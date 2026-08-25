@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const activeDevOpsPath = document.getElementById('activeDevOpsPath');
   const resultsContainer = document.getElementById('resultsContainer');
   const quickFilterInput = document.getElementById('quickFilterInput');
+  const rememberCredentials = document.getElementById('rememberCredentials');
 
   const categorySectionIds = [
     'section-repos',
@@ -16,57 +17,99 @@ document.addEventListener('DOMContentLoaded', () => {
     'section-activity'
   ];
 
-  // Update Org link live
-  orgUrlInput.addEventListener('input', (e) => {
-    const val = e.target.value.trim();
-    if (val.startsWith('http://') || val.startsWith('https://')) {
-      activeDevOpsPath.href = val;
-      activeDevOpsPath.textContent = val;
-    } else if (val) {
-      activeDevOpsPath.href = `https://dev.azure.com/${val}`;
-      activeDevOpsPath.textContent = `https://dev.azure.com/${val}`;
+  // Helper to extract clean organization name
+  function getCleanOrgName(rawInput) {
+    let org = rawInput.trim();
+    org = org.replace(/^(https?:\/\/)?(dev\.azure\.com\/)/i, '')
+             .replace(/^(https?:\/\/)?([\w.-]+)\.visualstudio\.com\/?/i, '$2')
+             .replace(/\/+$/, '');
+    return org;
+  }
+
+  // Load saved credentials from localStorage if available
+  if (localStorage.getItem('ado_remember') === 'true') {
+    if (rememberCredentials) rememberCredentials.checked = true;
+    orgUrlInput.value = localStorage.getItem('ado_org') || '';
+    patTokenInput.value = localStorage.getItem('ado_pat') || '';
+    updateOrgPreview(orgUrlInput.value);
+  }
+
+  function updateOrgPreview(val) {
+    const cleanOrg = getCleanOrgName(val);
+    if (cleanOrg) {
+      activeDevOpsPath.href = `https://dev.azure.com/${cleanOrg}`;
+      activeDevOpsPath.textContent = `https://dev.azure.com/${cleanOrg}`;
     } else {
       activeDevOpsPath.href = 'https://dev.azure.com/';
       activeDevOpsPath.textContent = 'https://dev.azure.com/';
     }
+  }
+
+  // Live Org URL link update
+  orgUrlInput.addEventListener('input', (e) => {
+    updateOrgPreview(e.target.value);
   });
 
-  // Handle Loading Projects
+  // Fetch real projects from Azure DevOps REST API
   btnLoadProjects.addEventListener('click', async () => {
-    const org = orgUrlInput.value.trim();
+    const cleanOrg = getCleanOrgName(orgUrlInput.value);
     const pat = patTokenInput.value.trim();
 
-    if (!org || !pat) {
-      alert('Please fill both Organization URL/Name and Azure DevOps PAT.');
+    if (!cleanOrg || !pat) {
+      alert('Please provide both an Organization Name/URL and an Azure DevOps PAT.');
       return;
+    }
+
+    // Save or clear credentials based on checkbox
+    if (rememberCredentials && rememberCredentials.checked) {
+      localStorage.setItem('ado_remember', 'true');
+      localStorage.setItem('ado_org', orgUrlInput.value.trim());
+      localStorage.setItem('ado_pat', pat);
+    } else {
+      localStorage.removeItem('ado_remember');
+      localStorage.removeItem('ado_org');
+      localStorage.removeItem('ado_pat');
     }
 
     btnLoadProjects.textContent = 'Loading...';
     btnLoadProjects.disabled = true;
 
     try {
-      // Example Azure DevOps API integration:
-      // const orgName = org.replace('https://dev.azure.com/', '').replace('/', '');
-      // const res = await fetch(`https://dev.azure.com/${orgName}/_apis/projects?api-version=6.0`, {
-      //   headers: { 'Authorization': 'Basic ' + btoa(':' + pat) }
-      // });
-      // const data = await res.json();
+      const apiUrl = `https://dev.azure.com/${cleanOrg}/_apis/projects?api-version=6.0`;
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': 'Basic ' + btoa(':' + pat),
+          'Content-Type': 'application/json'
+        }
+      });
 
-      // Mock population for demonstration:
-      selectProject.innerHTML = `
-        <option value="">-- Choose Project --</option>
-        <option value="DemoProject1">DemoProject1</option>
-        <option value="DemoProject2">DemoProject2</option>
-      `;
-      selectProject.disabled = false;
-      
-      hideAllSections();
+      if (!response.ok) {
+        throw new Error(`Status ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const projects = data.value || [];
+
+      if (projects.length === 0) {
+        selectProject.innerHTML = '<option value="">-- No Projects Found --</option>';
+        selectProject.disabled = true;
+      } else {
+        // Populate dropdown with real project names sorted alphabetically
+        projects.sort((a, b) => a.name.localeCompare(b.name));
+        selectProject.innerHTML = '<option value="">-- Choose Project --</option>' +
+          projects.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+        selectProject.disabled = false;
+      }
+
+      // Reset subsequent controls
       selectCategory.value = '';
       selectCategory.disabled = true;
+      hideAllSections();
 
     } catch (err) {
-      console.error('Failed to load projects:', err);
-      alert('Failed to load projects. Please verify your credentials and network.');
+      console.error('Azure DevOps API Error:', err);
+      alert('Failed to fetch projects. Please verify:\n1. The Organization Name is correct.\n2. The PAT has "Project and Team (Read)" permissions.\n3. Your network allows direct calls to dev.azure.com.');
     } finally {
       btnLoadProjects.textContent = 'Load Projects';
       btnLoadProjects.disabled = false;
@@ -77,36 +120,38 @@ document.addEventListener('DOMContentLoaded', () => {
   selectProject.addEventListener('change', () => {
     if (selectProject.value) {
       selectCategory.disabled = false;
+      selectCategory.value = '';
     } else {
       selectCategory.disabled = true;
       selectCategory.value = '';
-      hideAllSections();
     }
+    hideAllSections();
   });
 
   // Category Selection Handler (Toggles visibility of specific sections)
   selectCategory.addEventListener('change', (e) => {
     const selected = e.target.value;
+    const cleanOrg = getCleanOrgName(orgUrlInput.value);
+    const pat = patTokenInput.value.trim();
+    const project = selectProject.value;
 
     if (!selected) {
       hideAllSections();
       return;
     }
 
-    // Show container
+    // Reveal main container and hide all sub-sections
     resultsContainer.classList.remove('hidden');
-
-    // Hide all category subsections first
     categorySectionIds.forEach(id => {
       const section = document.getElementById(id);
       if (section) section.classList.add('hidden');
     });
 
-    // Display the matching section
+    // Show only the selected category section
     const activeSection = document.getElementById(`section-${selected}`);
     if (activeSection) {
       activeSection.classList.remove('hidden');
-      loadCategoryData(selected, selectProject.value);
+      loadCategoryData(selected, cleanOrg, project, pat);
     }
   });
 
@@ -118,35 +163,48 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function loadCategoryData(category, project) {
+  // Dispatch data loading calls to category-specific modules
+  function loadCategoryData(category, org, project, pat) {
     switch (category) {
       case 'repos':
-        if (typeof loadRepositoriesModule === 'function') loadRepositoriesModule(project);
+        if (typeof loadRepositoriesModule === 'function') {
+          loadRepositoriesModule(org, project, pat);
+        }
         break;
       case 'pipelines':
-        if (typeof loadPipelinesModule === 'function') loadPipelinesModule(project);
+        if (typeof loadPipelinesModule === 'function') {
+          loadPipelinesModule(org, project, pat);
+        }
         break;
       case 'workitems':
-        if (typeof loadWorkItemsModule === 'function') loadWorkItemsModule(project);
+        if (typeof loadWorkItemsModule === 'function') {
+          loadWorkItemsModule(org, project, pat);
+        }
         break;
       case 'access':
-        if (typeof loadAccessModule === 'function') loadAccessModule(project);
+        if (typeof loadAccessModule === 'function') {
+          loadAccessModule(org, project, pat);
+        }
         break;
       case 'activity':
-        if (typeof loadActivityModule === 'function') loadActivityModule(project);
+        if (typeof loadActivityModule === 'function') {
+          loadActivityModule(org, project, pat);
+        }
         break;
     }
   }
 
-  // Quick search filter functionality across visible rows
-  quickFilterInput.addEventListener('input', (e) => {
-    const term = e.target.value.toLowerCase();
-    const visibleTables = resultsContainer.querySelectorAll('div:not(.hidden) tbody tr');
-    
-    visibleTables.forEach(row => {
-      if (row.classList.contains('empty-state')) return;
-      const text = row.textContent.toLowerCase();
-      row.style.display = text.includes(term) ? '' : 'none';
+  // Quick search filter functionality across all visible table rows
+  if (quickFilterInput) {
+    quickFilterInput.addEventListener('input', (e) => {
+      const term = e.target.value.toLowerCase();
+      const visibleRows = resultsContainer.querySelectorAll('div:not(.hidden) tbody tr');
+      
+      visibleRows.forEach(row => {
+        if (row.classList.contains('empty-state')) return;
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(term) ? '' : 'none';
+      });
     });
-  });
+  }
 });
