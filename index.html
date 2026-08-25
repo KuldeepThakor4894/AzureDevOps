@@ -1,820 +1,1397 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Azure DevOps Intelligence Hub</title>
-  <style>
-    :root {
-      --primary-color: #0078d4;
-      --primary-hover: #106ebe;
-      --success-color: #107c41;
-      --success-hover: #0b5a2f;
-      --danger-color: #a80000;
-      --bg-color: #f3f4f6;
-      --card-bg: #ffffff;
-      --border-color: #e1dfdd;
-      --text-primary: #323130;
-      --text-secondary: #605e5c;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-
-    body {
-      background-color: var(--bg-color);
-      color: var(--text-primary);
-      padding: 24px;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    .header-container {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 20px;
-    }
-
-    .header-container h1 {
-      font-size: 24px;
-      font-weight: 700;
-      color: #201f1e;
-    }
-
-    .header-container p {
-      font-size: 13px;
-      color: var(--text-secondary);
-      margin-top: 4px;
-    }
-
-    .remember-creds {
-      font-size: 13px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .config-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
-      padding: 16px;
-      margin-bottom: 20px;
-    }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns: 2fr 2fr auto 2fr 2fr 2fr;
-      gap: 12px;
-      align-items: flex-end;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .form-group label {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: var(--text-secondary);
-    }
-
-    .form-group label span {
-      color: #d83b01;
-    }
-
-    .form-group input,
-    .form-group select {
-      height: 36px;
-      padding: 0 10px;
-      border: 1px solid var(--border-color);
-      border-radius: 4px;
-      font-size: 13px;
-      background: #ffffff;
-      width: 100%;
-    }
-
-    .form-group input:focus,
-    .form-group select:focus {
-      outline: none;
-      border-color: var(--primary-color);
-    }
-
-    .btn-primary {
-      height: 36px;
-      padding: 0 16px;
-      background-color: var(--primary-color);
-      color: #ffffff;
-      border: none;
-      border-radius: 4px;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    .btn-primary:hover {
-      background-color: var(--primary-hover);
-    }
-
-    .status-banner {
-      margin-top: 12px;
-      padding: 8px 12px;
-      border-radius: 4px;
-      font-size: 12px;
-    }
-
-    .status-error {
-      background-color: #fde7e9;
-      color: var(--danger-color);
-      border: 1px solid #f8d0d4;
-    }
-
-    .status-success {
-      background-color: #dff6dd;
-      color: var(--success-color);
-      border: 1px solid #c2ebc0;
-    }
-
-    .path-preview {
-      margin-top: 12px;
-      font-size: 12px;
-      color: var(--text-secondary);
-    }
-
-    .path-preview a {
-      color: var(--primary-color);
-      text-decoration: none;
-    }
-
-    .toolbar {
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 16px;
-    }
-
-    .search-input {
-      width: 320px;
-      height: 36px;
-      padding: 0 12px;
-      border: 1px solid var(--border-color);
-      border-radius: 4px;
-      font-size: 13px;
-    }
-
-    .btn-export {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background-color: var(--success-color);
-      color: #ffffff;
-      border: none;
-      border-radius: 4px;
-      padding: 8px 14px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .btn-export:hover {
-      background-color: var(--success-hover);
-    }
-
-    .data-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
-      padding: 16px;
-      margin-bottom: 20px;
-    }
-
-    .data-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 12px;
-    }
-
-    .data-card-title {
-      font-size: 15px;
-      font-weight: 700;
-    }
-
-    .data-card-subtitle {
-      font-size: 12px;
-      color: var(--text-secondary);
-      margin-top: 2px;
-    }
-
-    .table-responsive {
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-    }
-
-    thead th {
-      background: #faf9f8;
-      border-bottom: 1px solid var(--border-color);
-      padding: 10px 12px;
-      text-align: left;
-      font-weight: 700;
-      color: var(--text-secondary);
-      text-transform: uppercase;
-    }
-
-    tbody td {
-      padding: 12px;
-      border-bottom: 1px solid var(--border-color);
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      font-size: 11px;
-      font-weight: 600;
-      border-radius: 12px;
-      background: #e1dfdd;
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 30px;
-      color: var(--text-secondary);
-      font-size: 13px;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Azure DevOps Multi-View Explorer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen">
 
-  <!-- Header -->
-  <header class="header-container">
-    <div>
-      <h1>Azure DevOps Intelligence Hub</h1>
-      <p>Details of Repositories, Pipelines, Work Items, Security & User Activity</p>
+  <!-- Step Validation Modal -->
+  <div id="validationModal" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl border border-slate-200">
+      <div class="flex items-center gap-3 text-amber-600 mb-3">
+        <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        <h3 class="text-base font-bold text-slate-900">Input Required</h3>
+      </div>
+      <p id="modalMessage" class="text-xs text-slate-600 mb-5 leading-relaxed"></p>
+      <div class="flex justify-end">
+        <button onclick="closeModal()" class="text-xs bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+          Got it
+        </button>
+      </div>
     </div>
-    <label class="remember-creds">
-      <input type="checkbox" id="rememberCredentials"> Remember Credentials
-    </label>
+  </div>
+
+  <!-- Header / Cascading Configuration Bar -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-6 py-4 space-y-3">
+      <div class="flex flex-wrap justify-between items-center gap-4">
+        <div>
+          <h1 class="text-xl font-bold text-slate-900">Azure DevOps Intelligence Hub</h1>
+          <p class="text-xs text-slate-500">Details of Repositories, Pipelines, Work Items, Security & User Activity</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer">
+            <input type="checkbox" id="chkRememberCreds" onchange="toggleRememberCreds()" class="rounded text-blue-600 focus:ring-blue-500 h-3.5 w-3.5 border-slate-300">
+            Remember Credentials
+          </label>
+        </div>
+      </div>
+
+      <!-- Main Step Grid -->
+      <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          
+          <!-- 1. Organization URL -->
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">
+              1. ORGANIZATION URL / NAME <span class="text-red-500">*</span>
+            </label>
+            <input type="text" id="targetOrg" 
+                   oninput="handleOrgChange()"
+                   placeholder="e.g. Enter Org Name" 
+                   class="w-full text-xs border border-slate-300 rounded-md px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+          </div>
+
+          <!-- 2. PAT & Load Projects Button -->
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">
+              2. AZURE DEVOPS PAT <span class="text-red-500">*</span>
+            </label>
+            <div class="flex gap-1.5">
+              <input type="password" id="targetPat" 
+                     placeholder="Enter PAT token" 
+                     class="w-full text-xs border border-slate-300 rounded-md px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+              <button id="btnLoadProjects" onclick="loadProjectsList()" class="text-xs bg-blue-600 text-white font-semibold px-3 py-2 rounded-md hover:bg-blue-700 transition flex-shrink-0">
+                Load Projects
+              </button>
+            </div>
+          </div>
+
+          <!-- 3. Select Project Dropdown -->
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">
+              3. SELECT PROJECT <span class="text-red-500">*</span>
+            </label>
+            <select id="projectSelect" 
+                    disabled
+                    onchange="handleProjectSelection()"
+                    class="w-full text-xs border border-slate-300 rounded-md px-3 py-2 bg-slate-100 cursor-not-allowed focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium">
+              <option value="">-- Load PAT first --</option>
+            </select>
+          </div>
+
+          <!-- 4. Category Selector -->
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">
+              4. SELECT CATEGORY <span class="text-red-500">*</span>
+            </label>
+            <select id="categorySelect" 
+                    disabled
+                    onchange="handleCategorySelection()"
+                    class="w-full text-xs border border-slate-300 rounded-md px-3 py-2 bg-slate-100 cursor-not-allowed focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium">
+              <option value="">-- Select Project first --</option>
+            </select>
+          </div>
+
+        </div>
+
+        <!-- 5. Dynamic Sub-Step Container -->
+        <div id="step5Container" class="hidden pt-3 border-t border-slate-200">
+          
+          <!-- Step 5A: Repositories -->
+          <div id="substepRepo" class="hidden grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
+            <div>
+              <label class="block text-[11px] font-semibold text-blue-900 mb-1">
+                5. SELECT OR TYPE REPOSITORY <span class="text-red-500">*</span>
+              </label>
+              <div class="flex gap-2">
+                <input list="repoDatalist" id="repoSelect" 
+                       placeholder="Type or select repository..." 
+                       onfocus="this.value=''"
+                       onblur="if(!this.value) this.value='-- All Repositories --'"
+                       class="w-full text-xs border border-blue-300 rounded-md px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium" />
+                <datalist id="repoDatalist"></datalist>
+                <button onclick="fetchRepositoryData()" class="text-xs bg-blue-600 text-white font-semibold px-4 py-2 rounded-md hover:bg-blue-700 transition flex-shrink-0">
+                  Inspect
+                </button>
+              </div>
+            </div>
+            <div class="text-xs text-slate-500 pb-2">
+              Select <strong>"-- All Repositories --"</strong> or pick an individual repository to scan branches and PR health[cite: 2].
+            </div>
+          </div>
+
+          <!-- Step 5B: User Access -->
+          <div id="substepAccess" class="hidden grid grid-cols-1 md:grid-cols-3 gap-3 bg-blue-50/50 p-3 rounded-md items-end">
+            <div class="md:col-span-2">
+              <label class="block text-[11px] font-semibold text-blue-900 mb-1">
+                5. USER ID / EMAIL / DISPLAY NAME <span class="text-slate-400 font-normal">(Leave blank to fetch all project users)</span>
+              </label>
+              <input type="text" id="targetAccessUserQuery" 
+                     placeholder="e.g. user@domain.com or First Last" 
+                     class="w-full text-xs border border-blue-300 rounded-md px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+            </div>
+            <div>
+              <button onclick="fetchUserAccessData()" class="w-full text-xs bg-blue-600 text-white font-semibold px-4 py-2 rounded-md hover:bg-blue-700 transition h-[34px]">
+                Fetch User Access
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 5C: User Activity -->
+          <div id="substepActivity" class="hidden grid grid-cols-1 md:grid-cols-3 gap-3 bg-blue-50/50 p-3 rounded-md items-end">
+            <div>
+              <label class="block text-[11px] font-semibold text-blue-900 mb-1">
+                5. USER EMAIL / ID <span class="text-red-500">*</span>
+              </label>
+              <input type="text" id="targetUserQuery" 
+                     placeholder="e.g. user@domain.com or First Last" 
+                     class="w-full text-xs border border-blue-300 rounded-md px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-blue-900 mb-1">TIMEFRAME</label>
+              <select id="userTimeframeDays" class="w-full text-xs border border-blue-300 rounded-md px-2 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                <option value="30">Last 30 Days</option>
+                <option value="90" selected>Last 90 Days</option>
+                <option value="180">Last 6 Months</option>
+                <option value="365">Last 1 Year</option>
+                <option value="0">All Time</option>
+              </select>
+            </div>
+            <div>
+              <button onclick="fetchUserActivityData()" class="w-full text-xs bg-blue-600 text-white font-semibold px-4 py-2 rounded-md hover:bg-blue-700 transition h-[34px]">
+                Search User Activity
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 5D: Pipelines -->
+          <div id="substepPipelines" class="hidden grid grid-cols-1 md:grid-cols-3 gap-3 bg-blue-50/50 p-3 rounded-md items-end">
+            <div class="md:col-span-2">
+              <label class="block text-[11px] font-semibold text-blue-900 mb-1">
+                TOP RUNS TO SCAN
+              </label>
+              <select id="pipelineRunsTop" class="w-full text-xs border border-blue-300 rounded-md px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                <option value="25">Latest 25 Runs</option>
+                <option value="50" selected>Latest 50 Runs</option>
+                <option value="100">Latest 100 Runs</option>
+              </select>
+            </div>
+            <div>
+              <button onclick="fetchPipelineData()" class="w-full text-xs bg-blue-600 text-white font-semibold px-4 py-2 rounded-md hover:bg-blue-700 transition h-[34px]">
+                Fetch Pipeline Runs
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 5E: Work Items -->
+          <div id="substepWorkItems" class="hidden grid grid-cols-1 md:grid-cols-3 gap-3 bg-blue-50/50 p-3 rounded-md items-end">
+            <div class="md:col-span-2">
+              <label class="block text-[11px] font-semibold text-blue-900 mb-1">
+                ASSIGNED USER EMAIL / NAME <span class="text-slate-400 font-normal">(Leave blank to query all active work items)</span>
+              </label>
+              <input type="text" id="targetWorkItemUser" 
+                     placeholder="e.g. user@domain.com or First Last" 
+                     class="w-full text-xs border border-blue-300 rounded-md px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+            </div>
+            <div>
+              <button onclick="fetchWorkItemsData()" class="w-full text-xs bg-blue-600 text-white font-semibold px-4 py-2 rounded-md hover:bg-blue-700 transition h-[34px]">
+                Query Work Items
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Active Path Preview -->
+        <div class="text-[12px] text-slate-500 flex items-center gap-1.5 pt-1">
+          <span class="font-medium text-slate-600">Active Azure DevOps Path:</span>
+          <a id="generatedUrlLink" href="javascript:void(0)" class="text-blue-600 font-mono underline cursor-default">
+            https://dev.azure.com/
+          </a>
+        </div>
+      </div>
+
+      <!-- Status Bar -->
+      <div id="statusBar" class="hidden text-xs py-2 px-3 rounded-md font-medium"></div>
+    </div>
   </header>
 
-  <!-- Step-by-Step Configuration Filter -->
-  <section class="config-card">
-    <div class="form-grid">
-      <div class="form-group">
-        <label for="orgUrl">1. ORGANIZATION URL / NAME <span>*</span></label>
-        <input type="text" id="orgUrl" placeholder="e.g. CornerstoneBuildingBrands">
+  <!-- Results Area (Completely Hidden by Default until Step 5 Execute) -->
+  <main id="mainDashboard" class="hidden max-w-7xl mx-auto px-6 py-6 space-y-6">
+
+    <!-- KPI Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Scope</p>
+        <p id="kpi-1-val" class="text-lg font-bold text-slate-800 mt-1 truncate">-</p>
+      </div>
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <p id="kpi-2-label" class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Primary Metric</p>
+        <p id="kpi-2-val" class="text-2xl font-extrabold text-blue-600 mt-1">0</p>
+      </div>
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <p id="kpi-3-label" class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Secondary Metric</p>
+        <p id="kpi-3-val" class="text-2xl font-extrabold text-emerald-600 mt-1">0</p>
+      </div>
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <p id="kpi-4-label" class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Volume</p>
+        <p id="kpi-4-val" class="text-2xl font-extrabold text-indigo-600 mt-1">0</p>
+      </div>
+    </div>
+
+    <!-- Analytics Chart Container -->
+    <div id="chartSection" class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+      <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
+        <h2 id="chartTitle" class="text-base font-bold text-slate-900">Activity Overview</h2>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-500 font-medium">Chart Type:</span>
+          <button onclick="changeChartType('bar')" class="px-2.5 py-1 text-xs font-medium border rounded hover:bg-slate-50 bg-slate-100 text-slate-700">Bar</button>
+          <button onclick="changeChartType('line')" class="px-2.5 py-1 text-xs font-medium border rounded hover:bg-slate-50 text-slate-600">Line</button>
+          <button onclick="changeChartType('pie')" class="px-2.5 py-1 text-xs font-medium border rounded hover:bg-slate-50 text-slate-600">Pie</button>
+        </div>
+      </div>
+      <div class="h-64">
+        <canvas id="analyticsChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Table Filter & CSV Export -->
+    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap justify-between items-center gap-3">
+      <div class="flex items-center gap-2 flex-grow max-w-sm">
+        <input type="text" id="tableFilterInput" oninput="filterActiveTable()" placeholder="Quick filter displayed rows..." class="w-full text-xs border border-slate-300 rounded-md px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+      </div>
+      <button onclick="exportCurrentTableToCSV()" class="text-xs bg-slate-800 text-white font-semibold px-4 py-1.5 rounded-md hover:bg-slate-900 transition flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Export to CSV
+      </button>
+    </div>
+
+    <!-- VIEW 1: Repositories & Pull Requests -->
+    <section id="view-repositories" class="hidden space-y-6">
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
+        <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+          <h3 class="font-bold text-slate-900 text-sm">Repositories & Active Branch Matrix</h3>
+          <span class="text-xs text-slate-400">Branches older than 90 days are flagged as Stale</span>
+        </div>
+        <table id="table-repositories" class="w-full text-left border-collapse text-sm">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase font-semibold">
+              <th class="p-4">Repository</th>
+              <th class="p-4">Branch Name</th>
+              <th class="p-4">Status / Health</th>
+              <th class="p-4">Last Author</th>
+              <th class="p-4">Last Commit Date</th>
+              <th class="p-4">Commit Message</th>
+            </tr>
+          </thead>
+          <tbody id="branchesTableBody" class="divide-y divide-slate-100"></tbody>
+        </table>
+        <div id="seeMoreRepoContainer" class="hidden p-4 border-t border-slate-100 text-center">
+          <button onclick="renderRepoTableBatch(true)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-5 py-2 rounded-lg transition">
+            See More (<span id="repoRemainingCount">0</span> remaining)
+          </button>
+        </div>
       </div>
       
-      <div class="form-group">
-        <label for="patToken">2. AZURE DEVOPS PAT <span>*</span></label>
-        <input type="password" id="patToken" placeholder="Enter PAT token">
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
+        <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+          <h3 class="font-bold text-slate-900 text-sm">Pull Requests (Active & Completed)</h3>
+          <span class="text-xs text-slate-400">Showing latest pull requests for selected repositories</span>
+        </div>
+        <table id="table-repo-prs" class="w-full text-left border-collapse text-sm">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase font-semibold">
+              <th class="p-4">Repository</th>
+              <th class="p-4">PR Title</th>
+              <th class="p-4">Source &rarr; Target</th>
+              <th class="p-4">Creator</th>
+              <th class="p-4">Status</th>
+              <th class="p-4">Created Date</th>
+            </tr>
+          </thead>
+          <tbody id="repoPrsTableBody" class="divide-y divide-slate-100"></tbody>
+        </table>
+        <div id="seeMoreRepoPrsContainer" class="hidden p-4 border-t border-slate-100 text-center">
+          <button onclick="renderRepoPrsTableBatch(true)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-5 py-2 rounded-lg transition">
+            See More (<span id="repoPrsRemainingCount">0</span> remaining)
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: User Access & Groups -->
+    <section id="view-access" class="hidden space-y-4">
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
+        <div class="p-4 border-b border-slate-100">
+          <h3 class="font-bold text-slate-900 text-sm">Project Teams, Security Groups & Member Permissions</h3>
+        </div>
+        <table id="table-access" class="w-full text-left border-collapse text-sm">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase font-semibold">
+              <th class="p-4">Team / Group Name</th>
+              <th class="p-4">User Display Name</th>
+              <th class="p-4">User Principal / Email</th>
+            </tr>
+          </thead>
+          <tbody id="accessTableBody" class="divide-y divide-slate-100"></tbody>
+        </table>
+        <div id="seeMoreAccessContainer" class="hidden p-4 border-t border-slate-100 text-center">
+          <button onclick="renderAccessTableBatch(true)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-5 py-2 rounded-lg transition">
+            See More (<span id="accessRemainingCount">0</span> remaining)
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: User Activity & Commits -->
+    <section id="view-activity" class="hidden space-y-6">
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
+        <div class="p-4 border-b border-slate-100">
+          <h3 class="font-bold text-slate-900 text-sm">User Commit History & Code Changes</h3>
+        </div>
+        <table id="table-user-commits" class="w-full text-left border-collapse text-sm">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase font-semibold">
+              <th class="p-4">Repository</th>
+              <th class="p-4">Commit ID</th>
+              <th class="p-4">Commit Date</th>
+              <th class="p-4">Message / Changes</th>
+            </tr>
+          </thead>
+          <tbody id="userCommitsTableBody" class="divide-y divide-slate-100"></tbody>
+        </table>
+        <div id="seeMoreCommitsContainer" class="hidden p-4 border-t border-slate-100 text-center">
+          <button onclick="renderCommitsTableBatch(true)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-5 py-2 rounded-lg transition">
+            See More (<span id="commitsRemainingCount">0</span> remaining)
+          </button>
+        </div>
       </div>
 
-      <div>
-        <button type="button" id="btnLoadProjects" class="btn-primary">Load Projects</button>
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
+        <div class="p-4 border-b border-slate-100">
+          <h3 class="font-bold text-slate-900 text-sm">Pull Requests (Created / Authored)</h3>
+        </div>
+        <table id="table-user-prs" class="w-full text-left border-collapse text-sm">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase font-semibold">
+              <th class="p-4">Repository</th>
+              <th class="p-4">PR Title</th>
+              <th class="p-4">Source &rarr; Target</th>
+              <th class="p-4">Status</th>
+              <th class="p-4">Creation Date</th>
+            </tr>
+          </thead>
+          <tbody id="userPrTableBody" class="divide-y divide-slate-100"></tbody>
+        </table>
       </div>
+    </section>
 
-      <div class="form-group">
-        <label for="selectProject">3. SELECT PROJECT <span>*</span></label>
-        <select id="selectProject" disabled>
-          <option value="">-- Click Load Projects --</option>
-        </select>
+    <!-- VIEW 4: Pipelines -->
+    <section id="view-pipelines" class="hidden space-y-4">
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
+        <div class="p-4 border-b border-slate-100">
+          <h3 class="font-bold text-slate-900 text-sm">Pipeline & CI/CD Build Runs</h3>
+        </div>
+        <table id="table-pipelines" class="w-full text-left border-collapse text-sm">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase font-semibold">
+              <th class="p-4">Pipeline Name</th>
+              <th class="p-4">Build #</th>
+              <th class="p-4">Branch</th>
+              <th class="p-4">Triggered By</th>
+              <th class="p-4">Result</th>
+              <th class="p-4">Finish Time</th>
+            </tr>
+          </thead>
+          <tbody id="pipelineTableBody" class="divide-y divide-slate-100"></tbody>
+        </table>
+        <div id="seeMorePipelinesContainer" class="hidden p-4 border-t border-slate-100 text-center">
+          <button onclick="renderPipelineTableBatch(true)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-5 py-2 rounded-lg transition">
+            See More (<span id="pipelinesRemainingCount">0</span> remaining)
+          </button>
+        </div>
       </div>
+    </section>
 
-      <div class="form-group">
-        <label for="selectCategory">4. SELECT CATEGORY <span>*</span></label>
-        <select id="selectCategory" disabled>
-          <option value="">-- Select Project First --</option>
-          <option value="repos">Repositories & PRs</option>
-          <option value="pipelines">Pipelines & Runs</option>
-          <option value="workitems">Work Items</option>
-          <option value="access">Security & Access</option>
-          <option value="activity">User Activity</option>
-        </select>
+    <!-- VIEW 5: Work Items -->
+    <section id="view-workitems" class="hidden space-y-4">
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
+        <div class="p-4 border-b border-slate-100">
+          <h3 class="font-bold text-slate-900 text-sm">Active Work Items & Backlog Status</h3>
+        </div>
+        <table id="table-workitems" class="w-full text-left border-collapse text-sm">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase font-semibold">
+              <th class="p-4">ID</th>
+              <th class="p-4">Work Item Type</th>
+              <th class="p-4">Title</th>
+              <th class="p-4">Assigned To</th>
+              <th class="p-4">State</th>
+              <th class="p-4">Created Date</th>
+            </tr>
+          </thead>
+          <tbody id="workItemsTableBody" class="divide-y divide-slate-100"></tbody>
+        </table>
+        <div id="seeMoreWorkItemsContainer" class="hidden p-4 border-t border-slate-100 text-center">
+          <button onclick="renderWorkItemsTableBatch(true)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-5 py-2 rounded-lg transition">
+            See More (<span id="workItemsRemainingCount">0</span> remaining)
+          </button>
+        </div>
       </div>
-
-      <div class="form-group" id="groupSubItem">
-        <label for="selectSubItem" id="lblSubItem">5. SELECT ITEM <span>*</span></label>
-        <select id="selectSubItem" disabled>
-          <option value="">-- Select Category First --</option>
-        </select>
-      </div>
-    </div>
-
-    <div id="statusBanner" class="status-banner hidden"></div>
-
-    <div class="path-preview">
-      Active Azure DevOps Path: <a href="https://dev.azure.com/" target="_blank" id="activeDevOpsPath">https://dev.azure.com/</a>
-    </div>
-  </section>
-
-  <!-- Results Area (Completely Hidden by Default) -->
-  <main id="resultsContainer" class="hidden">
-    
-    <div class="toolbar">
-      <input type="text" id="quickFilterInput" class="search-input" placeholder="Quick filter displayed rows...">
-      <button class="btn-export" id="btnExportActiveTable">📥 Export Active Table (.xlsx)</button>
-    </div>
-
-    <!-- REPOSITORIES CATEGORY -->
-    <div id="section-repos" class="hidden">
-      <section class="data-card">
-        <div class="data-card-header">
-          <div>
-            <h2 class="data-card-title">Repositories & Active Branch Matrix</h2>
-            <p class="data-card-subtitle">Branches older than 90 days are flagged as Stale</p>
-          </div>
-          <button class="btn-export">📥 Export Branches (.xlsx)</button>
-        </div>
-        <div class="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th>REPOSITORY</th>
-                <th>BRANCH NAME</th>
-                <th>STATUS / HEALTH</th>
-                <th>LAST AUTHOR</th>
-                <th>LAST COMMIT DATE</th>
-                <th>COMMIT MESSAGE</th>
-              </tr>
-            </thead>
-            <tbody id="branchTableBody"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="data-card">
-        <div class="data-card-header">
-          <div>
-            <h2 class="data-card-title">Pull Requests (Active & Completed)</h2>
-            <p class="data-card-subtitle">Showing latest pull requests for selected repositories</p>
-          </div>
-          <button class="btn-export">📥 Export PRs (.xlsx)</button>
-        </div>
-        <div class="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th>REPOSITORY</th>
-                <th>PR TITLE</th>
-                <th>SOURCE → TARGET</th>
-                <th>CREATOR</th>
-                <th>STATUS</th>
-                <th>CREATED DATE</th>
-              </tr>
-            </thead>
-            <tbody id="prTableBody"></tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-
-    <!-- PIPELINES CATEGORY -->
-    <div id="section-pipelines" class="hidden">
-      <section class="data-card">
-        <div class="data-card-header">
-          <div>
-            <h2 class="data-card-title">Pipelines Inventory & Runs</h2>
-          </div>
-          <button class="btn-export">📥 Export Runs (.xlsx)</button>
-        </div>
-        <div class="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th>PIPELINE NAME</th>
-                <th>BUILD #</th>
-                <th>BRANCH</th>
-                <th>TRIGGER TYPE</th>
-                <th>TRIGGERED BY</th>
-                <th>RESULT</th>
-                <th>FINISH TIME</th>
-              </tr>
-            </thead>
-            <tbody id="buildRunsTableBody"></tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-
-    <!-- WORK ITEMS CATEGORY -->
-    <div id="section-workitems" class="hidden">
-      <section class="data-card">
-        <div class="data-card-header">
-          <div>
-            <h2 class="data-card-title">Work Items & Backlog Tracker</h2>
-          </div>
-          <button class="btn-export">📥 Export Work Items (.xlsx)</button>
-        </div>
-        <div class="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>TITLE</th>
-                <th>TYPE</th>
-                <th>STATE</th>
-                <th>ASSIGNED TO</th>
-                <th>LAST UPDATED</th>
-              </tr>
-            </thead>
-            <tbody id="workItemsTableBody"></tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-
-    <!-- ACCESS CATEGORY -->
-    <div id="section-access" class="hidden">
-      <section class="data-card">
-        <div class="data-card-header">
-          <div>
-            <h2 class="data-card-title">Project Security Groups & Teams</h2>
-          </div>
-        </div>
-        <div class="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th>TEAM / GROUP NAME</th>
-                <th>DESCRIPTION</th>
-                <th>IDENTITY TYPE</th>
-              </tr>
-            </thead>
-            <tbody id="accessTableBody"></tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-
-    <!-- ACTIVITY CATEGORY -->
-    <div id="section-activity" class="hidden">
-      <section class="data-card">
-        <div class="data-card-header">
-          <div>
-            <h2 class="data-card-title">Recent Project Activity & Commits</h2>
-          </div>
-        </div>
-        <div class="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th>AUTHOR</th>
-                <th>ACTIVITY / COMMIT</th>
-                <th>DATE</th>
-              </tr>
-            </thead>
-            <tbody id="activityTableBody"></tbody>
-          </table>
-        </div>
-      </section>
-    </div>
+    </section>
 
   </main>
 
-  <!-- Self-Contained Execution Script -->
+  <!-- Application Logic -->
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const orgUrlInput = document.getElementById('orgUrl');
-      const patTokenInput = document.getElementById('patToken');
-      const btnLoadProjects = document.getElementById('btnLoadProjects');
-      const selectProject = document.getElementById('selectProject');
-      const selectCategory = document.getElementById('selectCategory');
-      const selectSubItem = document.getElementById('selectSubItem');
-      const lblSubItem = document.getElementById('lblSubItem');
-      const activeDevOpsPath = document.getElementById('activeDevOpsPath');
-      const resultsContainer = document.getElementById('resultsContainer');
-      const statusBanner = document.getElementById('statusBanner');
-      const rememberCredentials = document.getElementById('rememberCredentials');
-      const quickFilterInput = document.getElementById('quickFilterInput');
+    let chartInstance = null;
+    let currentFocusTarget = null;
+    let cachedRepos = [];
+    let currentChartData = { labels: [], values: [], label: 'Overview' };
+    let currentChartType = 'bar';
+    let activeViewSection = 'view-repositories';
+    const API_VERSION = "7.1-preview.1";
+    const PAGE_SIZE = 10;
 
-      const allSectionIds = ['section-repos', 'section-pipelines', 'section-workitems', 'section-access', 'section-activity'];
+    let rawStore = {
+      repos: [], repoIndex: 0,
+      repoPrs: [], repoPrsIndex: 0,
+      access: [], accessIndex: 0,
+      commits: [], commitsIndex: 0,
+      pipelines: [], pipelineIndex: 0,
+      workitems: [], workitemsIndex: 0
+    };
 
-      function showStatus(msg, isError = false) {
-        statusBanner.textContent = msg;
-        statusBanner.className = `status-banner ${isError ? 'status-error' : 'status-success'}`;
-        statusBanner.classList.remove('hidden');
+    function extractOrgName(input) {
+      let cleaned = input.trim().replace(/^https?:\/\//, '').replace(/^dev\.azure\.com\//, '');
+      return cleaned.split('/')[0] || '';
+    }
+
+    function showModal(message, targetFocusId) {
+      currentFocusTarget = targetFocusId;
+      document.getElementById('modalMessage').textContent = message;
+      document.getElementById('validationModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('validationModal').classList.add('hidden');
+      if (currentFocusTarget) {
+        const target = document.getElementById(currentFocusTarget);
+        if (target) {
+          target.focus();
+          target.classList.add('ring-2', 'ring-red-400');
+          setTimeout(() => target.classList.remove('ring-2', 'ring-red-400'), 1500);
+        }
+      }
+    }
+
+    function setStatus(msg, type = 'info') {
+      const el = document.getElementById('statusBar');
+      el.classList.remove('hidden', 'bg-red-50', 'text-red-700', 'bg-green-50', 'text-green-700', 'bg-blue-50', 'text-blue-700');
+      if (type === 'error') el.classList.add('bg-red-50', 'text-red-700');
+      else if (type === 'success') el.classList.add('bg-green-50', 'text-green-700');
+      else el.classList.add('bg-blue-50', 'text-blue-700');
+      el.textContent = msg;
+    }
+
+    function updatePathPreview(org = '', project = '') {
+      const linkEl = document.getElementById('generatedUrlLink');
+      let url = 'https://dev.azure.com/';
+      if (org) url += org;
+      if (org && project) url += `/${project}`;
+
+      linkEl.textContent = url;
+      linkEl.href = url;
+      if (org) {
+        linkEl.className = 'text-blue-600 font-mono underline hover:text-blue-800 cursor-pointer';
+        linkEl.target = '_blank';
+      } else {
+        linkEl.className = 'text-slate-400 font-mono underline cursor-default';
+        linkEl.removeAttribute('target');
+      }
+    }
+
+    function initCredentials() {
+      const savedOrg = localStorage.getItem('azdo_org');
+      const savedPat = localStorage.getItem('azdo_pat');
+      if (savedOrg) document.getElementById('targetOrg').value = savedOrg;
+      if (savedPat) {
+        document.getElementById('targetPat').value = savedPat;
+        document.getElementById('chkRememberCreds').checked = true;
+      }
+      handleOrgChange();
+    }
+
+    function toggleRememberCreds() {
+      const isChecked = document.getElementById('chkRememberCreds').checked;
+      if (isChecked) {
+        localStorage.setItem('azdo_org', document.getElementById('targetOrg').value.trim());
+        localStorage.setItem('azdo_pat', document.getElementById('targetPat').value.trim());
+      } else {
+        localStorage.removeItem('azdo_org');
+        localStorage.removeItem('azdo_pat');
+      }
+    }
+
+    function hideDashboard() {
+      document.getElementById('mainDashboard').classList.add('hidden');
+    }
+
+    function handleOrgChange() {
+      const org = extractOrgName(document.getElementById('targetOrg').value);
+      updatePathPreview(org);
+      resetDropdown('projectSelect', '-- Load PAT first --');
+      resetDropdown('categorySelect', '-- Select Project first --');
+      document.getElementById('step5Container').classList.add('hidden');
+      hideDashboard();
+      if (document.getElementById('chkRememberCreds').checked) {
+        localStorage.setItem('azdo_org', document.getElementById('targetOrg').value.trim());
+      }
+    }
+
+    function resetDropdown(id, placeholder) {
+      const el = document.getElementById(id);
+      el.innerHTML = `<option value="">${placeholder}</option>`;
+      el.disabled = true;
+      el.classList.add('bg-slate-100', 'cursor-not-allowed');
+      el.classList.remove('bg-white');
+    }
+
+    function enableDropdown(id) {
+      const el = document.getElementById(id);
+      el.disabled = false;
+      el.classList.remove('bg-slate-100', 'cursor-not-allowed');
+      el.classList.add('bg-white');
+    }
+
+    async function fetchAzDo(url, authHeader, options = {}) {
+      const res = await fetch(url, { 
+        ...options,
+        headers: { 
+          'Authorization': authHeader, 
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          ...(options.headers || {})
+        } 
+      });
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 203) throw new Error('Authentication failed: Invalid PAT or missing scopes.');
+        if (res.status === 404) throw new Error('Resource not found: Verify your Organization & Project names.');
+        throw new Error(`Azure DevOps API Error: ${res.statusText}`);
+      }
+      return await res.json();
+    }
+
+    // --- STEP 2 -> 3: Load Projects ---
+    async function loadProjectsList() {
+      const org = extractOrgName(document.getElementById('targetOrg').value);
+      const pat = document.getElementById('targetPat').value.trim();
+
+      if (!org) return showModal('Please enter the Organization Name or URL first.', 'targetOrg');
+      if (!pat) return showModal('Please enter your Personal Access Token (PAT).', 'targetPat');
+
+      if (document.getElementById('chkRememberCreds').checked) {
+        localStorage.setItem('azdo_org', org);
+        localStorage.setItem('azdo_pat', pat);
       }
 
-      function clearStatus() {
-        statusBanner.textContent = '';
-        statusBanner.classList.add('hidden');
-      }
+      const authHeader = 'Basic ' + btoa(':' + pat);
+      setStatus(`Loading projects from https://dev.azure.com/${org}...`, 'info');
 
-      function cleanOrg(val) {
-        return val.trim()
-          .replace(/^(https?:\/\/)?(dev\.azure\.com\/)/i, '')
-          .replace(/^(https?:\/\/)?([\w.-]+)\.visualstudio\.com\/?/i, '$2')
-          .replace(/\/+$/, '');
-      }
+      try {
+        const url = `https://dev.azure.com/${org}/_apis/projects?api-version=${API_VERSION}&$top=500`;
+        const data = await fetchAzDo(url, authHeader);
+        const projects = data.value || [];
 
-      function hideAllTables() {
-        resultsContainer.classList.add('hidden');
-        allSectionIds.forEach(id => {
-          const el = document.getElementById(id);
-          if (el) el.classList.add('hidden');
+        const projDropdown = document.getElementById('projectSelect');
+        projDropdown.innerHTML = '<option value="">-- Select a Project --</option>';
+
+        projects.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.name;
+          opt.textContent = p.name;
+          projDropdown.appendChild(opt);
         });
+
+        enableDropdown('projectSelect');
+        resetDropdown('categorySelect', '-- Select Project first --');
+        document.getElementById('step5Container').classList.add('hidden');
+        hideDashboard();
+        setStatus(`Loaded ${projects.length} projects successfully! Please choose a project.`, 'success');
+      } catch (err) {
+        setStatus(`Error loading projects: ${err.message}`, 'error');
+      }
+    }
+
+    // --- STEP 3 -> 4: Project Selection ---
+    async function handleProjectSelection() {
+      const org = extractOrgName(document.getElementById('targetOrg').value);
+      const project = document.getElementById('projectSelect').value;
+      const pat = document.getElementById('targetPat').value.trim();
+
+      if (!project) {
+        resetDropdown('categorySelect', '-- Select Project first --');
+        document.getElementById('step5Container').classList.add('hidden');
+        hideDashboard();
+        updatePathPreview(org);
+        return;
       }
 
-      function resetSubSelect() {
-        lblSubItem.textContent = '5. SELECT ITEM *';
-        selectSubItem.innerHTML = '<option value="">-- Select Category First --</option>';
-        selectSubItem.disabled = true;
+      updatePathPreview(org, project);
+
+      const catSelect = document.getElementById('categorySelect');
+      catSelect.innerHTML = `
+        <option value="">-- Choose Category --</option>
+        <option value="repositories">Repositories & Branches</option>
+        <option value="user_access">User Access & Teams</option>
+        <option value="user_activity">User Activity & Commits</option>
+        <option value="pipelines">Pipelines & Builds</option>
+        <option value="work_items">Work Items & Backlog</option>
+      `;
+      enableDropdown('categorySelect');
+      document.getElementById('step5Container').classList.add('hidden');
+      hideDashboard();
+
+      // Pre-fetch repositories
+      const authHeader = 'Basic ' + btoa(':' + pat);
+      try {
+        const url = `https://dev.azure.com/${org}/${project}/_apis/git/repositories?api-version=${API_VERSION}`;
+        const data = await fetchAzDo(url, authHeader);
+        cachedRepos = data.value || [];
+      } catch (e) {
+        console.warn('Could not prefetch repos:', e);
+      }
+    }
+
+    // --- STEP 4 -> 5: Category Selection ---
+    function handleCategorySelection() {
+      const cat = document.getElementById('categorySelect').value;
+      const step5 = document.getElementById('step5Container');
+      const subRepo = document.getElementById('substepRepo');
+      const subAccess = document.getElementById('substepAccess');
+      const subActivity = document.getElementById('substepActivity');
+      const subPipelines = document.getElementById('substepPipelines');
+      const subWorkItems = document.getElementById('substepWorkItems');
+
+      hideDashboard();
+
+      if (!cat) {
+        step5.classList.add('hidden');
+        return;
       }
 
-      async function callAdo(path, method = 'GET', body = null) {
-        const org = cleanOrg(orgUrlInput.value);
-        const pat = patTokenInput.value.trim();
-        const opts = {
-          method,
-          headers: {
-            'Authorization': 'Basic ' + btoa(':' + pat),
-            'Content-Type': 'application/json'
-          }
-        };
-        if (body) opts.body = JSON.stringify(body);
-        const res = await fetch(`https://dev.azure.com/${org}/${path}`, opts);
-        if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-        return await res.json();
+      step5.classList.remove('hidden');
+      [subRepo, subAccess, subActivity, subPipelines, subWorkItems].forEach(el => el.classList.add('hidden'));
+
+      if (cat === 'repositories') {
+        subRepo.classList.remove('hidden');
+        populateRepoDropdown();
+      } else if (cat === 'user_access') {
+        subAccess.classList.remove('hidden');
+      } else if (cat === 'user_activity') {
+        subActivity.classList.remove('hidden');
+      } else if (cat === 'pipelines') {
+        subPipelines.classList.remove('hidden');
+      } else if (cat === 'work_items') {
+        subWorkItems.classList.remove('hidden');
       }
+    }
 
-      // Remember credentials
-      if (localStorage.getItem('ado_saved_flag') === 'true') {
-        rememberCredentials.checked = true;
-        orgUrlInput.value = localStorage.getItem('ado_saved_org') || '';
-        patTokenInput.value = localStorage.getItem('ado_saved_pat') || '';
-      }
+    function populateRepoDropdown() {
+      const datalist = document.getElementById('repoDatalist');
+      datalist.innerHTML = '';
 
-      // Step 1 & 2: Load Projects
-      btnLoadProjects.addEventListener('click', async () => {
-        clearStatus();
-        hideAllTables();
-        resetSubSelect();
-        selectCategory.value = '';
-        selectCategory.disabled = true;
+      const allOpt = document.createElement('option');
+      allOpt.value = '-- All Repositories --';
+      datalist.appendChild(allOpt);
 
-        const org = cleanOrg(orgUrlInput.value);
-        const pat = patTokenInput.value.trim();
-
-        if (!org || !pat) {
-          showStatus('Please enter both Organization Name and Azure DevOps PAT.', true);
-          return;
-        }
-
-        if (rememberCredentials.checked) {
-          localStorage.setItem('ado_saved_flag', 'true');
-          localStorage.setItem('ado_saved_org', org);
-          localStorage.setItem('ado_saved_pat', pat);
-        }
-
-        btnLoadProjects.textContent = 'Loading...';
-        btnLoadProjects.disabled = true;
-
-        try {
-          const res = await callAdo('_apis/projects?api-version=6.0');
-          const projects = res.value || [];
-
-          if (projects.length === 0) {
-            selectProject.innerHTML = '<option value="">-- No Projects Found --</option>';
-            selectProject.disabled = true;
-            showStatus('Connected, but no projects found in this organization.', true);
-          } else {
-            projects.sort((a, b) => a.name.localeCompare(b.name));
-            selectProject.innerHTML = '<option value="">-- Select Project --</option>' +
-              projects.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
-            selectProject.disabled = false;
-            showStatus(`Successfully loaded ${projects.length} project(s).`);
-          }
-        } catch (err) {
-          showStatus(`Failed to load projects: ${err.message}. Verify PAT permissions or check browser console for CORS.`, true);
-        } finally {
-          btnLoadProjects.textContent = 'Load Projects';
-          btnLoadProjects.disabled = false;
-        }
+      cachedRepos.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r.name;
+        datalist.appendChild(opt);
       });
+      document.getElementById('repoSelect').value = '-- All Repositories --';
+    }
 
-      // Step 3: Project Selection
-      selectProject.addEventListener('change', () => {
-        clearStatus();
-        hideAllTables();
-        resetSubSelect();
-
-        if (selectProject.value) {
-          selectCategory.disabled = false;
-          selectCategory.value = '';
-        } else {
-          selectCategory.disabled = true;
-          selectCategory.value = '';
-        }
+    function showSection(viewId) {
+      document.getElementById('mainDashboard').classList.remove('hidden');
+      activeViewSection = `view-${viewId}`;
+      ['repositories', 'access', 'activity', 'pipelines', 'workitems'].forEach(v => {
+        document.getElementById(`view-${v}`).classList.toggle('hidden', v !== viewId);
       });
+    }
 
-      // Step 4: Category Selection -> Unlocks Step 5
-      selectCategory.addEventListener('change', async () => {
-        clearStatus();
-        hideAllTables();
-        const cat = selectCategory.value;
-        const project = encodeURIComponent(selectProject.value);
+    // ==========================================
+    // DATA FETCHING FUNCTIONS
+    // ==========================================
+    async function fetchRepositoryData() {
+      const org = extractOrgName(document.getElementById('targetOrg').value);
+      const project = document.getElementById('projectSelect').value;
+      const rawInput = document.getElementById('repoSelect').value.trim();
+      const pat = document.getElementById('targetPat').value.trim();
 
-        if (!cat) {
-          resetSubSelect();
-          return;
-        }
+      if (!rawInput) return showModal('Please select or type a repository name.', 'repoSelect');
 
-        selectSubItem.disabled = true;
-        selectSubItem.innerHTML = '<option value="">Loading options...</option>';
+      const authHeader = 'Basic ' + btoa(':' + pat);
+      showSection('repositories');
+      setStatus('Fetching repository and branch data...', 'info');
 
-        try {
-          if (cat === 'repos') {
-            lblSubItem.textContent = '5. SELECT REPOSITORY *';
-            const data = await callAdo(`${project}/_apis/git/repositories?api-version=6.0`);
-            const repos = data.value || [];
-            if (repos.length === 0) {
-              selectSubItem.innerHTML = '<option value="">-- No Repositories Found --</option>';
-            } else {
-              selectSubItem.innerHTML = '<option value="">-- Choose Repository --</option>' +
-                repos.map(r => `<option value="${r.id}" data-name="${r.name}">${r.name}</option>`).join('');
-              selectSubItem.disabled = false;
-            }
-          } else if (cat === 'pipelines') {
-            lblSubItem.textContent = '5. SELECT PIPELINE *';
-            const data = await callAdo(`${project}/_apis/pipelines?api-version=6.0-preview.1`);
-            const pipes = data.value || [];
-            selectSubItem.innerHTML = '<option value="">-- Choose Pipeline --</option><option value="ALL">All Pipelines</option>' +
-              pipes.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-            selectSubItem.disabled = false;
-          } else if (cat === 'workitems') {
-            lblSubItem.textContent = '5. SELECT WORK ITEM SCOPE *';
-            selectSubItem.innerHTML = `
-              <option value="">-- Select Scope --</option>
-              <option value="recent">Recently Updated (Top 25)</option>
-            `;
-            selectSubItem.disabled = false;
-          } else if (cat === 'access') {
-            lblSubItem.textContent = '5. ACCESS SCOPE *';
-            selectSubItem.innerHTML = '<option value="">-- Select Scope --</option><option value="teams">Project Teams & Groups</option>';
-            selectSubItem.disabled = false;
-          } else if (cat === 'activity') {
-            lblSubItem.textContent = '5. ACTIVITY SCOPE *';
-            selectSubItem.innerHTML = '<option value="">-- Select Scope --</option><option value="latest">Latest Commits & Updates</option>';
-            selectSubItem.disabled = false;
+      let targetRepos = cachedRepos;
+      if (rawInput !== '-- All Repositories --' && rawInput !== '__ALL__') {
+        const exactMatches = cachedRepos.filter(r => r.name.toLowerCase() === rawInput.toLowerCase());
+        targetRepos = exactMatches.length > 0 
+          ? exactMatches 
+          : cachedRepos.filter(r => r.name.toLowerCase().includes(rawInput.toLowerCase()));
+      }
+
+      if (targetRepos.length === 0) {
+        setStatus(`No repository found matching "${rawInput}".`, 'error');
+        return;
+      }
+
+      let repoBranchCounts = {};
+      const now = new Date();
+
+      try {
+        const repoPromises = targetRepos.map(async (r) => {
+          const refsUrl = `https://dev.azure.com/${org}/${project}/_apis/git/repositories/${r.id}/refs?filter=heads/&api-version=${API_VERSION}`;
+          try {
+            const refsData = await fetchAzDo(refsUrl, authHeader);
+            const refs = refsData.value || [];
+            repoBranchCounts[r.name] = refs.length;
+
+            return await Promise.all(refs.map(async (ref) => {
+              const bName = ref.name.replace(/^refs\/heads\//, '');
+              const commitUrl = `https://dev.azure.com/${org}/${project}/_apis/git/repositories/${r.id}/commits?searchCriteria.itemVersion.version=${encodeURIComponent(bName)}&searchCriteria.itemVersion.versionType=branch&$top=1&api-version=${API_VERSION}`;
+              const commitData = await fetchAzDo(commitUrl, authHeader);
+              const topCommit = (commitData.value && commitData.value[0]) ? commitData.value[0] : null;
+
+              const commitDate = topCommit?.author?.date ? new Date(topCommit.author.date) : null;
+              const isStale = commitDate ? ((now - commitDate) / (1000 * 60 * 60 * 24)) > 90 : false;
+
+              return {
+                repo: r.name,
+                branch: bName,
+                author: topCommit?.author?.name || 'Unknown',
+                date: commitDate ? commitDate.toLocaleString() : 'N/A',
+                isStale: isStale,
+                msg: topCommit?.comment || ''
+              };
+            }));
+          } catch (e) {
+            return [];
           }
-        } catch (err) {
-          showStatus(`Failed to load category details: ${err.message}`, true);
-          resetSubSelect();
-        }
-      });
-
-      // Step 5: Sub-Item Selection -> Displays Table & Renders Data
-      selectSubItem.addEventListener('change', async () => {
-        const cat = selectCategory.value;
-        const subVal = selectSubItem.value;
-        const project = encodeURIComponent(selectProject.value);
-
-        if (!subVal) {
-          hideAllTables();
-          return;
-        }
-
-        // Show table container and matching category card
-        resultsContainer.classList.remove('hidden');
-        allSectionIds.forEach(id => {
-          const el = document.getElementById(id);
-          if (el) el.classList.add('hidden');
         });
-        const targetSection = document.getElementById(`section-${cat}`);
-        if (targetSection) targetSection.classList.remove('hidden');
 
-        try {
-          if (cat === 'repos') {
-            const repoName = selectSubItem.selectedOptions[0].getAttribute('data-name');
-            
-            // Fetch branches
-            const bData = await callAdo(`${project}/_apis/git/repositories/${subVal}/stats/branches?api-version=6.0`);
-            const branches = bData.value || [];
-            document.getElementById('branchTableBody').innerHTML = branches.length ? branches.map(b => `
-              <tr>
-                <td><strong>${repoName}</strong></td>
-                <td>${b.name}</td>
-                <td><span class="badge">${b.isBaseVersion ? 'Default' : 'Active'}</span></td>
-                <td>${b.commit?.author?.name || '-'}</td>
-                <td>${b.commit?.author?.date ? new Date(b.commit.author.date).toLocaleDateString() : '-'}</td>
-                <td>${b.commit?.comment || '-'}</td>
-              </tr>
-            `).join('') : `<tr><td colspan="6" class="empty-state">No active branches found.</td></tr>`;
+        const results = await Promise.all(repoPromises);
+        rawStore.repos = results.flat();
+        rawStore.repoIndex = 0;
 
-            // Fetch PRs
-            const prData = await callAdo(`${project}/_apis/git/repositories/${subVal}/pullrequests?searchCriteria.status=all&api-version=6.0`);
-            const prs = prData.value || [];
-            document.getElementById('prTableBody').innerHTML = prs.length ? prs.map(pr => `
-              <tr>
-                <td>${repoName}</td>
-                <td>#${pr.pullRequestId}: ${pr.title}</td>
-                <td>${pr.sourceRefName?.replace('refs/heads/', '')} → ${pr.targetRefName?.replace('refs/heads/', '')}</td>
-                <td>${pr.createdBy?.displayName || '-'}</td>
-                <td><span class="badge">${pr.status}</span></td>
-                <td>${new Date(pr.creationDate).toLocaleDateString()}</td>
-              </tr>
-            `).join('') : `<tr><td colspan="6" class="empty-state">No pull requests found.</td></tr>`;
+        document.getElementById('kpi-1-val').textContent = (targetRepos.length > 1) ? `${project} (${targetRepos.length} Repos)` : targetRepos[0]?.name;
+        document.getElementById('kpi-2-label').textContent = 'Repositories';
+        document.getElementById('kpi-2-val').textContent = targetRepos.length;
+        document.getElementById('kpi-3-label').textContent = 'Branches';
+        document.getElementById('kpi-3-val').textContent = rawStore.repos.length;
+        document.getElementById('kpi-4-label').textContent = 'Stale Branches (>90d)';
+        document.getElementById('kpi-4-val').textContent = rawStore.repos.filter(b => b.isStale).length;
 
-          } else if (cat === 'pipelines') {
-            const endpoint = subVal === 'ALL'
-              ? `${project}/_apis/build/builds?api-version=6.0&$top=25`
-              : `${project}/_apis/build/builds?definitions=${subVal}&api-version=6.0&$top=25`;
-            
-            const runData = await callAdo(endpoint);
-            const runs = runData.value || [];
-            document.getElementById('buildRunsTableBody').innerHTML = runs.length ? runs.map(r => `
-              <tr>
-                <td>${r.definition?.name || '-'}</td>
-                <td>${r.buildNumber}</td>
-                <td>${r.sourceBranch?.replace('refs/heads/', '') || '-'}</td>
-                <td>${r.reason || 'manual'}</td>
-                <td>${r.requestedFor?.displayName || '-'}</td>
-                <td><span class="badge">${r.result || r.status}</span></td>
-                <td>${r.finishTime ? new Date(r.finishTime).toLocaleString() : 'Running'}</td>
-              </tr>
-            `).join('') : `<tr><td colspan="7" class="empty-state">No build runs available.</td></tr>`;
+        renderRepoTableBatch(false);
+        renderChart(Object.keys(repoBranchCounts), Object.values(repoBranchCounts), 'Branches per Repository');
+        setStatus(`Loaded ${rawStore.repos.length} branches across ${targetRepos.length} repositories.`, 'success');
+      } catch (err) {
+        setStatus(`Error fetching branches: ${err.message}`, 'error');
+      }
+    }
 
-          } else if (cat === 'workitems') {
-            const wiql = { query: `Select [System.Id] From WorkItems Where [System.TeamProject] = '${selectProject.value}' order by [System.ChangedDate] desc` };
-            const queryRes = await callAdo(`${project}/_apis/wit/wiql?api-version=6.0&$top=20`, 'POST', wiql);
-            const ids = (queryRes.workItems || []).map(i => i.id);
+    function renderRepoTableBatch(append = false) {
+      const tbody = document.getElementById('branchesTableBody');
+      const container = document.getElementById('seeMoreRepoContainer');
+      const remainingEl = document.getElementById('repoRemainingCount');
 
-            if (!ids.length) {
-              document.getElementById('workItemsTableBody').innerHTML = `<tr><td colspan="6" class="empty-state">No work items found.</td></tr>`;
-              return;
-            }
+      if (!append) tbody.innerHTML = '';
 
-            const itemDetails = await callAdo(`${project}/_apis/wit/workitems?ids=${ids.join(',')}&api-version=6.0`);
-            const items = itemDetails.value || [];
-            document.getElementById('workItemsTableBody').innerHTML = items.map(w => `
-              <tr>
-                <td><strong>#${w.id}</strong></td>
-                <td>${w.fields['System.Title']}</td>
-                <td>${w.fields['System.WorkItemType']}</td>
-                <td><span class="badge">${w.fields['System.State']}</span></td>
-                <td>${w.fields['System.AssignedTo']?.displayName || 'Unassigned'}</td>
-                <td>${new Date(w.fields['System.ChangedDate']).toLocaleDateString()}</td>
+      if (rawStore.repos.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No branches found.</td></tr>`;
+        container.classList.add('hidden');
+        return;
+      }
+
+      const nextBatch = rawStore.repos.slice(rawStore.repoIndex, rawStore.repoIndex + PAGE_SIZE);
+      rawStore.repoIndex += nextBatch.length;
+
+      const html = nextBatch.map(b => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="p-4 font-semibold text-slate-900">${b.repo}</td>
+          <td class="p-4"><span class="font-mono text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded font-semibold">${b.branch}</span></td>
+          <td class="p-4">${b.isStale 
+            ? '<span class="bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded-full font-semibold">Stale</span>' 
+            : '<span class="bg-emerald-100 text-emerald-700 text-xs px-2 py-0.5 rounded-full font-semibold">Active</span>'}
+          </td>
+          <td class="p-4 text-xs font-medium">${b.author}</td>
+          <td class="p-4 text-xs text-slate-500">${b.date}</td>
+          <td class="p-4 text-xs text-slate-600 max-w-xs truncate">${b.msg}</td>
+        </tr>
+      `).join('');
+
+      tbody.insertAdjacentHTML('beforeend', html);
+
+      const remaining = rawStore.repos.length - rawStore.repoIndex;
+      if (remaining > 0) {
+        container.classList.remove('hidden');
+        remainingEl.textContent = remaining;
+      } else {
+        container.classList.add('hidden');
+      }
+    }
+
+    async function fetchUserAccessData() {
+      const org = extractOrgName(document.getElementById('targetOrg').value);
+      const project = document.getElementById('projectSelect').value;
+      const pat = document.getElementById('targetPat').value.trim();
+      const userQuery = document.getElementById('targetAccessUserQuery').value.trim().toLowerCase();
+
+      const authHeader = 'Basic ' + btoa(':' + pat);
+      showSection('access');
+      setStatus(userQuery ? `Searching access for "${userQuery}"...` : `Fetching all project teams...`, 'info');
+
+      try {
+        const teamsUrl = `https://dev.azure.com/${org}/_apis/projects/${project}/teams?api-version=${API_VERSION}`;
+        const teamsData = await fetchAzDo(teamsUrl, authHeader);
+        const teams = teamsData.value || [];
+
+        let accessRows = [];
+        let teamMemberCounts = {};
+
+        const teamPromises = teams.map(async (t) => {
+          const membersUrl = `https://dev.azure.com/${org}/_apis/projects/${project}/teams/${t.id}/members?api-version=${API_VERSION}`;
+          try {
+            const membersData = await fetchAzDo(membersUrl, authHeader);
+            const members = membersData.value || [];
+
+            members.forEach(m => {
+              const name = m.identity?.displayName || 'Unknown';
+              const email = m.identity?.uniqueName || 'N/A';
+
+              if (!userQuery || name.toLowerCase().includes(userQuery) || email.toLowerCase().includes(userQuery)) {
+                accessRows.push({ team: t.name, name: name, email: email });
+                teamMemberCounts[t.name] = (teamMemberCounts[t.name] || 0) + 1;
+              }
+            });
+          } catch (e) { console.warn(e); }
+        });
+
+        await Promise.all(teamPromises);
+
+        rawStore.access = accessRows;
+        rawStore.accessIndex = 0;
+
+        document.getElementById('kpi-1-val').textContent = userQuery ? userQuery : project;
+        document.getElementById('kpi-2-label').textContent = 'Teams / Groups';
+        document.getElementById('kpi-2-val').textContent = Object.keys(teamMemberCounts).length;
+        document.getElementById('kpi-3-label').textContent = 'Memberships';
+        document.getElementById('kpi-3-val').textContent = accessRows.length;
+        document.getElementById('kpi-4-label').textContent = 'Mode';
+        document.getElementById('kpi-4-val').textContent = 'Security Access';
+
+        renderAccessTableBatch(false);
+        renderChart(Object.keys(teamMemberCounts), Object.values(teamMemberCounts), 'Members per Team');
+        setStatus(`Loaded ${accessRows.length} team memberships.`, 'success');
+      } catch (err) {
+        setStatus(`Error fetching user access: ${err.message}`, 'error');
+      }
+    }
+
+    function renderAccessTableBatch(append = false) {
+      const tbody = document.getElementById('accessTableBody');
+      const container = document.getElementById('seeMoreAccessContainer');
+      const remainingEl = document.getElementById('accessRemainingCount');
+
+      if (!append) tbody.innerHTML = '';
+
+      if (rawStore.access.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-slate-400">No team members found.</td></tr>`;
+        container.classList.add('hidden');
+        return;
+      }
+
+      const nextBatch = rawStore.access.slice(rawStore.accessIndex, rawStore.accessIndex + PAGE_SIZE);
+      rawStore.accessIndex += nextBatch.length;
+
+      const html = nextBatch.map(a => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="p-4 font-semibold text-slate-900">${a.team}</td>
+          <td class="p-4 font-medium">${a.name}</td>
+          <td class="p-4 text-xs font-mono text-slate-600">${a.email}</td>
+        </tr>
+      `).join('');
+
+      tbody.insertAdjacentHTML('beforeend', html);
+
+      const remaining = rawStore.access.length - rawStore.accessIndex;
+      if (remaining > 0) {
+        container.classList.remove('hidden');
+        remainingEl.textContent = remaining;
+      } else {
+        container.classList.add('hidden');
+      }
+    }
+
+    async function fetchUserActivityData() {
+      const org = extractOrgName(document.getElementById('targetOrg').value);
+      const project = document.getElementById('projectSelect').value;
+      const pat = document.getElementById('targetPat').value.trim();
+      const userQuery = document.getElementById('targetUserQuery').value.trim();
+      const timeframeDays = parseInt(document.getElementById('userTimeframeDays').value, 10);
+
+      if (!userQuery) return showModal('Please enter a User Email or Name to search.', 'targetUserQuery');
+
+      const authHeader = 'Basic ' + btoa(':' + pat);
+      showSection('activity');
+      setStatus(`Scanning commits and PRs for "${userQuery}"...`, 'info');
+
+      const queryLower = userQuery.toLowerCase();
+      let userCommits = [];
+      let userPRs = [];
+      let reposTouched = new Set();
+
+      let fromDateStr = '';
+      if (timeframeDays > 0) {
+        const d = new Date();
+        d.setDate(d.getDate() - timeframeDays);
+        fromDateStr = `&searchCriteria.fromDate=${encodeURIComponent(d.toISOString())}`;
+      }
+
+      try {
+        const fetchPromises = cachedRepos.map(async (r) => {
+          const commitsPromise = (async () => {
+            try {
+              const url = `https://dev.azure.com/${org}/${project}/_apis/git/repositories/${r.id}/commits?$top=500${fromDateStr}&api-version=${API_VERSION}`;
+              const res = await fetchAzDo(url, authHeader);
+              (res.value || []).forEach(c => {
+                const email = (c.author?.email || '').toLowerCase();
+                const name = (c.author?.name || '').toLowerCase();
+                if (email.includes(queryLower) || name.includes(queryLower)) {
+                  reposTouched.add(r.name);
+                  userCommits.push({
+                    repo: r.name,
+                    commitId: (c.commitId || '').substring(0, 8),
+                    date: new Date(c.author?.date).toLocaleString(),
+                    comment: c.comment || ''
+                  });
+                }
+              });
+            } catch (e) { console.warn(e); }
+          })();
+
+          const prsPromise = (async () => {
+            try {
+              const url = `https://dev.azure.com/${org}/${project}/_apis/git/repositories/${r.id}/pullrequests?searchCriteria.status=all&$top=50&api-version=${API_VERSION}`;
+              const res = await fetchAzDo(url, authHeader);
+              (res.value || []).forEach(pr => {
+                const creatorEmail = (pr.createdBy?.uniqueName || '').toLowerCase();
+                const creatorName = (pr.createdBy?.displayName || '').toLowerCase();
+                if (creatorEmail.includes(queryLower) || creatorName.includes(queryLower)) {
+                  userPRs.push({
+                    repo: r.name,
+                    title: pr.title,
+                    source: pr.sourceRefName?.replace('refs/heads/', ''),
+                    target: pr.targetRefName?.replace('refs/heads/', ''),
+                    status: pr.status,
+                    createdDate: new Date(pr.creationDate).toLocaleDateString()
+                  });
+                }
+              });
+            } catch (e) { console.warn(e); }
+          })();
+
+          return Promise.all([commitsPromise, prsPromise]);
+        });
+
+        await Promise.all(fetchPromises);
+
+        rawStore.commits = userCommits;
+        rawStore.commitsIndex = 0;
+
+        document.getElementById('kpi-1-val').textContent = userQuery;
+        document.getElementById('kpi-2-label').textContent = 'Active Repos';
+        document.getElementById('kpi-2-val').textContent = reposTouched.size;
+        document.getElementById('kpi-3-label').textContent = 'Pull Requests';
+        document.getElementById('kpi-3-val').textContent = userPRs.length;
+        document.getElementById('kpi-4-label').textContent = 'Commits Made';
+        document.getElementById('kpi-4-val').textContent = userCommits.length;
+
+        renderCommitsTableBatch(false);
+
+        document.getElementById('userPrTableBody').innerHTML = userPRs.length === 0
+          ? `<tr><td colspan="5" class="p-4 text-center text-slate-400">No pull requests found.</td></tr>`
+          : userPRs.map(pr => `
+              <tr class="hover:bg-slate-50 transition">
+                <td class="p-4 font-semibold text-slate-900">${pr.repo}</td>
+                <td class="p-4 font-medium text-slate-800">${pr.title}</td>
+                <td class="p-4 font-mono text-xs text-slate-500">${pr.source} &rarr; ${pr.target}</td>
+                <td class="p-4"><span class="px-2 py-0.5 rounded-full text-xs font-semibold ${pr.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}">${pr.status}</span></td>
+                <td class="p-4 text-xs text-slate-500">${pr.createdDate}</td>
               </tr>
             `).join('');
 
-          } else if (cat === 'access') {
-            const teamsData = await callAdo(`_apis/projects/${project}/teams?api-version=6.0`);
-            const teams = teamsData.value || [];
-            document.getElementById('accessTableBody').innerHTML = teams.length ? teams.map(t => `
-              <tr>
-                <td><strong>${t.name}</strong></td>
-                <td>${t.description || 'Project Team'}</td>
-                <td><span class="badge">${t.identity?.uniqueName ? 'User Team' : 'Security Group'}</span></td>
-              </tr>
-            `).join('') : `<tr><td colspan="3" class="empty-state">No teams found.</td></tr>`;
+        const repoCommitMap = {};
+        userCommits.forEach(c => repoCommitMap[c.repo] = (repoCommitMap[c.repo] || 0) + 1);
+        renderChart(Object.keys(repoCommitMap), Object.values(repoCommitMap), `Commits by ${userQuery}`);
+        setStatus(`Found ${userCommits.length} commits and ${userPRs.length} PRs.`, 'success');
+      } catch (err) {
+        setStatus(`Error fetching user activity: ${err.message}`, 'error');
+      }
+    }
 
-          } else if (cat === 'activity') {
-            const historyData = await callAdo(`${project}/_apis/git/repositories?api-version=6.0`);
-            const repos = historyData.value || [];
-            if (repos.length > 0) {
-              const commitsData = await callAdo(`${project}/_apis/git/repositories/${repos[0].id}/commits?api-version=6.0&$top=15`);
-              const commits = commitsData.value || [];
-              document.getElementById('activityTableBody').innerHTML = commits.length ? commits.map(c => `
-                <tr>
-                  <td><strong>${c.author?.name || '-'}</strong></td>
-                  <td>${c.comment}</td>
-                  <td>${new Date(c.author?.date).toLocaleString()}</td>
-                </tr>
-              `).join('') : `<tr><td colspan="3" class="empty-state">No recent activity found.</td></tr>`;
-            } else {
-              document.getElementById('activityTableBody').innerHTML = `<tr><td colspan="3" class="empty-state">No repositories available to check activity.</td></tr>`;
-            }
+    function renderCommitsTableBatch(append = false) {
+      const tbody = document.getElementById('userCommitsTableBody');
+      const container = document.getElementById('seeMoreCommitsContainer');
+      const remainingEl = document.getElementById('commitsRemainingCount');
+
+      if (!append) tbody.innerHTML = '';
+
+      if (rawStore.commits.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">No commits found.</td></tr>`;
+        container.classList.add('hidden');
+        return;
+      }
+
+      const nextBatch = rawStore.commits.slice(rawStore.commitsIndex, rawStore.commitsIndex + PAGE_SIZE);
+      rawStore.commitsIndex += nextBatch.length;
+
+      const html = nextBatch.map(c => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="p-4 font-semibold text-slate-900">${c.repo}</td>
+          <td class="p-4 font-mono text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded">${c.commitId}</td>
+          <td class="p-4 text-xs text-slate-500">${c.date}</td>
+          <td class="p-4 text-xs text-slate-700">${c.comment}</td>
+        </tr>
+      `).join('');
+
+      tbody.insertAdjacentHTML('beforeend', html);
+
+      const remaining = rawStore.commits.length - rawStore.commitsIndex;
+      if (remaining > 0) {
+        container.classList.remove('hidden');
+        remainingEl.textContent = remaining;
+      } else {
+        container.classList.add('hidden');
+      }
+    }
+
+    async function fetchPipelineData() {
+      const org = extractOrgName(document.getElementById('targetOrg').value);
+      const project = document.getElementById('projectSelect').value;
+      const pat = document.getElementById('targetPat').value.trim();
+      const topRuns = document.getElementById('pipelineRunsTop').value;
+
+      const authHeader = 'Basic ' + btoa(':' + pat);
+      showSection('pipelines');
+      setStatus('Loading latest pipeline runs...', 'info');
+
+      try {
+        const url = `https://dev.azure.com/${org}/${project}/_apis/build/builds?$top=${topRuns}&api-version=${API_VERSION}`;
+        const data = await fetchAzDo(url, authHeader);
+        const builds = data.value || [];
+
+        let statusCounts = { succeeded: 0, failed: 0, inProgress: 0, canceled: 0 };
+        rawStore.pipelines = builds.map(b => {
+          const result = b.result || b.status || 'unknown';
+          if (statusCounts[result] !== undefined) statusCounts[result]++;
+          else statusCounts[result] = 1;
+
+          return {
+            name: b.definition?.name || 'Unnamed Pipeline',
+            buildNumber: b.buildNumber || b.id,
+            branch: (b.sourceBranch || '').replace('refs/heads/', ''),
+            author: b.requestedFor?.displayName || 'Automated',
+            result: result,
+            finishTime: b.finishTime ? new Date(b.finishTime).toLocaleString() : 'Running...'
+          };
+        });
+
+        rawStore.pipelineIndex = 0;
+
+        document.getElementById('kpi-1-val').textContent = `${project} (Builds)`;
+        document.getElementById('kpi-2-label').textContent = 'Total Runs';
+        document.getElementById('kpi-2-val').textContent = builds.length;
+        document.getElementById('kpi-3-label').textContent = 'Succeeded';
+        document.getElementById('kpi-3-val').textContent = statusCounts.succeeded || 0;
+        document.getElementById('kpi-4-label').textContent = 'Failed';
+        document.getElementById('kpi-4-val').textContent = statusCounts.failed || 0;
+
+        renderPipelineTableBatch(false);
+        renderChart(Object.keys(statusCounts), Object.values(statusCounts), 'Pipeline Run Results');
+        setStatus(`Loaded ${builds.length} pipeline runs.`, 'success');
+      } catch (err) {
+        setStatus(`Error loading pipelines: ${err.message}`, 'error');
+      }
+    }
+
+    function renderPipelineTableBatch(append = false) {
+      const tbody = document.getElementById('pipelineTableBody');
+      const container = document.getElementById('seeMorePipelinesContainer');
+      const remainingEl = document.getElementById('pipelinesRemainingCount');
+
+      if (!append) tbody.innerHTML = '';
+
+      if (rawStore.pipelines.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No pipeline runs found.</td></tr>`;
+        container.classList.add('hidden');
+        return;
+      }
+
+      const nextBatch = rawStore.pipelines.slice(rawStore.pipelineIndex, rawStore.pipelineIndex + PAGE_SIZE);
+      rawStore.pipelineIndex += nextBatch.length;
+
+      const html = nextBatch.map(r => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="p-4 font-semibold text-slate-900">${r.name}</td>
+          <td class="p-4 font-mono text-xs text-blue-600">#${r.buildNumber}</td>
+          <td class="p-4 text-xs font-mono">${r.branch}</td>
+          <td class="p-4 text-xs font-medium">${r.author}</td>
+          <td class="p-4">
+            <span class="px-2 py-0.5 rounded-full text-xs font-semibold ${
+              r.result === 'succeeded' ? 'bg-green-100 text-green-700' :
+              r.result === 'failed' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+            }">${r.result}</span>
+          </td>
+          <td class="p-4 text-xs text-slate-500">${r.finishTime}</td>
+        </tr>
+      `).join('');
+
+      tbody.insertAdjacentHTML('beforeend', html);
+
+      const remaining = rawStore.pipelines.length - rawStore.pipelineIndex;
+      if (remaining > 0) {
+        container.classList.remove('hidden');
+        remainingEl.textContent = remaining;
+      } else {
+        container.classList.add('hidden');
+      }
+    }
+
+    async function fetchWorkItemsData() {
+      const org = extractOrgName(document.getElementById('targetOrg').value);
+      const project = document.getElementById('projectSelect').value;
+      const pat = document.getElementById('targetPat').value.trim();
+      const targetUser = document.getElementById('targetWorkItemUser').value.trim();
+
+      const authHeader = 'Basic ' + btoa(':' + pat);
+      showSection('workitems');
+      setStatus('Querying work items...', 'info');
+
+      try {
+        let wiql = `SELECT [System.Id], [System.Title], [System.WorkItemType], [System.State], [System.AssignedTo], [System.CreatedDate] FROM workitems WHERE [System.TeamProject] = '${project}'`;
+        if (targetUser) {
+          wiql += ` AND [System.AssignedTo] CONTAINS '${targetUser}'`;
+        }
+        wiql += ` ORDER BY [System.CreatedDate] DESC`;
+
+        const queryUrl = `https://dev.azure.com/${org}/${project}/_apis/wit/wiql?api-version=${API_VERSION}`;
+        const queryRes = await fetchAzDo(queryUrl, authHeader, {
+          method: 'POST',
+          body: JSON.stringify({ query: wiql })
+        });
+
+        const wiIds = (queryRes.workItems || []).slice(0, 100).map(w => w.id);
+        if (wiIds.length === 0) {
+          document.getElementById('workItemsTableBody').innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No work items found matching criteria.</td></tr>`;
+          document.getElementById('seeMoreWorkItemsContainer').classList.add('hidden');
+          renderChart([], [], 'Work Items');
+          return;
+        }
+
+        const detailsUrl = `https://dev.azure.com/${org}/_apis/wit/workitems?ids=${wiIds.join(',')}&api-version=${API_VERSION}`;
+        const detailsData = await fetchAzDo(detailsUrl, authHeader);
+        const workItems = detailsData.value || [];
+
+        let typeCount = {};
+        rawStore.workitems = workItems.map(w => {
+          const type = w.fields['System.WorkItemType'] || 'Item';
+          typeCount[type] = (typeCount[type] || 0) + 1;
+
+          return {
+            id: w.id,
+            type: type,
+            title: w.fields['System.Title'] || '',
+            assignedTo: w.fields['System.AssignedTo']?.displayName || 'Unassigned',
+            state: w.fields['System.State'] || 'Unknown',
+            createdDate: new Date(w.fields['System.CreatedDate']).toLocaleDateString()
+          };
+        });
+
+        rawStore.workitemsIndex = 0;
+
+        document.getElementById('kpi-1-val').textContent = targetUser ? targetUser : project;
+        document.getElementById('kpi-2-label').textContent = 'Total Work Items';
+        document.getElementById('kpi-2-val').textContent = rawStore.workitems.length;
+        document.getElementById('kpi-3-label').textContent = 'Item Types';
+        document.getElementById('kpi-3-val').textContent = Object.keys(typeCount).length;
+        document.getElementById('kpi-4-label').textContent = 'Mode';
+        document.getElementById('kpi-4-val').textContent = 'Work Item WIQL';
+
+        renderWorkItemsTableBatch(false);
+        renderChart(Object.keys(typeCount), Object.values(typeCount), 'Work Items by Type');
+        setStatus(`Loaded ${rawStore.workitems.length} active work items.`, 'success');
+      } catch (err) {
+        setStatus(`Error fetching work items: ${err.message}`, 'error');
+      }
+    }
+
+    function renderWorkItemsTableBatch(append = false) {
+      const tbody = document.getElementById('workItemsTableBody');
+      const container = document.getElementById('seeMoreWorkItemsContainer');
+      const remainingEl = document.getElementById('workItemsRemainingCount');
+
+      if (!append) tbody.innerHTML = '';
+
+      if (rawStore.workitems.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No work items found.</td></tr>`;
+        container.classList.add('hidden');
+        return;
+      }
+
+      const nextBatch = rawStore.workitems.slice(rawStore.workitemsIndex, rawStore.workitemsIndex + PAGE_SIZE);
+      rawStore.workitemsIndex += nextBatch.length;
+
+      const html = nextBatch.map(r => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="p-4 font-mono text-xs font-bold text-blue-600">#${r.id}</td>
+          <td class="p-4"><span class="px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700">${r.type}</span></td>
+          <td class="p-4 font-medium text-slate-900 max-w-sm truncate">${r.title}</td>
+          <td class="p-4 text-xs font-medium">${r.assignedTo}</td>
+          <td class="p-4 text-xs"><span class="px-2 py-0.5 rounded-full font-semibold bg-blue-50 text-blue-700">${r.state}</span></td>
+          <td class="p-4 text-xs text-slate-500">${r.createdDate}</td>
+        </tr>
+      `).join('');
+
+      tbody.insertAdjacentHTML('beforeend', html);
+
+      const remaining = rawStore.workitems.length - rawStore.workitemsIndex;
+      if (remaining > 0) {
+        container.classList.remove('hidden');
+        remainingEl.textContent = remaining;
+      } else {
+        container.classList.add('hidden');
+      }
+    }
+
+    // ==========================================
+    // CLIENT FILTER & CSV EXPORT
+    // ==========================================
+    function filterActiveTable() {
+      const query = document.getElementById('tableFilterInput').value.toLowerCase();
+      const activeSection = document.getElementById(activeViewSection);
+      if (!activeSection) return;
+
+      const rows = activeSection.querySelectorAll('tbody tr');
+      rows.forEach(r => {
+        const text = r.textContent.toLowerCase();
+        r.style.display = text.includes(query) ? '' : 'none';
+      });
+    }
+
+    function exportCurrentTableToCSV() {
+      let csv = [];
+      let filename = `AzureDevOps_${activeViewSection}_${Date.now()}.csv`;
+
+      if (activeViewSection === 'view-repositories') {
+        if (!rawStore.repos || rawStore.repos.length === 0) return;
+        csv.push('"Repository","Branch Name","Status / Health","Last Author","Last Commit Date","Commit Message"');
+        rawStore.repos.forEach(b => {
+          const status = b.isStale ? 'Stale' : 'Active';
+          const msg = (b.msg || '').replace(/"/g, '""').trim();
+          csv.push(`"${b.repo}","${b.branch}","${status}","${b.author}","${b.date}","${msg}"`);
+        });
+      } else if (activeViewSection === 'view-access') {
+        if (!rawStore.access || rawStore.access.length === 0) return;
+        csv.push('"Team / Group Name","User Display Name","User Principal / Email"');
+        rawStore.access.forEach(a => {
+          csv.push(`"${a.team}","${a.name}","${a.email}"`);
+        });
+      } else if (activeViewSection === 'view-activity') {
+        if (!rawStore.commits || rawStore.commits.length === 0) return;
+        csv.push('"Repository","Commit ID","Commit Date","Message / Changes"');
+        rawStore.commits.forEach(c => {
+          const comment = (c.comment || '').replace(/"/g, '""').trim();
+          csv.push(`"${c.repo}","${c.commitId}","${c.date}","${comment}"`);
+        });
+      } else if (activeViewSection === 'view-pipelines') {
+        if (!rawStore.pipelines || rawStore.pipelines.length === 0) return;
+        csv.push('"Pipeline Name","Build #","Branch","Triggered By","Result","Finish Time"');
+        rawStore.pipelines.forEach(r => {
+          csv.push(`"${r.name}","#${r.buildNumber}","${r.branch}","${r.author}","${r.result}","${r.finishTime}"`);
+        });
+      } else if (activeViewSection === 'view-workitems') {
+        if (!rawStore.workitems || rawStore.workitems.length === 0) return;
+        csv.push('"ID","Work Item Type","Title","Assigned To","State","Created Date"');
+        rawStore.workitems.forEach(w => {
+          const title = (w.title || '').replace(/"/g, '""').trim();
+          csv.push(`"#${w.id}","${w.type}","${title}","${w.assignedTo}","${w.state}","${w.createdDate}"`);
+        });
+      }
+
+      if (csv.length <= 1) return;
+
+      const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    }
+
+    // ==========================================
+    // CHART RENDERING
+    // ==========================================
+    function changeChartType(type) {
+      currentChartType = type.toLowerCase() === 'pie' ? 'pie' : type;
+      renderChart(currentChartData.labels, currentChartData.values, currentChartData.label);
+    }
+
+    function renderChart(labels, data, datasetLabel) {
+      currentChartData = { labels, values: data, label: datasetLabel };
+      const ctx = document.getElementById('analyticsChart').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+
+      const palette = ['#3b82f6', '#10b981', '#6366f1', '#f59e0b', '#ec4899', '#8b5cf6'];
+      const isPie = currentChartType === 'pie';
+
+      chartInstance = new Chart(ctx, {
+        type: currentChartType,
+        data: {
+          labels: labels.length ? labels : ['No Data'],
+          datasets: [{
+            label: datasetLabel,
+            data: data.length ? data : [0],
+            backgroundColor: isPie ? palette : '#3b82f6',
+            borderColor: currentChartType === 'line' ? '#2563eb' : undefined,
+            fill: currentChartType === 'line' ? false : undefined,
+            borderRadius: currentChartType === 'bar' ? 6 : 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: isPie } },
+          scales: isPie ? {} : {
+            y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+            x: { grid: { display: false } }
           }
-        } catch (err) {
-          showStatus(`Error loading data: ${err.message}`, true);
         }
       });
+    }
 
-      // Search filter across visible rows
-      quickFilterInput.addEventListener('input', (e) => {
-        const term = e.target.value.toLowerCase();
-        const rows = resultsContainer.querySelectorAll('div:not(.hidden) tbody tr');
-        rows.forEach(r => {
-          if (r.classList.contains('empty-state')) return;
-          r.style.display = r.textContent.toLowerCase().includes(term) ? '' : 'none';
-        });
-      });
-    });
+    document.addEventListener('DOMContentLoaded', initCredentials);
   </script>
 </body>
 </html>
