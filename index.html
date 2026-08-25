@@ -4,7 +4,259 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Azure DevOps Intelligence Hub</title>
-  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    :root {
+      --primary-color: #0078d4;
+      --primary-hover: #106ebe;
+      --success-color: #107c41;
+      --success-hover: #0b5a2f;
+      --danger-color: #a80000;
+      --bg-color: #f3f4f6;
+      --card-bg: #ffffff;
+      --border-color: #e1dfdd;
+      --text-primary: #323130;
+      --text-secondary: #605e5c;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-primary);
+      padding: 24px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+
+    .header-container h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #201f1e;
+    }
+
+    .header-container p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    .remember-creds {
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .config-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 2fr 2fr auto 2fr 2fr 2fr;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+
+    .form-group label span {
+      color: #d83b01;
+    }
+
+    .form-group input,
+    .form-group select {
+      height: 36px;
+      padding: 0 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 13px;
+      background: #ffffff;
+      width: 100%;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+
+    .btn-primary {
+      height: 36px;
+      padding: 0 16px;
+      background-color: var(--primary-color);
+      color: #ffffff;
+      border: none;
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .status-banner {
+      margin-top: 12px;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .status-error {
+      background-color: #fde7e9;
+      color: var(--danger-color);
+      border: 1px solid #f8d0d4;
+    }
+
+    .status-success {
+      background-color: #dff6dd;
+      color: var(--success-color);
+      border: 1px solid #c2ebc0;
+    }
+
+    .path-preview {
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .path-preview a {
+      color: var(--primary-color);
+      text-decoration: none;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .search-input {
+      width: 320px;
+      height: 36px;
+      padding: 0 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    .btn-export {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background-color: var(--success-color);
+      color: #ffffff;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-export:hover {
+      background-color: var(--success-hover);
+    }
+
+    .data-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .data-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .data-card-title {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .data-card-subtitle {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .table-responsive {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    thead th {
+      background: #faf9f8;
+      border-bottom: 1px solid var(--border-color);
+      padding: 10px 12px;
+      text-align: left;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+    }
+
+    tbody td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 12px;
+      background: #e1dfdd;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 30px;
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+  </style>
 </head>
 <body>
 
@@ -19,7 +271,7 @@
     </label>
   </header>
 
-  <!-- Configuration Bar -->
+  <!-- Step-by-Step Configuration Filter -->
   <section class="config-card">
     <div class="form-grid">
       <div class="form-group">
@@ -39,14 +291,14 @@
       <div class="form-group">
         <label for="selectProject">3. SELECT PROJECT <span>*</span></label>
         <select id="selectProject" disabled>
-          <option value="">-- Load PAT first --</option>
+          <option value="">-- Click Load Projects --</option>
         </select>
       </div>
 
       <div class="form-group">
         <label for="selectCategory">4. SELECT CATEGORY <span>*</span></label>
         <select id="selectCategory" disabled>
-          <option value="">-- Select Project first --</option>
+          <option value="">-- Select Project First --</option>
           <option value="repos">Repositories & PRs</option>
           <option value="pipelines">Pipelines & Runs</option>
           <option value="workitems">Work Items</option>
@@ -55,11 +307,10 @@
         </select>
       </div>
 
-      <!-- Step 5: Contextual Sub-selector -->
-      <div class="form-group" id="subSelectGroup" style="grid-column: span 2;">
-        <label for="selectSubItem" id="subSelectLabel">5. SELECT ITEM <span>*</span></label>
+      <div class="form-group" id="groupSubItem">
+        <label for="selectSubItem" id="lblSubItem">5. SELECT ITEM <span>*</span></label>
         <select id="selectSubItem" disabled>
-          <option value="">-- Select Category first --</option>
+          <option value="">-- Select Category First --</option>
         </select>
       </div>
     </div>
@@ -71,7 +322,7 @@
     </div>
   </section>
 
-  <!-- Results Area (Hidden until step 5 selection) -->
+  <!-- Results Area (Completely Hidden by Default) -->
   <main id="resultsContainer" class="hidden">
     
     <div class="toolbar">
@@ -79,7 +330,7 @@
       <button class="btn-export" id="btnExportActiveTable">📥 Export Active Table (.xlsx)</button>
     </div>
 
-    <!-- REPOSITORIES & PRS -->
+    <!-- REPOSITORIES CATEGORY -->
     <div id="section-repos" class="hidden">
       <section class="data-card">
         <div class="data-card-header">
@@ -87,7 +338,7 @@
             <h2 class="data-card-title">Repositories & Active Branch Matrix</h2>
             <p class="data-card-subtitle">Branches older than 90 days are flagged as Stale</p>
           </div>
-          <button class="btn-export" id="btnExportBranches">📥 Export Branches (.xlsx)</button>
+          <button class="btn-export">📥 Export Branches (.xlsx)</button>
         </div>
         <div class="table-responsive">
           <table>
@@ -112,7 +363,7 @@
             <h2 class="data-card-title">Pull Requests (Active & Completed)</h2>
             <p class="data-card-subtitle">Showing latest pull requests for selected repositories</p>
           </div>
-          <button class="btn-export" id="btnExportPRs">📥 Export PRs (.xlsx)</button>
+          <button class="btn-export">📥 Export PRs (.xlsx)</button>
         </div>
         <div class="table-responsive">
           <table>
@@ -132,39 +383,14 @@
       </section>
     </div>
 
-    <!-- PIPELINES & RUNS -->
+    <!-- PIPELINES CATEGORY -->
     <div id="section-pipelines" class="hidden">
       <section class="data-card">
         <div class="data-card-header">
           <div>
-            <h2 class="data-card-title">Pipelines Inventory & Trigger Analytics</h2>
-            <p class="data-card-subtitle">Aggregated success rates, Auto CI triggers, and Manual triggers</p>
+            <h2 class="data-card-title">Pipelines Inventory & Runs</h2>
           </div>
-          <button class="btn-export" id="btnExportPipelines">📥 Export Pipelines (.xlsx)</button>
-        </div>
-        <div class="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th>PIPELINE NAME</th>
-                <th>TOTAL SCANNED</th>
-                <th>SUCCESSFUL BUILDS</th>
-                <th>FAILED / OTHER</th>
-                <th>AUTO / CI TRIGGERS</th>
-                <th>MANUAL TRIGGERS</th>
-                <th>SUCCESS RATE</th>
-              </tr>
-            </thead>
-            <tbody id="pipelinesTableBody"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="data-card">
-        <div class="data-card-header">
-          <div>
-            <h2 class="data-card-title">Detailed CI/CD Build Runs</h2>
-          </div>
+          <button class="btn-export">📥 Export Runs (.xlsx)</button>
         </div>
         <div class="table-responsive">
           <table>
@@ -185,14 +411,14 @@
       </section>
     </div>
 
-    <!-- WORK ITEMS -->
+    <!-- WORK ITEMS CATEGORY -->
     <div id="section-workitems" class="hidden">
       <section class="data-card">
         <div class="data-card-header">
           <div>
             <h2 class="data-card-title">Work Items & Backlog Tracker</h2>
           </div>
-          <button class="btn-export" id="btnExportWorkItems">📥 Export Work Items (.xlsx)</button>
+          <button class="btn-export">📥 Export Work Items (.xlsx)</button>
         </div>
         <div class="table-responsive">
           <table>
@@ -212,22 +438,21 @@
       </section>
     </div>
 
-    <!-- SECURITY & ACCESS -->
+    <!-- ACCESS CATEGORY -->
     <div id="section-access" class="hidden">
       <section class="data-card">
         <div class="data-card-header">
           <div>
-            <h2 class="data-card-title">Security, Users & Group Permissions</h2>
+            <h2 class="data-card-title">Project Security Groups & Teams</h2>
           </div>
         </div>
         <div class="table-responsive">
           <table>
             <thead>
               <tr>
-                <th>PRINCIPAL NAME</th>
-                <th>PRINCIPAL TYPE</th>
-                <th>ACCESS LEVEL</th>
-                <th>ASSIGNED PERMISSIONS</th>
+                <th>TEAM / GROUP NAME</th>
+                <th>DESCRIPTION</th>
+                <th>IDENTITY TYPE</th>
               </tr>
             </thead>
             <tbody id="accessTableBody"></tbody>
@@ -236,22 +461,21 @@
       </section>
     </div>
 
-    <!-- USER ACTIVITY -->
+    <!-- ACTIVITY CATEGORY -->
     <div id="section-activity" class="hidden">
       <section class="data-card">
         <div class="data-card-header">
           <div>
-            <h2 class="data-card-title">Recent User Activity & Audits</h2>
+            <h2 class="data-card-title">Recent Project Activity & Commits</h2>
           </div>
         </div>
         <div class="table-responsive">
           <table>
             <thead>
               <tr>
-                <th>ACTOR</th>
-                <th>ACTIVITY TYPE</th>
-                <th>TARGET ENTITY</th>
-                <th>TIMESTAMP</th>
+                <th>AUTHOR</th>
+                <th>ACTIVITY / COMMIT</th>
+                <th>DATE</th>
               </tr>
             </thead>
             <tbody id="activityTableBody"></tbody>
@@ -262,6 +486,335 @@
 
   </main>
 
-  <script src="js/app.js"></script>
+  <!-- Self-Contained Execution Script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const orgUrlInput = document.getElementById('orgUrl');
+      const patTokenInput = document.getElementById('patToken');
+      const btnLoadProjects = document.getElementById('btnLoadProjects');
+      const selectProject = document.getElementById('selectProject');
+      const selectCategory = document.getElementById('selectCategory');
+      const selectSubItem = document.getElementById('selectSubItem');
+      const lblSubItem = document.getElementById('lblSubItem');
+      const activeDevOpsPath = document.getElementById('activeDevOpsPath');
+      const resultsContainer = document.getElementById('resultsContainer');
+      const statusBanner = document.getElementById('statusBanner');
+      const rememberCredentials = document.getElementById('rememberCredentials');
+      const quickFilterInput = document.getElementById('quickFilterInput');
+
+      const allSectionIds = ['section-repos', 'section-pipelines', 'section-workitems', 'section-access', 'section-activity'];
+
+      function showStatus(msg, isError = false) {
+        statusBanner.textContent = msg;
+        statusBanner.className = `status-banner ${isError ? 'status-error' : 'status-success'}`;
+        statusBanner.classList.remove('hidden');
+      }
+
+      function clearStatus() {
+        statusBanner.textContent = '';
+        statusBanner.classList.add('hidden');
+      }
+
+      function cleanOrg(val) {
+        return val.trim()
+          .replace(/^(https?:\/\/)?(dev\.azure\.com\/)/i, '')
+          .replace(/^(https?:\/\/)?([\w.-]+)\.visualstudio\.com\/?/i, '$2')
+          .replace(/\/+$/, '');
+      }
+
+      function hideAllTables() {
+        resultsContainer.classList.add('hidden');
+        allSectionIds.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.classList.add('hidden');
+        });
+      }
+
+      function resetSubSelect() {
+        lblSubItem.textContent = '5. SELECT ITEM *';
+        selectSubItem.innerHTML = '<option value="">-- Select Category First --</option>';
+        selectSubItem.disabled = true;
+      }
+
+      async function callAdo(path, method = 'GET', body = null) {
+        const org = cleanOrg(orgUrlInput.value);
+        const pat = patTokenInput.value.trim();
+        const opts = {
+          method,
+          headers: {
+            'Authorization': 'Basic ' + btoa(':' + pat),
+            'Content-Type': 'application/json'
+          }
+        };
+        if (body) opts.body = JSON.stringify(body);
+        const res = await fetch(`https://dev.azure.com/${org}/${path}`, opts);
+        if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        return await res.json();
+      }
+
+      // Remember credentials
+      if (localStorage.getItem('ado_saved_flag') === 'true') {
+        rememberCredentials.checked = true;
+        orgUrlInput.value = localStorage.getItem('ado_saved_org') || '';
+        patTokenInput.value = localStorage.getItem('ado_saved_pat') || '';
+      }
+
+      // Step 1 & 2: Load Projects
+      btnLoadProjects.addEventListener('click', async () => {
+        clearStatus();
+        hideAllTables();
+        resetSubSelect();
+        selectCategory.value = '';
+        selectCategory.disabled = true;
+
+        const org = cleanOrg(orgUrlInput.value);
+        const pat = patTokenInput.value.trim();
+
+        if (!org || !pat) {
+          showStatus('Please enter both Organization Name and Azure DevOps PAT.', true);
+          return;
+        }
+
+        if (rememberCredentials.checked) {
+          localStorage.setItem('ado_saved_flag', 'true');
+          localStorage.setItem('ado_saved_org', org);
+          localStorage.setItem('ado_saved_pat', pat);
+        }
+
+        btnLoadProjects.textContent = 'Loading...';
+        btnLoadProjects.disabled = true;
+
+        try {
+          const res = await callAdo('_apis/projects?api-version=6.0');
+          const projects = res.value || [];
+
+          if (projects.length === 0) {
+            selectProject.innerHTML = '<option value="">-- No Projects Found --</option>';
+            selectProject.disabled = true;
+            showStatus('Connected, but no projects found in this organization.', true);
+          } else {
+            projects.sort((a, b) => a.name.localeCompare(b.name));
+            selectProject.innerHTML = '<option value="">-- Select Project --</option>' +
+              projects.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+            selectProject.disabled = false;
+            showStatus(`Successfully loaded ${projects.length} project(s).`);
+          }
+        } catch (err) {
+          showStatus(`Failed to load projects: ${err.message}. Verify PAT permissions or check browser console for CORS.`, true);
+        } finally {
+          btnLoadProjects.textContent = 'Load Projects';
+          btnLoadProjects.disabled = false;
+        }
+      });
+
+      // Step 3: Project Selection
+      selectProject.addEventListener('change', () => {
+        clearStatus();
+        hideAllTables();
+        resetSubSelect();
+
+        if (selectProject.value) {
+          selectCategory.disabled = false;
+          selectCategory.value = '';
+        } else {
+          selectCategory.disabled = true;
+          selectCategory.value = '';
+        }
+      });
+
+      // Step 4: Category Selection -> Unlocks Step 5
+      selectCategory.addEventListener('change', async () => {
+        clearStatus();
+        hideAllTables();
+        const cat = selectCategory.value;
+        const project = encodeURIComponent(selectProject.value);
+
+        if (!cat) {
+          resetSubSelect();
+          return;
+        }
+
+        selectSubItem.disabled = true;
+        selectSubItem.innerHTML = '<option value="">Loading options...</option>';
+
+        try {
+          if (cat === 'repos') {
+            lblSubItem.textContent = '5. SELECT REPOSITORY *';
+            const data = await callAdo(`${project}/_apis/git/repositories?api-version=6.0`);
+            const repos = data.value || [];
+            if (repos.length === 0) {
+              selectSubItem.innerHTML = '<option value="">-- No Repositories Found --</option>';
+            } else {
+              selectSubItem.innerHTML = '<option value="">-- Choose Repository --</option>' +
+                repos.map(r => `<option value="${r.id}" data-name="${r.name}">${r.name}</option>`).join('');
+              selectSubItem.disabled = false;
+            }
+          } else if (cat === 'pipelines') {
+            lblSubItem.textContent = '5. SELECT PIPELINE *';
+            const data = await callAdo(`${project}/_apis/pipelines?api-version=6.0-preview.1`);
+            const pipes = data.value || [];
+            selectSubItem.innerHTML = '<option value="">-- Choose Pipeline --</option><option value="ALL">All Pipelines</option>' +
+              pipes.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+            selectSubItem.disabled = false;
+          } else if (cat === 'workitems') {
+            lblSubItem.textContent = '5. SELECT WORK ITEM SCOPE *';
+            selectSubItem.innerHTML = `
+              <option value="">-- Select Scope --</option>
+              <option value="recent">Recently Updated (Top 25)</option>
+            `;
+            selectSubItem.disabled = false;
+          } else if (cat === 'access') {
+            lblSubItem.textContent = '5. ACCESS SCOPE *';
+            selectSubItem.innerHTML = '<option value="">-- Select Scope --</option><option value="teams">Project Teams & Groups</option>';
+            selectSubItem.disabled = false;
+          } else if (cat === 'activity') {
+            lblSubItem.textContent = '5. ACTIVITY SCOPE *';
+            selectSubItem.innerHTML = '<option value="">-- Select Scope --</option><option value="latest">Latest Commits & Updates</option>';
+            selectSubItem.disabled = false;
+          }
+        } catch (err) {
+          showStatus(`Failed to load category details: ${err.message}`, true);
+          resetSubSelect();
+        }
+      });
+
+      // Step 5: Sub-Item Selection -> Displays Table & Renders Data
+      selectSubItem.addEventListener('change', async () => {
+        const cat = selectCategory.value;
+        const subVal = selectSubItem.value;
+        const project = encodeURIComponent(selectProject.value);
+
+        if (!subVal) {
+          hideAllTables();
+          return;
+        }
+
+        // Show table container and matching category card
+        resultsContainer.classList.remove('hidden');
+        allSectionIds.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.classList.add('hidden');
+        });
+        const targetSection = document.getElementById(`section-${cat}`);
+        if (targetSection) targetSection.classList.remove('hidden');
+
+        try {
+          if (cat === 'repos') {
+            const repoName = selectSubItem.selectedOptions[0].getAttribute('data-name');
+            
+            // Fetch branches
+            const bData = await callAdo(`${project}/_apis/git/repositories/${subVal}/stats/branches?api-version=6.0`);
+            const branches = bData.value || [];
+            document.getElementById('branchTableBody').innerHTML = branches.length ? branches.map(b => `
+              <tr>
+                <td><strong>${repoName}</strong></td>
+                <td>${b.name}</td>
+                <td><span class="badge">${b.isBaseVersion ? 'Default' : 'Active'}</span></td>
+                <td>${b.commit?.author?.name || '-'}</td>
+                <td>${b.commit?.author?.date ? new Date(b.commit.author.date).toLocaleDateString() : '-'}</td>
+                <td>${b.commit?.comment || '-'}</td>
+              </tr>
+            `).join('') : `<tr><td colspan="6" class="empty-state">No active branches found.</td></tr>`;
+
+            // Fetch PRs
+            const prData = await callAdo(`${project}/_apis/git/repositories/${subVal}/pullrequests?searchCriteria.status=all&api-version=6.0`);
+            const prs = prData.value || [];
+            document.getElementById('prTableBody').innerHTML = prs.length ? prs.map(pr => `
+              <tr>
+                <td>${repoName}</td>
+                <td>#${pr.pullRequestId}: ${pr.title}</td>
+                <td>${pr.sourceRefName?.replace('refs/heads/', '')} → ${pr.targetRefName?.replace('refs/heads/', '')}</td>
+                <td>${pr.createdBy?.displayName || '-'}</td>
+                <td><span class="badge">${pr.status}</span></td>
+                <td>${new Date(pr.creationDate).toLocaleDateString()}</td>
+              </tr>
+            `).join('') : `<tr><td colspan="6" class="empty-state">No pull requests found.</td></tr>`;
+
+          } else if (cat === 'pipelines') {
+            const endpoint = subVal === 'ALL'
+              ? `${project}/_apis/build/builds?api-version=6.0&$top=25`
+              : `${project}/_apis/build/builds?definitions=${subVal}&api-version=6.0&$top=25`;
+            
+            const runData = await callAdo(endpoint);
+            const runs = runData.value || [];
+            document.getElementById('buildRunsTableBody').innerHTML = runs.length ? runs.map(r => `
+              <tr>
+                <td>${r.definition?.name || '-'}</td>
+                <td>${r.buildNumber}</td>
+                <td>${r.sourceBranch?.replace('refs/heads/', '') || '-'}</td>
+                <td>${r.reason || 'manual'}</td>
+                <td>${r.requestedFor?.displayName || '-'}</td>
+                <td><span class="badge">${r.result || r.status}</span></td>
+                <td>${r.finishTime ? new Date(r.finishTime).toLocaleString() : 'Running'}</td>
+              </tr>
+            `).join('') : `<tr><td colspan="7" class="empty-state">No build runs available.</td></tr>`;
+
+          } else if (cat === 'workitems') {
+            const wiql = { query: `Select [System.Id] From WorkItems Where [System.TeamProject] = '${selectProject.value}' order by [System.ChangedDate] desc` };
+            const queryRes = await callAdo(`${project}/_apis/wit/wiql?api-version=6.0&$top=20`, 'POST', wiql);
+            const ids = (queryRes.workItems || []).map(i => i.id);
+
+            if (!ids.length) {
+              document.getElementById('workItemsTableBody').innerHTML = `<tr><td colspan="6" class="empty-state">No work items found.</td></tr>`;
+              return;
+            }
+
+            const itemDetails = await callAdo(`${project}/_apis/wit/workitems?ids=${ids.join(',')}&api-version=6.0`);
+            const items = itemDetails.value || [];
+            document.getElementById('workItemsTableBody').innerHTML = items.map(w => `
+              <tr>
+                <td><strong>#${w.id}</strong></td>
+                <td>${w.fields['System.Title']}</td>
+                <td>${w.fields['System.WorkItemType']}</td>
+                <td><span class="badge">${w.fields['System.State']}</span></td>
+                <td>${w.fields['System.AssignedTo']?.displayName || 'Unassigned'}</td>
+                <td>${new Date(w.fields['System.ChangedDate']).toLocaleDateString()}</td>
+              </tr>
+            `).join('');
+
+          } else if (cat === 'access') {
+            const teamsData = await callAdo(`_apis/projects/${project}/teams?api-version=6.0`);
+            const teams = teamsData.value || [];
+            document.getElementById('accessTableBody').innerHTML = teams.length ? teams.map(t => `
+              <tr>
+                <td><strong>${t.name}</strong></td>
+                <td>${t.description || 'Project Team'}</td>
+                <td><span class="badge">${t.identity?.uniqueName ? 'User Team' : 'Security Group'}</span></td>
+              </tr>
+            `).join('') : `<tr><td colspan="3" class="empty-state">No teams found.</td></tr>`;
+
+          } else if (cat === 'activity') {
+            const historyData = await callAdo(`${project}/_apis/git/repositories?api-version=6.0`);
+            const repos = historyData.value || [];
+            if (repos.length > 0) {
+              const commitsData = await callAdo(`${project}/_apis/git/repositories/${repos[0].id}/commits?api-version=6.0&$top=15`);
+              const commits = commitsData.value || [];
+              document.getElementById('activityTableBody').innerHTML = commits.length ? commits.map(c => `
+                <tr>
+                  <td><strong>${c.author?.name || '-'}</strong></td>
+                  <td>${c.comment}</td>
+                  <td>${new Date(c.author?.date).toLocaleString()}</td>
+                </tr>
+              `).join('') : `<tr><td colspan="3" class="empty-state">No recent activity found.</td></tr>`;
+            } else {
+              document.getElementById('activityTableBody').innerHTML = `<tr><td colspan="3" class="empty-state">No repositories available to check activity.</td></tr>`;
+            }
+          }
+        } catch (err) {
+          showStatus(`Error loading data: ${err.message}`, true);
+        }
+      });
+
+      // Search filter across visible rows
+      quickFilterInput.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        const rows = resultsContainer.querySelectorAll('div:not(.hidden) tbody tr');
+        rows.forEach(r => {
+          if (r.classList.contains('empty-state')) return;
+          r.style.display = r.textContent.toLowerCase().includes(term) ? '' : 'none';
+        });
+      });
+    });
+  </script>
 </body>
 </html>
