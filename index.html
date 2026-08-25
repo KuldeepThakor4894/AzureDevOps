@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Azure DevOps Intelligence Hub</title>
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/styles.css?v=1.1">
 </head>
 <body>
 
@@ -24,7 +24,7 @@
     <div class="form-grid">
       <div class="form-group">
         <label for="orgUrl">1. ORGANIZATION URL / NAME <span>*</span></label>
-        <input type="text" id="orgUrl" placeholder="e.g. Enter Org Name">
+        <input type="text" id="orgUrl" placeholder="e.g. CornerstoneBuildingBrands">
       </div>
       
       <div class="form-group">
@@ -55,6 +55,9 @@
         </select>
       </div>
     </div>
+
+    <!-- Status Message Banner -->
+    <div id="statusBanner" class="status-banner hidden"></div>
 
     <div class="path-preview">
       Active Azure DevOps Path: <a href="https://dev.azure.com/" target="_blank" id="activeDevOpsPath">https://dev.azure.com/</a>
@@ -281,11 +284,11 @@
 
   </main>
 
-  <script src="js/repos.js"></script>
-  <script src="js/pipelines.js"></script>
-  <script src="js/workitems.js"></script>
-  <script src="js/access.js"></script>
-  <script src="js/activity.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/repos.js?v=2.0"></script>
+  <script src="js/pipelines.js?v=2.0"></script>
+  <script src="js/workitems.js?v=2.0"></script>
+  <script src="js/access.js?v=2.0"></script>
+  <script src="js/activity.js?v=2.0"></script>
+  <script src="js/app.js?v=2.0"></script>
 </body>
 </html>
