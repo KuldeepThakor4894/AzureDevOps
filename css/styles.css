@@ -64,7 +64,7 @@ body {
 
 .form-grid {
   display: grid;
-  grid-template-columns: 2fr 2fr auto 2fr 2fr;
+  grid-template-columns: repeat(6, 1fr);
   gap: 12px;
   align-items: flex-end;
 }
@@ -112,6 +112,7 @@ body {
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s;
+  white-space: nowrap;
 }
 
 .btn-primary:hover {
@@ -231,6 +232,15 @@ thead th {
 tbody td {
   padding: 12px;
   border-bottom: 1px solid var(--border-color);
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 12px;
+  background: #e1dfdd;
 }
 
 .empty-state {
