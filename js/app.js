@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const resultsContainer = document.getElementById('resultsContainer');
   const quickFilterInput = document.getElementById('quickFilterInput');
   const rememberCredentials = document.getElementById('rememberCredentials');
+  const statusBanner = document.getElementById('statusBanner');
 
   const categorySectionIds = [
     'section-repos',
@@ -17,7 +18,20 @@ document.addEventListener('DOMContentLoaded', () => {
     'section-activity'
   ];
 
-  // Helper to extract clean organization name
+  function showStatus(msg, isError = false) {
+    if (!statusBanner) return;
+    statusBanner.textContent = msg;
+    statusBanner.className = `status-banner ${isError ? 'status-error' : 'status-success'}`;
+    statusBanner.classList.remove('hidden');
+  }
+
+  function clearStatus() {
+    if (statusBanner) {
+      statusBanner.textContent = '';
+      statusBanner.classList.add('hidden');
+    }
+  }
+
   function getCleanOrgName(rawInput) {
     let org = rawInput.trim();
     org = org.replace(/^(https?:\/\/)?(dev\.azure\.com\/)/i, '')
@@ -26,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return org;
   }
 
-  // Load saved credentials from localStorage if available
+  // Load saved credentials
   if (localStorage.getItem('ado_remember') === 'true') {
     if (rememberCredentials) rememberCredentials.checked = true;
     orgUrlInput.value = localStorage.getItem('ado_org') || '';
@@ -45,25 +59,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Live Org URL link update
   orgUrlInput.addEventListener('input', (e) => {
     updateOrgPreview(e.target.value);
   });
 
-  // Fetch real projects from Azure DevOps REST API
+  // Handle Load Projects
   btnLoadProjects.addEventListener('click', async () => {
+    clearStatus();
     const cleanOrg = getCleanOrgName(orgUrlInput.value);
     const pat = patTokenInput.value.trim();
 
     if (!cleanOrg || !pat) {
-      alert('Please provide both an Organization Name/URL and an Azure DevOps PAT.');
+      showStatus('Please enter both Organization Name and Azure DevOps PAT.', true);
       return;
     }
 
-    // Save or clear credentials based on checkbox
     if (rememberCredentials && rememberCredentials.checked) {
       localStorage.setItem('ado_remember', 'true');
-      localStorage.setItem('ado_org', orgUrlInput.value.trim());
+      localStorage.setItem('ado_org', cleanOrg);
       localStorage.setItem('ado_pat', pat);
     } else {
       localStorage.removeItem('ado_remember');
@@ -76,6 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       const apiUrl = `https://dev.azure.com/${cleanOrg}/_apis/projects?api-version=6.0`;
+      
       const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
@@ -85,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (!response.ok) {
-        throw new Error(`Status ${response.status}: ${response.statusText}`);
+        throw new Error(`HTTP ${response.status} (${response.statusText}). Check Organization and PAT permissions.`);
       }
 
       const data = await response.json();
@@ -94,22 +108,24 @@ document.addEventListener('DOMContentLoaded', () => {
       if (projects.length === 0) {
         selectProject.innerHTML = '<option value="">-- No Projects Found --</option>';
         selectProject.disabled = true;
+        showStatus('No projects found in this organization.', true);
       } else {
-        // Populate dropdown with real project names sorted alphabetically
         projects.sort((a, b) => a.name.localeCompare(b.name));
-        selectProject.innerHTML = '<option value="">-- Choose Project --</option>' +
+        selectProject.innerHTML = '<option value="">-- Select Project --</option>' +
           projects.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
         selectProject.disabled = false;
+        showStatus(`Successfully loaded ${projects.length} project(s).`);
       }
 
-      // Reset subsequent controls
       selectCategory.value = '';
       selectCategory.disabled = true;
       hideAllSections();
 
     } catch (err) {
-      console.error('Azure DevOps API Error:', err);
-      alert('Failed to fetch projects. Please verify:\n1. The Organization Name is correct.\n2. The PAT has "Project and Team (Read)" permissions.\n3. Your network allows direct calls to dev.azure.com.');
+      console.error('Project fetch error:', err);
+      selectProject.innerHTML = '<option value="">-- Load Failed --</option>';
+      selectProject.disabled = true;
+      showStatus(`Failed to load projects: ${err.message}. If running locally, check browser CORS restrictions.`, true);
     } finally {
       btnLoadProjects.textContent = 'Load Projects';
       btnLoadProjects.disabled = false;
@@ -118,6 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Project Selection Handler
   selectProject.addEventListener('change', () => {
+    clearStatus();
     if (selectProject.value) {
       selectCategory.disabled = false;
       selectCategory.value = '';
@@ -128,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
     hideAllSections();
   });
 
-  // Category Selection Handler (Toggles visibility of specific sections)
+  // Category Selection Handler
   selectCategory.addEventListener('change', (e) => {
     const selected = e.target.value;
     const cleanOrg = getCleanOrgName(orgUrlInput.value);
@@ -140,14 +157,13 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Reveal main container and hide all sub-sections
     resultsContainer.classList.remove('hidden');
+
     categorySectionIds.forEach(id => {
       const section = document.getElementById(id);
       if (section) section.classList.add('hidden');
     });
 
-    // Show only the selected category section
     const activeSection = document.getElementById(`section-${selected}`);
     if (activeSection) {
       activeSection.classList.remove('hidden');
@@ -163,38 +179,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Dispatch data loading calls to category-specific modules
   function loadCategoryData(category, org, project, pat) {
-    switch (category) {
-      case 'repos':
-        if (typeof loadRepositoriesModule === 'function') {
-          loadRepositoriesModule(org, project, pat);
-        }
-        break;
-      case 'pipelines':
-        if (typeof loadPipelinesModule === 'function') {
-          loadPipelinesModule(org, project, pat);
-        }
-        break;
-      case 'workitems':
-        if (typeof loadWorkItemsModule === 'function') {
-          loadWorkItemsModule(org, project, pat);
-        }
-        break;
-      case 'access':
-        if (typeof loadAccessModule === 'function') {
-          loadAccessModule(org, project, pat);
-        }
-        break;
-      case 'activity':
-        if (typeof loadActivityModule === 'function') {
-          loadActivityModule(org, project, pat);
-        }
-        break;
+    if (category === 'repos' && typeof loadRepositoriesModule === 'function') {
+      loadRepositoriesModule(org, project, pat);
+    } else if (category === 'pipelines' && typeof loadPipelinesModule === 'function') {
+      loadPipelinesModule(org, project, pat);
+    } else if (category === 'workitems' && typeof loadWorkItemsModule === 'function') {
+      loadWorkItemsModule(org, project, pat);
+    } else if (category === 'access' && typeof loadAccessModule === 'function') {
+      loadAccessModule(org, project, pat);
+    } else if (category === 'activity' && typeof loadActivityModule === 'function') {
+      loadActivityModule(org, project, pat);
     }
   }
 
-  // Quick search filter functionality across all visible table rows
   if (quickFilterInput) {
     quickFilterInput.addEventListener('input', (e) => {
       const term = e.target.value.toLowerCase();
