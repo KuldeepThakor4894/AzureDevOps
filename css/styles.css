@@ -4,18 +4,18 @@
   --success-color: #107c41;
   --success-hover: #0b5a2f;
   --danger-color: #a80000;
-  --bg-color: #f3f4f6;
+  --bg-color: #f8fafc;
   --card-bg: #ffffff;
-  --border-color: #e1dfdd;
-  --text-primary: #323130;
-  --text-secondary: #605e5c;
+  --border-color: #e2e8f0;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
 }
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 body {
@@ -28,6 +28,40 @@ body {
   display: none !important;
 }
 
+/* Modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-card {
+  background: #fff;
+  padding: 24px;
+  border-radius: 8px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+/* Header */
 .header-container {
   display: flex;
   justify-content: space-between;
@@ -36,15 +70,13 @@ body {
 }
 
 .header-container h1 {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
-  color: #201f1e;
 }
 
 .header-container p {
   font-size: 13px;
   color: var(--text-secondary);
-  margin-top: 4px;
 }
 
 .remember-creds {
@@ -54,19 +86,19 @@ body {
   gap: 6px;
 }
 
+/* Configurations */
 .config-card {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 16px;
-  margin-bottom: 20px;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
 }
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 12px;
-  align-items: flex-end;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
 }
 
 .form-group {
@@ -78,65 +110,82 @@ body {
 .form-group label {
   font-size: 11px;
   font-weight: 700;
-  text-transform: uppercase;
   color: var(--text-secondary);
+  text-transform: uppercase;
 }
 
 .form-group label span {
-  color: #d83b01;
+  color: #ef4444;
 }
 
 .form-group input,
 .form-group select {
-  height: 36px;
-  padding: 0 10px;
+  height: 38px;
+  padding: 0 12px;
   border: 1px solid var(--border-color);
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 13px;
-  background: #ffffff;
+  background: #fff;
 }
 
-.form-group input:focus,
-.form-group select:focus {
-  outline: none;
-  border-color: var(--primary-color);
+.form-group input:disabled,
+.form-group select:disabled {
+  background: #f1f5f9;
+  cursor: not-allowed;
+}
+
+.input-with-button {
+  display: flex;
+  gap: 8px;
 }
 
 .btn-primary {
-  height: 36px;
+  height: 38px;
   padding: 0 16px;
-  background-color: var(--primary-color);
-  color: #ffffff;
+  background: var(--primary-color);
+  color: #fff;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
   white-space: nowrap;
 }
 
 .btn-primary:hover {
-  background-color: var(--primary-hover);
+  background: var(--primary-hover);
+}
+
+.step5-container {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.substep-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.flex-1 { flex: 1; }
+.flex-2 { flex: 2; }
+
+.substep-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  align-self: center;
 }
 
 .status-banner {
-  margin-top: 12px;
-  padding: 8px 12px;
-  border-radius: 4px;
-  font-size: 12px;
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13px;
 }
 
-.status-error {
-  background-color: #fde7e9;
-  color: var(--danger-color);
-  border: 1px solid #f8d0d4;
-}
-
-.status-success {
-  background-color: #dff6dd;
-  color: var(--success-color);
-  border: 1px solid #c2ebc0;
-}
+.status-error { background: #fee2e2; color: #b91c1c; }
+.status-success { background: #dcfce7; color: #15803d; }
+.status-info { background: #e0f2fe; color: #0369a1; }
 
 .path-preview {
   margin-top: 12px;
@@ -144,11 +193,80 @@ body {
   color: var(--text-secondary);
 }
 
-.path-preview a {
-  color: var(--primary-color);
-  text-decoration: none;
+/* KPI Cards */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
+.kpi-card {
+  background: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.kpi-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.kpi-value {
+  font-size: 24px;
+  font-weight: 800;
+  margin-top: 6px;
+}
+
+.text-blue { color: #2563eb; }
+.text-green { color: #16a34a; }
+.text-purple { color: #9333ea; }
+.text-slate { color: #334155; }
+
+/* Chart Section */
+.chart-card {
+  background: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.chart-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.btn-chart {
+  padding: 4px 10px;
+  border: 1px solid var(--border-color);
+  background: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-chart.active {
+  background: #e2e8f0;
+  font-weight: 700;
+}
+
+.chart-wrapper {
+  height: 250px;
+}
+
+/* Tables */
 .toolbar {
   display: flex;
   justify-content: space-between;
@@ -157,36 +275,29 @@ body {
 }
 
 .search-input {
-  width: 320px;
+  width: 300px;
   height: 36px;
   padding: 0 12px;
   border: 1px solid var(--border-color);
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 13px;
 }
 
 .btn-export {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background-color: var(--success-color);
-  color: #ffffff;
+  background: #1e293b;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 6px;
   border: none;
-  border-radius: 4px;
-  padding: 8px 14px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
 }
 
-.btn-export:hover {
-  background-color: var(--success-hover);
-}
-
 .data-card {
-  background: var(--card-bg);
+  background: #fff;
   border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 16px;
   margin-bottom: 20px;
 }
@@ -194,19 +305,13 @@ body {
 .data-card-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
+  align-items: center;
+  margin-bottom: 14px;
 }
 
-.data-card-title {
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.data-card-subtitle {
+.subtext {
   font-size: 12px;
   color: var(--text-secondary);
-  margin-top: 2px;
 }
 
 .table-responsive {
@@ -216,16 +321,16 @@ body {
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 thead th {
-  background: #faf9f8;
-  border-bottom: 1px solid var(--border-color);
-  padding: 10px 12px;
+  background: #f8fafc;
+  padding: 12px;
   text-align: left;
-  font-weight: 700;
+  border-bottom: 1px solid var(--border-color);
   color: var(--text-secondary);
+  font-size: 11px;
   text-transform: uppercase;
 }
 
@@ -238,14 +343,24 @@ tbody td {
   display: inline-block;
   padding: 2px 8px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   border-radius: 12px;
-  background: #e1dfdd;
 }
 
-.empty-state {
+.badge-active { background: #dcfce7; color: #15803d; }
+.badge-stale { background: #fef3c7; color: #b45309; }
+.badge-blue { background: #dbeafe; color: #1d4ed8; }
+
+.pagination-footer {
   text-align: center;
-  padding: 30px;
-  color: var(--text-secondary);
-  font-size: 13px;
+  padding: 12px 0 0;
+}
+
+.btn-secondary {
+  background: #f1f5f9;
+  border: 1px solid var(--border-color);
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
 }
