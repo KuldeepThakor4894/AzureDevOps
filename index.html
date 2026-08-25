@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Azure DevOps Intelligence Hub</title>
-  <link rel="stylesheet" href="css/styles.css?v=1.1">
+  <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 
@@ -54,9 +54,16 @@
           <option value="activity">User Activity</option>
         </select>
       </div>
+
+      <!-- Step 5: Contextual Sub-selector -->
+      <div class="form-group" id="subSelectGroup" style="grid-column: span 2;">
+        <label for="selectSubItem" id="subSelectLabel">5. SELECT ITEM <span>*</span></label>
+        <select id="selectSubItem" disabled>
+          <option value="">-- Select Category first --</option>
+        </select>
+      </div>
     </div>
 
-    <!-- Status Message Banner -->
     <div id="statusBanner" class="status-banner hidden"></div>
 
     <div class="path-preview">
@@ -64,16 +71,15 @@
     </div>
   </section>
 
-  <!-- Results Area (Hidden until valid category selection) -->
+  <!-- Results Area (Hidden until step 5 selection) -->
   <main id="resultsContainer" class="hidden">
     
-    <!-- Global Action Bar -->
     <div class="toolbar">
       <input type="text" id="quickFilterInput" class="search-input" placeholder="Quick filter displayed rows...">
       <button class="btn-export" id="btnExportActiveTable">📥 Export Active Table (.xlsx)</button>
     </div>
 
-    <!-- REPOSITORIES CATEGORY -->
+    <!-- REPOSITORIES & PRS -->
     <div id="section-repos" class="hidden">
       <section class="data-card">
         <div class="data-card-header">
@@ -95,11 +101,7 @@
                 <th>COMMIT MESSAGE</th>
               </tr>
             </thead>
-            <tbody id="branchTableBody">
-              <tr>
-                <td colspan="6" class="empty-state">Select a repository to inspect.</td>
-              </tr>
-            </tbody>
+            <tbody id="branchTableBody"></tbody>
           </table>
         </div>
       </section>
@@ -124,17 +126,13 @@
                 <th>CREATED DATE</th>
               </tr>
             </thead>
-            <tbody id="prTableBody">
-              <tr>
-                <td colspan="6" class="empty-state">Select a repository to inspect.</td>
-              </tr>
-            </tbody>
+            <tbody id="prTableBody"></tbody>
           </table>
         </div>
       </section>
     </div>
 
-    <!-- PIPELINES CATEGORY -->
+    <!-- PIPELINES & RUNS -->
     <div id="section-pipelines" class="hidden">
       <section class="data-card">
         <div class="data-card-header">
@@ -157,11 +155,7 @@
                 <th>SUCCESS RATE</th>
               </tr>
             </thead>
-            <tbody id="pipelinesTableBody">
-              <tr>
-                <td colspan="7" class="empty-state">Click "Fetch Pipeline Runs" to scan pipeline definitions.</td>
-              </tr>
-            </tbody>
+            <tbody id="pipelinesTableBody"></tbody>
           </table>
         </div>
       </section>
@@ -185,17 +179,13 @@
                 <th>FINISH TIME</th>
               </tr>
             </thead>
-            <tbody id="buildRunsTableBody">
-              <tr>
-                <td colspan="7" class="empty-state">No build runs loaded.</td>
-              </tr>
-            </tbody>
+            <tbody id="buildRunsTableBody"></tbody>
           </table>
         </div>
       </section>
     </div>
 
-    <!-- WORK ITEMS CATEGORY -->
+    <!-- WORK ITEMS -->
     <div id="section-workitems" class="hidden">
       <section class="data-card">
         <div class="data-card-header">
@@ -216,17 +206,13 @@
                 <th>LAST UPDATED</th>
               </tr>
             </thead>
-            <tbody id="workItemsTableBody">
-              <tr>
-                <td colspan="6" class="empty-state">No work items fetched.</td>
-              </tr>
-            </tbody>
+            <tbody id="workItemsTableBody"></tbody>
           </table>
         </div>
       </section>
     </div>
 
-    <!-- ACCESS & SECURITY CATEGORY -->
+    <!-- SECURITY & ACCESS -->
     <div id="section-access" class="hidden">
       <section class="data-card">
         <div class="data-card-header">
@@ -244,17 +230,13 @@
                 <th>ASSIGNED PERMISSIONS</th>
               </tr>
             </thead>
-            <tbody id="accessTableBody">
-              <tr>
-                <td colspan="4" class="empty-state">No security definitions loaded.</td>
-              </tr>
-            </tbody>
+            <tbody id="accessTableBody"></tbody>
           </table>
         </div>
       </section>
     </div>
 
-    <!-- ACTIVITY CATEGORY -->
+    <!-- USER ACTIVITY -->
     <div id="section-activity" class="hidden">
       <section class="data-card">
         <div class="data-card-header">
@@ -272,11 +254,7 @@
                 <th>TIMESTAMP</th>
               </tr>
             </thead>
-            <tbody id="activityTableBody">
-              <tr>
-                <td colspan="4" class="empty-state">No user activity recorded.</td>
-              </tr>
-            </tbody>
+            <tbody id="activityTableBody"></tbody>
           </table>
         </div>
       </section>
@@ -284,11 +262,6 @@
 
   </main>
 
-  <script src="js/repos.js?v=2.0"></script>
-  <script src="js/pipelines.js?v=2.0"></script>
-  <script src="js/workitems.js?v=2.0"></script>
-  <script src="js/access.js?v=2.0"></script>
-  <script src="js/activity.js?v=2.0"></script>
-  <script src="js/app.js?v=2.0"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
