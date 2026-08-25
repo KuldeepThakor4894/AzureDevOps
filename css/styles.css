@@ -1,9 +1,9 @@
-/* Base Reset & Variables */
 :root {
   --primary-color: #0078d4;
   --primary-hover: #106ebe;
   --success-color: #107c41;
   --success-hover: #0b5a2f;
+  --danger-color: #a80000;
   --bg-color: #f3f4f6;
   --card-bg: #ffffff;
   --border-color: #e1dfdd;
@@ -24,12 +24,10 @@ body {
   padding: 24px;
 }
 
-/* Visibility Control */
 .hidden {
   display: none !important;
 }
 
-/* Header & Controls */
 .header-container {
   display: flex;
   justify-content: space-between;
@@ -120,6 +118,25 @@ body {
   background-color: var(--primary-hover);
 }
 
+.status-banner {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.status-error {
+  background-color: #fde7e9;
+  color: var(--danger-color);
+  border: 1px solid #f8d0d4;
+}
+
+.status-success {
+  background-color: #dff6dd;
+  color: var(--success-color);
+  border: 1px solid #c2ebc0;
+}
+
 .path-preview {
   margin-top: 12px;
   font-size: 12px;
@@ -131,7 +148,6 @@ body {
   text-decoration: none;
 }
 
-/* Data Sections & Tables */
 .toolbar {
   display: flex;
   justify-content: space-between;
@@ -210,7 +226,6 @@ thead th {
   font-weight: 700;
   color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 tbody td {
