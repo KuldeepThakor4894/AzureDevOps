@@ -36,6 +36,38 @@ window.RepoModule = {
     return p.type?.displayName || 'Branch Protection Policy';
   },
 
+  // Strict Policy Matching Function
+  getMatchingPoliciesForBranch(repoId, branchName, allPolicyConfigs) {
+    const fullRef = `refs/heads/${branchName}`.toLowerCase();
+    const cleanBranch = branchName.toLowerCase();
+
+    return allPolicyConfigs.filter(p => {
+      if (!p.isEnabled) return false;
+      const scopes = p.settings?.scope || [];
+
+      return scopes.some(sc => {
+        // 1. Strict Repository Matching: If scope has a repositoryId, it MUST match this exact repo
+        if (sc.repositoryId && sc.repositoryId.toLowerCase() !== repoId.toLowerCase()) {
+          return false;
+        }
+
+        const scopeRef = (sc.refName || '').toLowerCase();
+        const cleanScopeRef = scopeRef.replace(/^refs\/heads\//, '');
+        const matchKind = (sc.matchKind || 'Exact').toLowerCase();
+
+        // 2. Exact or Prefix Branch Matching
+        if (matchKind === 'exact') {
+          return scopeRef === fullRef || cleanScopeRef === cleanBranch;
+        } else if (matchKind === 'prefix') {
+          return fullRef.startsWith(scopeRef) || cleanBranch.startsWith(cleanScopeRef);
+        } else if (matchKind === 'defaultbranch') {
+          return false; // Handled per-branch basis if default
+        }
+        return scopeRef === fullRef || cleanScopeRef === cleanBranch;
+      });
+    });
+  },
+
   async inspect(org, project, pat, targetRepoInput, cachedRepos) {
     let targetRepos = cachedRepos;
     if (targetRepoInput !== '-- All Repositories --' && targetRepoInput) {
@@ -48,7 +80,7 @@ window.RepoModule = {
     const now = new Date();
     let allPolicyConfigs = [];
 
-    // 1. Fetch All Policy Configurations for the Project
+    // 1. Fetch All Project-Level Policy Configurations
     try {
       const policyUrl = `${encodeURIComponent(project)}/_apis/policy/configurations?api-version=6.0&$top=500`;
       const policyData = await window.HubApp.fetchAdo(org, policyUrl, auth);
@@ -57,10 +89,10 @@ window.RepoModule = {
       console.warn('Policy configurations query notice:', e);
     }
 
-    // Map policies by "repoId:refName" and "repoName:refName"
-    const policyMap = new Map();
+    const targetRepoIds = new Set(targetRepos.map(r => r.id.toLowerCase()));
     const detailedPolicyRows = [];
 
+    // Filter detailed policies to only those belonging to the selected repository/repositories
     allPolicyConfigs.forEach(p => {
       if (!p.isEnabled) return;
       const scopes = p.settings?.scope || [];
@@ -69,19 +101,14 @@ window.RepoModule = {
       const details = this.formatPolicyDetails(p);
 
       scopes.forEach(sc => {
-        const repoId = sc.repositoryId || 'GLOBAL';
+        // If policy belongs to a specific repo not in current selection, skip
+        if (sc.repositoryId && !targetRepoIds.has(sc.repositoryId.toLowerCase())) {
+          return;
+        }
+
+        const matchingRepo = targetRepos.find(r => r.id.toLowerCase() === (sc.repositoryId || '').toLowerCase());
+        const repoDisplayName = matchingRepo ? matchingRepo.name : (sc.repositoryId ? 'Specific Repo' : 'Project Default (All Repos)');
         const refName = (sc.refName || '').replace(/^refs\/heads\//, '');
-        const mapKey = `${repoId}:${refName}`.toLowerCase();
-
-        if (!policyMap.has(mapKey)) policyMap.set(mapKey, []);
-        policyMap.get(mapKey).push(p);
-
-        const globalKey = `GLOBAL:${refName}`.toLowerCase();
-        if (!policyMap.has(globalKey)) policyMap.set(globalKey, []);
-        policyMap.get(globalKey).push(p);
-
-        const matchingRepo = targetRepos.find(r => r.id === sc.repositoryId);
-        const repoDisplayName = matchingRepo ? matchingRepo.name : (sc.repositoryId ? 'Specific Repo' : 'All Repositories');
 
         detailedPolicyRows.push({
           repo: repoDisplayName,
@@ -109,9 +136,8 @@ window.RepoModule = {
           const topC = cRes.value?.[0];
           const d = topC?.author?.date ? new Date(topC.author.date) : null;
 
-          const repoKey = `${r.id}:${bName}`.toLowerCase();
-          const globalKey = `GLOBAL:${bName}`.toLowerCase();
-          const branchPolicies = policyMap.get(repoKey) || policyMap.get(globalKey) || [];
+          // Strict match: Only policies assigned to this specific repository and branch
+          const branchPolicies = this.getMatchingPoliciesForBranch(r.id, bName, allPolicyConfigs);
 
           return {
             repo: r.name,
@@ -150,11 +176,12 @@ window.RepoModule = {
     this.prs = pResults.flat();
     this.prIndex = 0;
 
-    this.branches.sort((a, b) => (b.hasPolicy ? 1 : 0) - (a.hasPolicy ? 1 : 0));
+    // Sort: Protected branches first, then alphabetical
+    this.branches.sort((a, b) => (b.hasPolicy ? 1 : 0) - (a.hasPolicy ? 1 : 0) || a.branch.localeCompare(b.branch));
     const totalProtectedBranches = this.branches.filter(b => b.hasPolicy).length;
 
     window.HubApp.setKpis(
-      targetRepos[0]?.name || project,
+      targetRepos.length === 1 ? targetRepos[0].name : `${project} (${targetRepos.length} Repos)`,
       'Repositories',
       targetRepos.length,
       'Total Branches',
@@ -194,7 +221,7 @@ window.RepoModule = {
           <td>${b.msg}</td>
         </tr>
       `;
-    }).join(''));
+    }).join('') || `<tr><td colspan="7" class="p-4 text-center text-slate-400">No branches found.</td></tr>`);
 
     const rem = this.branches.length - this.branchIndex;
     const btnContainer = document.getElementById('seeMoreRepoContainer');
@@ -209,7 +236,7 @@ window.RepoModule = {
     if (!tbody) return;
 
     if (this.policies.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No branch policies configured for the selected repository scope.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No branch policies configured for this repository.</td></tr>`;
       return;
     }
 
@@ -242,7 +269,7 @@ window.RepoModule = {
         <td><span class="badge badge-blue">${p.status}</span></td>
         <td>${p.createdDate}</td>
       </tr>
-    `).join(''));
+    `).join('') || `<tr><td colspan="6" class="p-4 text-center text-slate-400">No pull requests found.</td></tr>`);
 
     const rem = this.prs.length - this.prIndex;
     const btnContainer = document.getElementById('seeMoreRepoPrsContainer');
