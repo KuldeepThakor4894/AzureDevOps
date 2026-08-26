@@ -37,7 +37,7 @@ window.AccessModule = {
     let rows = [];
     let groupCounts = {};
     const processedKeys = new Set();
-    const discoveredGroups = new Map(); // Key: CleanGroupName -> { rawName, descriptor, isTeam, members: [] }
+    const discoveredGroups = new Map();
 
     const addRow = (groupName, parentGroups, userDisplayName, mailAddress, isVirtual = false) => {
       const cleanGroup = groupName.replace(/^\[.*?\]\\/, '').trim();
@@ -48,13 +48,14 @@ window.AccessModule = {
       if (processedKeys.has(uniqueKey)) return;
       processedKeys.add(uniqueKey);
 
-      if (
-        !qLower ||
+      // Filtering check
+      const matchesSearch = !qLower ||
         cleanGroup.toLowerCase().includes(qLower) ||
         userDisplayName.toLowerCase().includes(qLower) ||
         mailAddress.toLowerCase().includes(qLower) ||
-        groupRole.toLowerCase().includes(qLower)
-      ) {
+        groupRole.toLowerCase().includes(qLower);
+
+      if (matchesSearch) {
         rows.push({
           projectName: project,
           groupName: cleanGroup,
@@ -73,7 +74,34 @@ window.AccessModule = {
       }
     };
 
-    // 1. Dynamically Fetch All Project Teams across the project
+    // 1. If Searching by a User Name/Email: Resolve User's Explicit & Inherited Memberships First
+    if (qLower) {
+      try {
+        const userLookupUrl = `_apis/identities?searchFilter=GeneralScope&filterValue=${encodeURIComponent(qLower)}&queryMembership=Expanded&api-version=6.0`;
+        const userData = await window.HubApp.fetchAdo(org, userLookupUrl, auth).catch(() => ({ value: [] }));
+        const matchedUsers = userData.value || [];
+
+        matchedUsers.forEach(u => {
+          const uName = u.displayName || u.customDisplayName || u.providerDisplayName || '';
+          const uEmail = u.mailAddress || u.uniqueName || '';
+
+          // Look through expanded parent memberOf groups
+          const memberOf = u.memberOf || [];
+          memberOf.forEach(grpDesc => {
+            const grpNameRaw = typeof grpDesc === 'string' ? grpDesc : (grpDesc.displayName || grpDesc.providerDisplayName || '');
+            if (grpNameRaw && (grpNameRaw.includes(`[${project}]`) || !grpNameRaw.includes('['))) {
+              const cleanGrpName = grpNameRaw.replace(/^\[.*?\]\\/, '').trim();
+              const parentGroups = this.determineParentGroups(cleanGrpName);
+              addRow(cleanGrpName, parentGroups, uName, uEmail, false);
+            }
+          });
+        });
+      } catch (uErr) {
+        console.warn('Direct user membership expansion notice:', uErr);
+      }
+    }
+
+    // 2. Fetch Project Teams and Members
     try {
       const teamsData = await window.HubApp.fetchAdo(
         org,
@@ -82,10 +110,10 @@ window.AccessModule = {
       );
       const teams = teamsData.value || [];
 
-      for (const t of teams) {
+      await Promise.all(teams.map(async (t) => {
         const cleanName = t.name.trim();
         discoveredGroups.set(cleanName, { isTeam: true, raw: t.name });
-        groupCounts[cleanName] = 0;
+        if (groupCounts[cleanName] === undefined) groupCounts[cleanName] = 0;
 
         const parentGroups = this.determineParentGroups(cleanName, true);
 
@@ -98,7 +126,7 @@ window.AccessModule = {
           const members = membersData.value || [];
 
           if (members.length === 0) {
-            addRow(cleanName, parentGroups, '(No members assigned)', '', true);
+            if (!qLower) addRow(cleanName, parentGroups, '(No members assigned)', '', true);
           } else {
             members.forEach(m => {
               const displayName = m.identity?.displayName || 'Unknown Member';
@@ -107,14 +135,14 @@ window.AccessModule = {
             });
           }
         } catch (mErr) {
-          addRow(cleanName, parentGroups, '(Team Active)', '', true);
+          if (!qLower) addRow(cleanName, parentGroups, '(Team Active)', '', true);
         }
-      }
+      }));
     } catch (err) {
       console.warn('Teams discovery warning:', err);
     }
 
-    // 2. Dynamically Discover All Security Groups for THIS Selected Project via GeneralScope Identities API
+    // 3. Discover Project-Scoped Groups & Expanded Memberships
     const identityQueryFilters = [
       `_apis/identities?searchFilter=GeneralScope&filterValue=[${encodeURIComponent(project)}]&queryMembership=Expanded&api-version=6.0`,
       `_apis/identities?searchFilter=AccountName&filterValue=[${encodeURIComponent(project)}]&queryMembership=Expanded&api-version=6.0`
@@ -139,7 +167,7 @@ window.AccessModule = {
           const members = grp.members || [];
 
           if (members.length === 0) {
-            addRow(cleanName, parentGroups, '(No direct members)', '', true);
+            if (!qLower) addRow(cleanName, parentGroups, '(No direct members)', '', true);
           } else {
             members.forEach(m => {
               const displayName = m.displayName || 'Security Principal';
@@ -153,7 +181,7 @@ window.AccessModule = {
       }
     }
 
-    // 3. Scan & Expand Standard Azure DevOps Built-in Project Groups dynamically for this project
+    // 4. Scan & Deep-Expand Standard Security Groups (Project Administrators, Build Administrators, Contributors, etc.)
     const defaultSecurityGroupPrototypes = [
       'Project Administrators',
       'Contributors',
@@ -184,34 +212,36 @@ window.AccessModule = {
             list[0].members.forEach(m => {
               addRow(grpName, parentGroups, m.displayName || 'Member', m.uniqueName || m.mailAddress || '', false);
             });
-          } else {
+          } else if (!qLower) {
             const existsInRows = rows.some(r => r.groupName.toLowerCase() === grpName.toLowerCase());
             if (!existsInRows) {
               addRow(grpName, parentGroups, '(No direct members)', '', true);
             }
           }
         } catch (e) {
-          const existsInRows = rows.some(r => r.groupName.toLowerCase() === grpName.toLowerCase());
-          if (!existsInRows) {
-            addRow(grpName, parentGroups, '(No direct members)', '', true);
+          if (!qLower) {
+            const existsInRows = rows.some(r => r.groupName.toLowerCase() === grpName.toLowerCase());
+            if (!existsInRows) {
+              addRow(grpName, parentGroups, '(No direct members)', '', true);
+            }
           }
         }
       })
     );
 
-    // Sort alphabetically by GroupName and UserDisplayName matching Excel layout
+    // Sort to match Excel order
     rows.sort((a, b) => a.groupName.localeCompare(b.groupName) || a.userDisplayName.localeCompare(b.userDisplayName));
 
     this.items = rows;
     this.index = 0;
 
-    const totalGroupsCount = Object.keys(groupCounts).length;
+    const matchedGroupsCount = Object.keys(groupCounts).filter(k => groupCounts[k] > 0).length || Object.keys(groupCounts).length;
     const totalMappingsCount = rows.filter(r => !r.userDisplayName.startsWith('(')).length || rows.length;
 
     window.HubApp.setKpis(
-      project,
+      filterQuery ? `${project} (${filterQuery})` : project,
       'Total Groups',
-      totalGroupsCount,
+      matchedGroupsCount,
       'Total Mappings',
       totalMappingsCount,
       'Scope',
@@ -220,15 +250,18 @@ window.AccessModule = {
 
     this.render(false);
 
-    // Chart all dynamically discovered groups
-    const sortedGroups = Object.entries(groupCounts).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    // Chart filtered groups with memberships
+    const sortedGroups = Object.entries(groupCounts)
+      .filter(([_, count]) => (qLower ? count > 0 : true))
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
     const chartKeys = sortedGroups.map(i => i[0]);
     const chartVals = sortedGroups.map(i => i[1]);
 
     window.HubApp.renderChart(
-      chartKeys,
-      chartVals,
-      'Members per Group / Team'
+      chartKeys.length ? chartKeys : ['No Groups'],
+      chartVals.length ? chartVals : [0],
+      'Memberships per Group'
     );
   },
 
