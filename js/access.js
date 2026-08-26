@@ -1,12 +1,12 @@
 window.AccessModule = {
   items: [],
   index: 0,
-  pageSize: 20,
+  pageSize: 25,
 
   determineGroupRole(groupName, parentGroups = '') {
     const name = groupName.toLowerCase();
     const parents = parentGroups.toLowerCase();
-    if (name.includes('admin') || parents.includes('project administrators')) return 'Admin';
+    if (name.includes('project administrators') || name.includes('admin') || parents.includes('project administrators')) return 'Admin';
     if (name.includes('reader') || parents.includes('readers')) return 'Reader';
     return 'Other';
   },
@@ -22,7 +22,7 @@ window.AccessModule = {
     if (name.includes('readers')) {
       return 'Project Valid Users';
     }
-    if (isTeam || name.includes('team') || name.includes('contributor')) {
+    if (isTeam || name.includes('team') || name.includes('contributor') || name.includes('reviewer')) {
       return 'Contributors, Project Valid Users';
     }
     return 'Project Valid Users';
@@ -35,10 +35,11 @@ window.AccessModule = {
     let groupCounts = {};
     const processedKeys = new Set();
 
-    const addPermissionRow = (groupName, groupRole, parentGroups, userDisplayName, mailAddress) => {
+    const addRow = (groupName, parentGroups, userDisplayName, mailAddress) => {
       const cleanGroup = groupName.replace(/^\[.*?\]\\/, '').trim();
       const groupPrincipal = `[${project}]\\${cleanGroup}`;
-      const uniqueKey = `${cleanGroup}__${userDisplayName}__${mailAddress}`.toLowerCase();
+      const groupRole = this.determineGroupRole(cleanGroup, parentGroups);
+      const uniqueKey = `${project}__${cleanGroup}__${userDisplayName}__${mailAddress}`.toLowerCase();
 
       if (processedKeys.has(uniqueKey)) return;
       processedKeys.add(uniqueKey);
@@ -63,7 +64,7 @@ window.AccessModule = {
       }
     };
 
-    // 1. Fetch Project Teams and Members
+    // 1. Fetch Project Teams & All Member Principals
     try {
       const teamsData = await window.HubApp.fetchAdo(
         org,
@@ -74,8 +75,6 @@ window.AccessModule = {
 
       for (const t of teams) {
         const parentGroups = this.determineParentGroups(t.name, true);
-        const groupRole = this.determineGroupRole(t.name, parentGroups);
-
         try {
           const membersData = await window.HubApp.fetchAdo(
             org,
@@ -85,33 +84,23 @@ window.AccessModule = {
           const members = membersData.value || [];
 
           if (members.length === 0) {
-            addPermissionRow(t.name, groupRole, parentGroups, '(No members assigned)', '');
+            addRow(t.name, parentGroups, '(No members assigned)', '');
           } else {
             members.forEach(m => {
               const displayName = m.identity?.displayName || 'Unknown Member';
               const email = m.identity?.uniqueName || m.identity?.mailAddress || '';
-              addPermissionRow(t.name, groupRole, parentGroups, displayName, email);
+              addRow(t.name, parentGroups, displayName, email);
             });
           }
         } catch (mErr) {
-          addPermissionRow(t.name, groupRole, parentGroups, '(Team Configured)', '');
+          addRow(t.name, parentGroups, '(Team Active)', '');
         }
       }
     } catch (err) {
-      console.warn('Teams query notice:', err);
+      console.warn('Teams fetch error:', err);
     }
 
-    // 2. Fetch Project Identities & Built-in Security Groups
-    const builtInGroups = [
-      'Project Administrators',
-      'Contributors',
-      'Readers',
-      'Build Administrators',
-      'Release Administrators',
-      'ABS Build and Release Team',
-      'Automation Pipeline Access'
-    ];
-
+    // 2. Fetch Project Security Identities
     try {
       const idData = await window.HubApp.fetchAdo(
         org,
@@ -127,16 +116,15 @@ window.AccessModule = {
         if (!cleanName) return;
 
         const parentGroups = this.determineParentGroups(cleanName);
-        const groupRole = this.determineGroupRole(cleanName, parentGroups);
         const members = grp.members || [];
 
         if (members.length === 0) {
-          addPermissionRow(cleanName, groupRole, parentGroups, '(No members assigned)', '');
+          addRow(cleanName, parentGroups, '(No direct members)', '');
         } else {
           members.forEach(m => {
             const displayName = m.displayName || 'Security Principal';
             const email = m.uniqueName || m.mailAddress || '';
-            addPermissionRow(cleanName, groupRole, parentGroups, displayName, email);
+            addRow(cleanName, parentGroups, displayName, email);
           });
         }
       });
@@ -144,11 +132,26 @@ window.AccessModule = {
       console.warn('Identities query notice:', idErr);
     }
 
-    // Fallback expansion for core security groups
+    // 3. Built-in Security Groups expansion
+    const builtInGroups = [
+      'Project Administrators',
+      'Contributors',
+      'Readers',
+      'Build Administrators',
+      'Release Administrators',
+      'ABS Build and Release Team',
+      'ABS_Automation_QA_Teams',
+      'ABS-DBA Team',
+      'ABS-DEV_ENV_PR_Reviewers',
+      'ABS-DEV_Upper_ENV_PR_Reviewers',
+      'Automation Pipeline Access',
+      'CBB_MyPortal_Team',
+      'Stridely_MyPortal_Team'
+    ];
+
     for (const grpName of builtInGroups) {
       if (groupCounts[grpName] !== undefined) continue;
       const parentGroups = this.determineParentGroups(grpName);
-      const groupRole = this.determineGroupRole(grpName, parentGroups);
 
       try {
         const qUrl = `_apis/identities?searchFilter=AccountName&filterValue=[${encodeURIComponent(project)}]\\${encodeURIComponent(grpName)}&queryMembership=Expanded&api-version=6.0`;
@@ -157,16 +160,13 @@ window.AccessModule = {
 
         if (list.length > 0 && list[0].members?.length > 0) {
           list[0].members.forEach(m => {
-            addPermissionRow(grpName, groupRole, parentGroups, m.displayName || 'Member', m.uniqueName || m.mailAddress || '');
+            addRow(grpName, parentGroups, m.displayName || 'Member', m.uniqueName || m.mailAddress || '');
           });
-        } else {
-          addPermissionRow(grpName, groupRole, parentGroups, '(No direct members)', '');
         }
-      } catch (e) {
-        addPermissionRow(grpName, groupRole, parentGroups, '(Default Scope)', '');
-      }
+      } catch (e) { }
     }
 
+    // Sort to match Excel order
     rows.sort((a, b) => a.groupName.localeCompare(b.groupName) || a.userDisplayName.localeCompare(b.userDisplayName));
 
     this.items = rows;
@@ -178,8 +178,8 @@ window.AccessModule = {
       Object.keys(groupCounts).length,
       'Total Mappings',
       rows.length,
-      'Permission Mode',
-      'MyPortal Security'
+      'Scope',
+      'Project Permissions'
     );
 
     this.render(false);
@@ -215,11 +215,11 @@ window.AccessModule = {
         return `
           <tr>
             <td><strong>${row.projectName}</strong></td>
-            <td>${row.groupName}</td>
+            <td><strong>${row.groupName}</strong></td>
             <td><code>${row.groupPrincipal}</code></td>
             <td><span class="badge ${badgeClass}">${row.groupRole}</span></td>
             <td><span class="subtext">${row.parentGroups}</span></td>
-            <td><strong>${row.userDisplayName}</strong></td>
+            <td>${row.userDisplayName}</td>
             <td>${row.mailAddress ? `<code>${row.mailAddress}</code>` : '-'}</td>
           </tr>
         `;
