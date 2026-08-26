@@ -30,14 +30,14 @@ window.HubApp = {
     document.getElementById('btnFetchWorkItems').addEventListener('click', () => self.execWorkItemsFetch());
 
     // Pagination Listeners
-    document.getElementById('btnMoreRepos').addEventListener('click', () => window.RepoModule.renderBranches(true));
-    document.getElementById('btnMorePrs').addEventListener('click', () => window.RepoModule.renderPrs(true));
-    document.getElementById('btnMoreAccess').addEventListener('click', () => window.AccessModule.render(true));
-    document.getElementById('btnMoreCommits').addEventListener('click', () => window.ActivityModule.render(true));
-    document.getElementById('btnMorePipelines').addEventListener('click', () => window.PipelineModule.render(true));
-    document.getElementById('btnMoreWorkItems').addEventListener('click', () => window.WorkItemModule.render(true));
+    document.getElementById('btnMoreRepos')?.addEventListener('click', () => window.RepoModule.renderBranches(true));
+    document.getElementById('btnMorePrs')?.addEventListener('click', () => window.RepoModule.renderPrs(true));
+    document.getElementById('btnMoreAccess')?.addEventListener('click', () => window.AccessModule.render(true));
+    document.getElementById('btnMoreCommits')?.addEventListener('click', () => window.ActivityModule.renderCommits(true));
+    document.getElementById('btnMorePipelines')?.addEventListener('click', () => window.PipelineModule.render(true));
+    document.getElementById('btnMoreWorkItems')?.addEventListener('click', () => window.WorkItemModule.render(true));
 
-    // Chart Switchers
+    // Chart Type Switcher
     document.querySelectorAll('.btn-chart').forEach(btn => {
       btn.addEventListener('click', (e) => {
         document.querySelectorAll('.btn-chart').forEach(b => b.classList.remove('active'));
@@ -47,7 +47,7 @@ window.HubApp = {
       });
     });
 
-    // Instant Search filter
+    // Quick Search Filter
     document.getElementById('tableFilterInput').addEventListener('input', (e) => {
       const term = e.target.value.toLowerCase();
       document.querySelectorAll('#mainDashboard tbody tr').forEach(r => {
@@ -56,8 +56,8 @@ window.HubApp = {
     });
 
     // Exports
-    document.getElementById('btnExportCSV').addEventListener('click', () => self.exportActiveCSV());
-    document.getElementById('btnExportAccessXlsx')?.addEventListener('click', () => self.exportAccessCSV());
+    document.getElementById('btnExportCSV')?.addEventListener('click', () => self.exportActiveCSV());
+    document.getElementById('btnExportAccessXlsx')?.addEventListener('click', () => self.exportAccessXLSX());
   },
 
   getOrg() {
@@ -77,7 +77,7 @@ window.HubApp = {
 
   async fetchAdo(org, path, auth) {
     const res = await fetch(`https://dev.azure.com/${org}/${path}`, {
-      headers: { 'Authorization': auth, 'Content-Type': 'application/json' }
+      headers: { 'Authorization': auth, 'Accept': 'application/json', 'Content-Type': 'application/json' }
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
     return await res.json();
@@ -121,7 +121,7 @@ window.HubApp = {
     }
 
     const btn = document.getElementById('btnLoadProjects');
-    btn.textContent = 'Loading...';
+    btn.textContent = 'Connecting...';
     btn.disabled = true;
 
     try {
@@ -195,12 +195,9 @@ window.HubApp = {
           this.cachedRepos.map(r => `<option value="${r.name}">${r.name}</option>`).join('');
         repoDropdown.disabled = false;
       } catch (err) {
-        console.error('Error fetching repositories:', err);
         repoDropdown.innerHTML = '<option value="-- All Repositories --">-- All Repositories --</option>';
         repoDropdown.disabled = false;
-        this.setStatus(`Could not load repositories: ${err.message}`, 'error');
       }
-
     } else if (cat === 'user_access') {
       document.getElementById('substepAccess').classList.remove('hidden');
     } else if (cat === 'user_activity') {
@@ -231,9 +228,8 @@ window.HubApp = {
   async execAccessFetch() {
     try {
       this.showDashboard('access');
-      this.setStatus('Scanning security groups & permissions...', 'info');
       await window.AccessModule.fetch(this.getOrg(), document.getElementById('projectSelect').value, this.getPat(), document.getElementById('targetAccessUserQuery').value.trim());
-      this.setStatus('Security permissions loaded.', 'success');
+      this.setStatus('Security permissions loaded successfully.', 'success');
     } catch (e) { this.setStatus(e.message, 'error'); }
   },
 
@@ -300,26 +296,34 @@ window.HubApp = {
           },
           y: {
             beginAtZero: true,
-            ticks: {
-              stepSize: 1
-            }
+            ticks: { stepSize: 1 }
           }
         }
       }
     });
   },
 
-  exportAccessCSV() {
-    if (!window.AccessModule.filteredItems || !window.AccessModule.filteredItems.length) return;
-    let csv = ['"PROJECT","SECURITY GROUP NAME","ROLE","USER DISPLAY NAME","USER PRINCIPAL / EMAIL"'];
-    window.AccessModule.filteredItems.forEach(row => {
-      csv.push(`"${row.project}","${row.groupName}","${row.role}","${row.userDisplayName}","${row.mailAddress}"`);
-    });
-    const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `Project_Permissions_${Date.now()}.csv`;
-    a.click();
+  exportAccessXLSX() {
+    if (!window.AccessModule.items || !window.AccessModule.items.length) {
+      alert('No permissions data available to export.');
+      return;
+    }
+    const exportData = window.AccessModule.items.map(r => ({
+      'Project': r.ProjectName,
+      'Security Group Name': r.GroupName,
+      'Role': r.GroupRole,
+      'User Display Name': r.UserDisplayName,
+      'User Principal / Email': r.MailAddress || r.UserPrincipal
+    }));
+
+    if (window.XLSX) {
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      XLSX.utils.book_append_sheet(wb, ws, 'Permissions');
+      XLSX.writeFile(wb, `${document.getElementById('projectSelect').value || 'Project'}_Permissions.xlsx`);
+    } else {
+      this.exportActiveCSV();
+    }
   },
 
   exportActiveCSV() {
