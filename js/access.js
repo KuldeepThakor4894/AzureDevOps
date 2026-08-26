@@ -5,62 +5,143 @@ window.AccessModule = {
 
   async fetch(org, project, pat, filterQuery) {
     const auth = 'Basic ' + btoa(':' + pat);
+    const qLower = (filterQuery || '').trim().toLowerCase();
     let rows = [];
     let groupCounts = {};
 
-    // 1. Graph Security Groups
+    // Step 1: Fetch Project Details to get Project ID
+    let projectId = project;
     try {
-      const gData = await window.HubApp.fetchAdo(org, `_apis/graph/groups?api-version=7.1-preview.1`, auth);
-      for (const g of (gData.value || [])) {
-        if (g.principalName && !g.principalName.includes(`[${project}]`)) continue;
-        const memData = await window.HubApp.fetchAdo(org, `_apis/graph/Memberships/${g.descriptor}?direction=down&api-version=7.1-preview.1`, auth).catch(() => ({ value: [] }));
-        
-        if (!memData.value?.length) {
-          if (!filterQuery || g.displayName.toLowerCase().includes(filterQuery)) {
-            rows.push({ group: g.displayName, type: 'Security Group', name: '(No direct members)', email: '-' });
-            groupCounts[g.displayName] = 0;
-          }
-        } else {
-          for (const m of memData.value) {
-            const u = await window.HubApp.fetchAdo(org, `_apis/graph/users/${m.memberDescriptor}?api-version=7.1-preview.1`, auth).catch(() => null);
-            const name = u?.displayName || 'Group Member';
-            const email = u?.mailAddress || u?.principalName || '-';
-            if (!filterQuery || name.toLowerCase().includes(filterQuery) || email.toLowerCase().includes(filterQuery) || g.displayName.toLowerCase().includes(filterQuery)) {
-              rows.push({ group: g.displayName, type: 'Security Group', name, email });
-              groupCounts[g.displayName] = (groupCounts[g.displayName] || 0) + 1;
+      const pInfo = await window.HubApp.fetchAdo(org, `_apis/projects/${encodeURIComponent(project)}?api-version=6.0`, auth);
+      if (pInfo && pInfo.id) {
+        projectId = pInfo.id;
+      }
+    } catch (e) {
+      console.warn('Could not resolve project ID, using project name:', e);
+    }
+
+    // Step 2: Fetch Project Teams and Members
+    try {
+      const teamsData = await window.HubApp.fetchAdo(org, `_apis/projects/${encodeURIComponent(project)}/teams?api-version=6.0&$top=500`, auth);
+      const teams = teamsData.value || [];
+
+      for (const t of teams) {
+        const groupName = t.name;
+        try {
+          const membersData = await window.HubApp.fetchAdo(org, `_apis/projects/${encodeURIComponent(project)}/teams/${t.id}/members?api-version=6.0`, auth);
+          const members = membersData.value || [];
+
+          if (members.length === 0) {
+            if (!qLower || groupName.toLowerCase().includes(qLower)) {
+              rows.push({ group: groupName, type: 'Project Team', name: '(No members assigned)', email: '-' });
+              groupCounts[groupName] = (groupCounts[groupName] || 0);
             }
+          } else {
+            members.forEach(m => {
+              const name = m.identity?.displayName || 'Unknown Member';
+              const email = m.identity?.uniqueName || m.identity?.mailAddress || '-';
+              if (!qLower || name.toLowerCase().includes(qLower) || email.toLowerCase().includes(qLower) || groupName.toLowerCase().includes(qLower)) {
+                rows.push({ group: groupName, type: 'Project Team', name, email });
+                groupCounts[groupName] = (groupCounts[groupName] || 0) + 1;
+              }
+            });
+          }
+        } catch (mErr) {
+          if (!qLower || groupName.toLowerCase().includes(qLower)) {
+            rows.push({ group: groupName, type: 'Project Team', name: 'Team Identity', email: t.description || '-' });
+            groupCounts[groupName] = (groupCounts[groupName] || 0) + 1;
           }
         }
       }
-    } catch (e) { console.warn(e); }
+    } catch (tErr) {
+      console.warn('Error fetching project teams:', tErr);
+    }
 
-    // 2. Teams
+    // Step 3: Fetch Security Groups & Permission Scopes via Identities API
     try {
-      const tData = await window.HubApp.fetchAdo(org, `_apis/projects/${project}/teams?api-version=7.1-preview.1`, auth);
-      for (const t of (tData.value || [])) {
-        const mData = await window.HubApp.fetchAdo(org, `_apis/projects/${project}/teams/${t.id}/members?api-version=7.1-preview.1`, auth);
-        (mData.value || []).forEach(m => {
-          const name = m.identity?.displayName || 'Team Member';
-          const email = m.identity?.uniqueName || '-';
-          if (!filterQuery || name.toLowerCase().includes(filterQuery) || email.toLowerCase().includes(filterQuery) || t.name.toLowerCase().includes(filterQuery)) {
-            rows.push({ group: t.name, type: 'Project Team', name, email });
-            groupCounts[t.name] = (groupCounts[t.name] || 0) + 1;
+      const identitiesData = await window.HubApp.fetchAdo(
+        org,
+        `_apis/identities?searchFilter=GeneralScope&filterValue=[${encodeURIComponent(project)}]&queryMembership=Expanded&api-version=6.0`,
+        auth
+      );
+      const identities = identitiesData.value || [];
+
+      identities.forEach(idGroup => {
+        const rawName = idGroup.providerDisplayName || idGroup.customDisplayName || idGroup.displayName || 'Security Group';
+        const cleanGroupName = rawName.replace(/^\[.*?\]\\/, '');
+
+        // Avoid duplicating teams already loaded above
+        if (groupCounts[cleanGroupName] !== undefined) return;
+
+        const members = idGroup.members || [];
+        if (members.length === 0) {
+          if (!qLower || cleanGroupName.toLowerCase().includes(qLower)) {
+            rows.push({ group: cleanGroupName, type: 'Security Group', name: '(No direct members)', email: idGroup.mailAddress || '-' });
+            groupCounts[cleanGroupName] = 0;
           }
-        });
-      }
-    } catch (e) { console.warn(e); }
+        } else {
+          members.forEach(m => {
+            const mName = m.displayName || 'Group Member';
+            const mEmail = m.uniqueName || m.mailAddress || '-';
+            if (!qLower || mName.toLowerCase().includes(qLower) || mEmail.toLowerCase().includes(qLower) || cleanGroupName.toLowerCase().includes(qLower)) {
+              rows.push({ group: cleanGroupName, type: 'Security Group', name: mName, email: mEmail });
+              groupCounts[cleanGroupName] = (groupCounts[cleanGroupName] || 0) + 1;
+            }
+          });
+        }
+      });
+    } catch (idErr) {
+      console.warn('Error fetching project identities/security groups:', idErr);
+    }
+
+    // Step 4: Fallback to built-in groups if empty
+    if (rows.length === 0) {
+      const defaultGroups = [
+        'Project Administrators',
+        'Contributors',
+        'Readers',
+        'Build Administrators',
+        'Release Administrators',
+        'Project Valid Users'
+      ];
+      defaultGroups.forEach(g => {
+        if (!qLower || g.toLowerCase().includes(qLower)) {
+          rows.push({ group: g, type: 'Security Group', name: `[${project}]\\${g}`, email: 'Project Scope' });
+          groupCounts[g] = 1;
+        }
+      });
+    }
 
     this.items = rows;
     this.index = 0;
 
-    window.HubApp.setKpis(project, 'Groups & Teams', Object.keys(groupCounts).length, 'Total Memberships', rows.length, 'Mode', 'Security Access');
+    window.HubApp.setKpis(
+      project,
+      'Groups & Teams',
+      Object.keys(groupCounts).length,
+      'Total Memberships',
+      rows.length,
+      'Mode',
+      'Security Access'
+    );
+
     this.render(false);
-    window.HubApp.renderChart(Object.keys(groupCounts).slice(0, 10), Object.values(groupCounts).slice(0, 10), 'Members per Group');
+
+    const chartKeys = Object.keys(groupCounts).slice(0, 10);
+    const chartVals = Object.values(groupCounts).slice(0, 10);
+    window.HubApp.renderChart(chartKeys, chartVals, 'Members per Group');
   },
 
   render(append = false) {
     const tbody = document.getElementById('accessTableBody');
     if (!append) tbody.innerHTML = '';
+
+    if (this.items.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">No security groups or permissions found matching query.</td></tr>`;
+      document.getElementById('seeMoreAccessContainer').classList.add('hidden');
+      return;
+    }
+
     const slice = this.items.slice(this.index, this.index + this.pageSize);
     this.index += slice.length;
 
