@@ -1,178 +1,198 @@
 window.AccessModule = {
-  allItems: [],
-  filteredItems: [],
+  items: [],
   index: 0,
   pageSize: 25,
 
-  determineGroupRole(groupName) {
-    const name = groupName.toLowerCase();
-    if (name.includes('project administrators') || name.includes('admin') || name.includes('build administrators')) return 'Admin';
-    if (name.includes('reader')) return 'Reader';
-    return 'Contributor';
-  },
-
   async fetch(org, project, pat, filterQuery) {
     const auth = 'Basic ' + btoa(':' + pat);
-    const cleanProject = project ? project.trim() : '';
-    const qLower = (filterQuery || '').trim().toLowerCase();
+    const userQuery = (filterQuery || '').trim().toLowerCase();
+    const API_VERSION = '7.1-preview.1';
 
-    let allProjectGroups = new Map(); // cleanName -> { rawName, members: [] }
-    let projectGroupCounts = {};      // cleanName -> count (for chart)
-    let userAssignedRows = [];
-    const processedUserKeys = new Set();
+    let accessRows = [];
+    let groupMemberCounts = {};
+    const roleMap = {
+      'Project Administrators': 'Admin',
+      'Build Administrators': 'Admin',
+      'Release Administrators': 'Admin',
+      'Contributors': 'Contributor',
+      'Readers': 'Reader',
+      'CBB Readers': 'Reader',
+      'Project Valid Users': 'Reader'
+    };
 
-    // 1. Fetch All Teams for Selected Project
-    try {
-      const teamsData = await window.HubApp.fetchAdo(
-        org,
-        `_apis/projects/${encodeURIComponent(cleanProject)}/teams?api-version=6.0&$top=500`,
-        auth
-      );
-      const teams = teamsData.value || [];
+    window.HubApp.setStatus(userQuery ? `Searching security groups for "${userQuery}"...` : `Discovering all project security groups in ${project}...`, 'info');
 
-      await Promise.all(teams.map(async (t) => {
-        const cleanName = t.name.trim();
-        allProjectGroups.set(cleanName, { raw: t.name, members: [] });
-        projectGroupCounts[cleanName] = 0;
-
-        try {
-          const membersData = await window.HubApp.fetchAdo(
-            org,
-            `_apis/projects/${encodeURIComponent(cleanProject)}/teams/${t.id}/members?api-version=6.0&$top=500`,
-            auth
-          );
-          const members = membersData.value || [];
-
-          members.forEach(m => {
-            const displayName = m.identity?.displayName || 'Unknown Member';
-            const email = m.identity?.uniqueName || m.identity?.mailAddress || '';
-            allProjectGroups.get(cleanName).members.push({ displayName, email });
-          });
-        } catch (e) { }
-      }));
-    } catch (e) {
-      console.warn('Teams fetch error:', e);
-    }
-
-    // 2. Fetch Project Identities & Security Groups
-    const idUrls = [
-      `_apis/identities?searchFilter=GeneralScope&filterValue=[${encodeURIComponent(cleanProject)}]&queryMembership=Expanded&api-version=6.0`,
-      `_apis/identities?searchFilter=AccountName&filterValue=[${encodeURIComponent(cleanProject)}]&queryMembership=Expanded&api-version=6.0`
-    ];
-
-    for (const u of idUrls) {
-      try {
-        const idData = await window.HubApp.fetchAdo(org, u, auth).catch(() => ({ value: [] }));
-        const identities = idData.value || [];
-
-        identities.forEach(grp => {
-          const rawName = grp.providerDisplayName || grp.customDisplayName || grp.displayName || '';
-          const cleanName = rawName.replace(/^\[.*?\]\\/, '').replace(/^\[.*?\]/, '').trim();
-          if (!cleanName || cleanName === cleanProject) return;
-
-          if (!allProjectGroups.has(cleanName)) {
-            allProjectGroups.set(cleanName, { raw: rawName, members: [] });
-            projectGroupCounts[cleanName] = 0;
-          }
-
-          const members = grp.members || [];
-          members.forEach(m => {
-            const displayName = m.displayName || m.providerDisplayName || m.customDisplayName || '';
-            const email = m.uniqueName || m.mailAddress || '';
-            allProjectGroups.get(cleanName).members.push({ displayName, email });
-          });
-        });
-      } catch (e) { }
-    }
-
-    // 3. Scan Built-in Security Groups
-    const standardGroups = [
-      'Build Administrators',
-      'Project Administrators',
-      'Contributors',
-      'Readers',
-      'Release Administrators',
-      'Deployment Group Administrators',
-      'Endpoint Administrators',
-      'Endpoint Creators',
-      'Project Valid Users'
-    ];
-
-    await Promise.all(standardGroups.map(async (grpName) => {
-      if (!allProjectGroups.has(grpName)) {
-        allProjectGroups.set(grpName, { raw: grpName, members: [] });
-        projectGroupCounts[grpName] = 0;
-      }
-
-      try {
-        const qUrl = `_apis/identities?searchFilter=AccountName&filterValue=[${encodeURIComponent(cleanProject)}]\\${encodeURIComponent(grpName)}&queryMembership=Expanded&api-version=6.0`;
-        const res = await window.HubApp.fetchAdo(org, qUrl, auth);
-        const list = res.value || [];
-
-        if (list.length > 0 && list[0].members?.length > 0) {
-          list[0].members.forEach(m => {
-            const displayName = m.displayName || m.providerDisplayName || '';
-            const email = m.uniqueName || m.mailAddress || '';
-            allProjectGroups.get(grpName).members.push({ displayName, email });
-          });
-        }
-      } catch (e) { }
-    }));
-
-    // 4. Match and Map Assigned User Roles
-    allProjectGroups.forEach((groupObj, groupName) => {
-      const role = this.determineGroupRole(groupName);
-
-      groupObj.members.forEach(member => {
-        const dName = member.displayName || '';
-        const email = member.email || '';
-
-        const isUserMatch = !qLower ||
-          dName.toLowerCase().includes(qLower) ||
-          email.toLowerCase().includes(qLower) ||
-          groupName.toLowerCase().includes(qLower);
-
-        if (isUserMatch) {
-          const rowKey = `${cleanProject}__${groupName}__${dName}__${email}`.toLowerCase();
-          if (!processedUserKeys.has(rowKey)) {
-            processedUserKeys.add(rowKey);
-            userAssignedRows.push({
-              project: cleanProject,
-              groupName: groupName,
-              role: role,
-              userDisplayName: dName,
-              mailAddress: email
-            });
-            projectGroupCounts[groupName] = (projectGroupCounts[groupName] || 0) + 1;
-          }
+    // Helper: Direct Fetch
+    const fetchAzDo = async (url) => {
+      const res = await fetch(url, {
+        headers: {
+          'Authorization': auth,
+          'Accept': 'application/json'
         }
       });
-    });
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      return await res.json();
+    };
 
-    // Sort matching reference layout
-    userAssignedRows.sort((a, b) => a.groupName.localeCompare(b.groupName) || a.userDisplayName.localeCompare(b.userDisplayName));
+    // Step 1: Get Project Metadata & Storage Key Scope Descriptor
+    const projMetaUrl = `https://dev.azure.com/${org}/_apis/projects/${encodeURIComponent(project)}?api-version=${API_VERSION}`;
+    const projMeta = await fetchAzDo(projMetaUrl);
+    const projectId = projMeta.id;
 
-    this.filteredItems = userAssignedRows;
+    let scopeDescriptor = '';
+    try {
+      const descUrl = `https://vssps.dev.azure.com/${org}/_apis/graph/descriptors/${projectId}?api-version=${API_VERSION}`;
+      const descData = await fetchAzDo(descUrl);
+      scopeDescriptor = descData.value || '';
+    } catch (e) {
+      console.warn('Could not query scope descriptor directly, trying fallback scope...', e);
+    }
+
+    // Step 2: Fetch ALL Graph Groups in Project Scope (with continuation token pagination)
+    let graphGroups = [];
+    let continuationToken = '';
+
+    do {
+      const tokenParam = continuationToken ? `&continuationToken=${continuationToken}` : '';
+      const scopeParam = scopeDescriptor ? `&scopeDescriptor=${scopeDescriptor}` : '';
+      const groupsUrl = `https://vssps.dev.azure.com/${org}/_apis/graph/groups?api-version=${API_VERSION}${scopeParam}${tokenParam}`;
+
+      try {
+        const gData = await fetchAzDo(groupsUrl);
+        if (gData && gData.value) {
+          const validGroups = gData.value.filter(g =>
+            !scopeDescriptor || g.scopeDescriptor === scopeDescriptor || (g.principalName && g.principalName.includes(`[${project}]`))
+          );
+          graphGroups.push(...(validGroups.length ? validGroups : gData.value));
+        }
+        continuationToken = gData.continuationToken || '';
+      } catch (ge) {
+        console.warn('Graph API call error, falling back to org-level filtering:', ge);
+        break;
+      }
+    } while (continuationToken);
+
+    // Step 3: Include all Project Teams
+    try {
+      const teamsUrl = `https://dev.azure.com/${org}/_apis/projects/${encodeURIComponent(project)}/teams?api-version=${API_VERSION}`;
+      const tData = await fetchAzDo(teamsUrl);
+      (tData.value || []).forEach(team => {
+        if (!graphGroups.some(g => g.displayName === team.name)) {
+          graphGroups.push({
+            displayName: team.name,
+            descriptor: team.id,
+            principalName: `[${project}]\\${team.name}`,
+            isTeam: true
+          });
+        }
+      });
+    } catch (te) {
+      console.warn('Teams discovery warning:', te);
+    }
+
+    window.HubApp.setStatus(`Found ${graphGroups.length} security groups/teams. Fetching member identities...`, 'info');
+
+    // Step 4: Resolve Members for every group found
+    for (const group of graphGroups) {
+      const groupName = group.displayName || group.name;
+      const groupDescriptor = group.descriptor;
+      const groupPrincipal = group.principalName || `[${project}]\\${groupName}`;
+      let groupRole = roleMap[groupName] || (groupName.toLowerCase().includes('admin') ? 'Admin' : (groupName.toLowerCase().includes('reader') ? 'Reader' : 'Contributor'));
+
+      let members = [];
+
+      if (group.isTeam) {
+        try {
+          const memUrl = `https://dev.azure.com/${org}/_apis/projects/${encodeURIComponent(project)}/teams/${groupDescriptor}/members?api-version=${API_VERSION}`;
+          const mData = await fetchAzDo(memUrl);
+          members = mData.value || [];
+        } catch (err) { }
+      } else {
+        try {
+          const memUrl = `https://vssps.dev.azure.com/${org}/_apis/graph/Memberships/${groupDescriptor}?direction=Down&api-version=${API_VERSION}`;
+          const mData = await fetchAzDo(memUrl);
+          const memberRefs = mData.value || [];
+
+          for (const mem of memberRefs) {
+            const subDesc = mem.memberDescriptor;
+            if (!subDesc) continue;
+
+            if (!subDesc.startsWith('vssgp.')) {
+              try {
+                const userUrl = `https://vssps.dev.azure.com/${org}/_apis/graph/users/${subDesc}?api-version=${API_VERSION}`;
+                const uData = await fetchAzDo(userUrl);
+                if (uData) members.push(uData);
+              } catch (ue) { }
+            }
+          }
+        } catch (err) { }
+      }
+
+      // If no members in group, register group placeholder when not filtering by user
+      if (members.length === 0) {
+        groupMemberCounts[groupName] = 0;
+        if (!userQuery) {
+          accessRows.push({
+            ProjectName: project,
+            GroupName: groupName,
+            GroupPrincipal: groupPrincipal,
+            GroupRole: groupRole,
+            ParentGroups: 'Contributors, Project Valid Users',
+            UserDisplayName: '(No Direct Members)',
+            UserPrincipal: '-',
+            MailAddress: '-',
+            SubjectKind: 'group'
+          });
+        }
+      } else {
+        members.forEach(m => {
+          const name = m.displayName || m.identity?.displayName || m.name || m.uniqueName || 'Unknown';
+          const email = m.mailAddress || m.identity?.mailAddress || m.uniqueName || m.identity?.uniqueName || m.principalName || '';
+          const subjectKind = m.subjectKind || m.identity?.subjectKind || 'user';
+
+          if (!userQuery || name.toLowerCase().includes(userQuery) || email.toLowerCase().includes(userQuery) || groupName.toLowerCase().includes(userQuery)) {
+            accessRows.push({
+              ProjectName: project,
+              GroupName: groupName,
+              GroupPrincipal: groupPrincipal,
+              GroupRole: groupRole,
+              ParentGroups: 'Contributors, Project Valid Users',
+              UserDisplayName: name,
+              UserPrincipal: email,
+              MailAddress: email,
+              SubjectKind: subjectKind
+            });
+            groupMemberCounts[groupName] = (groupMemberCounts[groupName] || 0) + 1;
+          }
+        });
+      }
+    }
+
+    this.items = accessRows;
     this.index = 0;
 
-    // Set 4 KPI values exactly matching screenshot
+    // Update KPI Badges matching your UI
     window.HubApp.setKpis(
-      filterQuery || cleanProject,
+      userQuery ? userQuery : project,
       'SECURITY GROUPS',
-      allProjectGroups.size,
+      Object.keys(groupMemberCounts).length,
       'ASSIGNED ROLES/MEMBERS',
-      userAssignedRows.length,
+      accessRows.filter(r => r.UserDisplayName !== '(No Direct Members)').length,
       'MODE',
       'Security Matrix'
     );
 
     this.render(false);
 
-    // Chart: All groups along the X-axis, bar height 1.0/count for assigned groups
-    const chartKeys = Array.from(allProjectGroups.keys());
-    const chartVals = chartKeys.map(gName => projectGroupCounts[gName] || 0);
+    // Render bar chart with all project groups along the X-axis
+    const chartKeys = Object.keys(groupMemberCounts);
+    const chartVals = Object.values(groupMemberCounts);
 
-    window.HubApp.renderChart(chartKeys, chartVals, 'Assigned Security Groups');
+    window.HubApp.renderChart(
+      chartKeys.length ? chartKeys : ['No Groups'],
+      chartVals.length ? chartVals : [0],
+      'Members per Security Group'
+    );
   },
 
   render(append = false) {
@@ -180,39 +200,37 @@ window.AccessModule = {
     if (!tbody) return;
     if (!append) tbody.innerHTML = '';
 
-    if (this.filteredItems.length === 0) {
+    if (this.items.length === 0) {
       tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">No matching security group assignments found.</td></tr>`;
       document.getElementById('seeMoreAccessContainer')?.classList.add('hidden');
       return;
     }
 
-    const slice = this.filteredItems.slice(this.index, this.index + this.pageSize);
+    const slice = this.items.slice(this.index, this.index + this.pageSize);
     this.index += slice.length;
 
     tbody.insertAdjacentHTML(
       'beforeend',
-      slice.map(row => {
-        let roleBadgeClass = 'badge-active';
-        if (row.role === 'Admin') roleBadgeClass = 'badge-danger';
-        if (row.role === 'Reader') roleBadgeClass = 'badge-blue';
-
+      slice.map(a => {
+        let badgeClass = a.GroupRole === 'Admin' ? 'badge-danger' : 'badge-active';
         return `
           <tr>
-            <td><strong>${row.project}</strong></td>
-            <td><strong>${row.groupName}</strong></td>
-            <td><span class="badge ${roleBadgeClass}">${row.role}</span></td>
-            <td>${row.userDisplayName}</td>
-            <td>${row.mailAddress ? `<code>${row.mailAddress}</code>` : '-'}</td>
+            <td><strong>${a.ProjectName}</strong></td>
+            <td><strong>${a.GroupName}</strong></td>
+            <td><span class="badge ${badgeClass}">${a.GroupRole}</span></td>
+            <td>${a.UserDisplayName}</td>
+            <td>${a.MailAddress || a.UserPrincipal ? `<code>${a.MailAddress || a.UserPrincipal}</code>` : '-'}</td>
           </tr>
         `;
       }).join('')
     );
 
-    const rem = this.filteredItems.length - this.index;
+    const rem = this.items.length - this.index;
     const moreBtn = document.getElementById('seeMoreAccessContainer');
     if (moreBtn) {
       moreBtn.classList.toggle('hidden', rem <= 0);
-      document.getElementById('accessRemainingCount').textContent = rem;
+      const counter = document.getElementById('accessRemainingCount');
+      if (counter) counter.textContent = rem;
     }
   }
 };
