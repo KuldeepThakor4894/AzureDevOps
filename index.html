@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Azure DevOps Intelligence Hub</title>
-  <link rel="stylesheet" href="css/styles.css?v=2.1">
+  <link rel="stylesheet" href="css/styles.css?v=2.2">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -67,7 +67,7 @@
         <select id="categorySelect" disabled>
           <option value="">-- Select Project first --</option>
           <option value="repositories">Repositories & Branches</option>
-          <option value="user_access">Project Security Groups & Teams</option>
+          <option value="user_access">Project Security Groups & Permissions</option>
           <option value="user_activity">User Activity & Commits</option>
           <option value="pipelines">Pipelines & Builds</option>
           <option value="work_items">Work Items & Backlog</option>
@@ -248,20 +248,27 @@
       </div>
     </section>
 
-    <!-- VIEW 2: Security Groups & Access -->
+    <!-- VIEW 2: Security Groups, Permissions & Members (MyPortal Matrix) -->
     <section id="view-access" class="data-view hidden">
       <div class="data-card">
         <div class="data-card-header">
-          <h3>Project Security Groups, Teams & Memberships</h3>
+          <div>
+            <h3>Project Permissions, Security Groups & Members</h3>
+            <span class="subtext">Permission matrix mapped to MyPortalProjectPermission format</span>
+          </div>
+          <button type="button" id="btnExportAccessXlsx" class="btn-export">📥 Export Permissions (.csv)</button>
         </div>
         <div class="table-responsive">
           <table>
             <thead>
               <tr>
-                <th>GROUP / TEAM NAME</th>
-                <th>TYPE</th>
-                <th>USER / PRINCIPAL NAME</th>
-                <th>USER PRINCIPAL / EMAIL</th>
+                <th>PROJECT NAME</th>
+                <th>GROUP NAME</th>
+                <th>GROUP PRINCIPAL</th>
+                <th>GROUP ROLE</th>
+                <th>PARENT GROUPS</th>
+                <th>USER DISPLAY NAME</th>
+                <th>MAIL ADDRESS</th>
               </tr>
             </thead>
             <tbody id="accessTableBody"></tbody>
@@ -376,11 +383,11 @@
   </main>
 
   <!-- Modular Linked Scripts -->
-  <script src="js/repos.js?v=2.1"></script>
-  <script src="js/access.js?v=2.1"></script>
-  <script src="js/activity.js?v=2.1"></script>
-  <script src="js/pipelines.js?v=2.1"></script>
-  <script src="js/workitems.js?v=2.1"></script>
-  <script src="js/app.js?v=2.1"></script>
+  <script src="js/repos.js?v=2.2"></script>
+  <script src="js/access.js?v=2.2"></script>
+  <script src="js/activity.js?v=2.2"></script>
+  <script src="js/pipelines.js?v=2.2"></script>
+  <script src="js/workitems.js?v=2.2"></script>
+  <script src="js/app.js?v=2.2"></script>
 </body>
 </html>
