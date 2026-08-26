@@ -55,7 +55,7 @@ window.HubApp = {
       });
     });
 
-    // CSV Exports
+    // Exports
     document.getElementById('btnExportCSV').addEventListener('click', () => self.exportActiveCSV());
     document.getElementById('btnExportAccessXlsx')?.addEventListener('click', () => self.exportAccessCSV());
   },
@@ -142,7 +142,7 @@ window.HubApp = {
     } catch (e) {
       this.setStatus(`Error loading projects: ${e.message}`, 'error');
     } finally {
-      btn.textContent = 'Load Projects';
+      btn.textContent = 'Connect';
       btn.disabled = false;
     }
   },
@@ -282,28 +282,43 @@ window.HubApp = {
         datasets: [{
           label,
           data: values.length ? values : [0],
-          backgroundColor: isPie ? ['#2563eb', '#16a34a', '#9333ea', '#f59e0b', '#ec4899', '#06b6d4', '#84cc16'] : '#2563eb',
+          backgroundColor: isPie ? ['#2563eb', '#16a34a', '#9333ea', '#f59e0b', '#ec4899', '#06b6d4', '#84cc16'] : '#3b82f6',
           borderRadius: 4
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: isPie } }
+        plugins: { legend: { display: isPie } },
+        scales: isPie ? {} : {
+          x: {
+            ticks: {
+              maxRotation: 20,
+              minRotation: 15,
+              font: { size: 10 }
+            }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: {
+              stepSize: 1
+            }
+          }
+        }
       }
     });
   },
 
   exportAccessCSV() {
-    if (!window.AccessModule.items || !window.AccessModule.items.length) return;
-    let csv = ['"ProjectName","GroupName","GroupPrincipal","GroupRole","ParentGroups","UserDisplayName","MailAddress"'];
-    window.AccessModule.items.forEach(row => {
-      csv.push(`"${row.projectName}","${row.groupName}","${row.groupPrincipal}","${row.groupRole}","${row.parentGroups}","${row.userDisplayName}","${row.mailAddress}"`);
+    if (!window.AccessModule.filteredItems || !window.AccessModule.filteredItems.length) return;
+    let csv = ['"PROJECT","SECURITY GROUP NAME","ROLE","USER DISPLAY NAME","USER PRINCIPAL / EMAIL"'];
+    window.AccessModule.filteredItems.forEach(row => {
+      csv.push(`"${row.project}","${row.groupName}","${row.role}","${row.userDisplayName}","${row.mailAddress}"`);
     });
     const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `MyPortalProjectPermission_${Date.now()}.csv`;
+    a.download = `Project_Permissions_${Date.now()}.csv`;
     a.click();
   },
 
