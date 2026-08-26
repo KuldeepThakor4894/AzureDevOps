@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Azure DevOps Intelligence Hub</title>
-  <link rel="stylesheet" href="css/styles.css?v=3.0">
+  <link rel="stylesheet" href="css/styles.css?v=3.1">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -196,12 +196,16 @@
       <button type="button" id="btnExportCSV" class="btn-export">📥 Export to CSV</button>
     </div>
 
-    <!-- VIEW 1: Repositories & PRs -->
+    <!-- VIEW 1: Repositories, Branches & Policy Compliance Matrix -->
     <section id="view-repositories" class="data-view hidden">
+      
+      <!-- Branch Matrix with Policy Column -->
       <div class="data-card">
         <div class="data-card-header">
-          <h3>Repositories & Active Branch Matrix</h3>
-          <span class="subtext">Branches older than 90 days are flagged as Stale</span>
+          <div>
+            <h3>Repositories & Active Branch Matrix</h3>
+            <span class="subtext">Branches older than 90 days are flagged as Stale | Branch Policy setup details included</span>
+          </div>
         </div>
         <div class="table-responsive">
           <table>
@@ -210,6 +214,7 @@
                 <th>REPOSITORY</th>
                 <th>BRANCH NAME</th>
                 <th>STATUS / HEALTH</th>
+                <th>BRANCH POLICIES</th>
                 <th>LAST AUTHOR</th>
                 <th>LAST COMMIT DATE</th>
                 <th>COMMIT MESSAGE</th>
@@ -223,6 +228,32 @@
         </div>
       </div>
 
+      <!-- Dedicated Branch Policies Details Table -->
+      <div class="data-card">
+        <div class="data-card-header">
+          <div>
+            <h3>Branch Policy Configurations & Enforcement Rules</h3>
+            <span class="subtext">Configured branch protection rules (Minimum Reviewers, Build Validation, Work Items, Comments)</span>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>REPOSITORY</th>
+                <th>PROTECTED BRANCH</th>
+                <th>POLICY TYPE</th>
+                <th>ENFORCEMENT</th>
+                <th>POLICY CONFIGURATION DETAILS</th>
+                <th>STATUS</th>
+              </tr>
+            </thead>
+            <tbody id="policyTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Pull Requests Matrix -->
       <div class="data-card">
         <div class="data-card-header">
           <h3>Pull Requests (Active & Completed)</h3>
@@ -248,7 +279,7 @@
       </div>
     </section>
 
-    <!-- VIEW 2: Security Groups, Permissions & Members (MyPortal Matrix) -->
+    <!-- VIEW 2: Security Groups, Permissions & Members -->
     <section id="view-access" class="data-view hidden">
       <div class="data-card">
         <div class="data-card-header">
@@ -383,11 +414,11 @@
   </main>
 
   <!-- Modular Linked Scripts -->
-  <script src="js/repos.js?v=3.0"></script>
-  <script src="js/access.js?v=3.0"></script>
-  <script src="js/activity.js?v=3.0"></script>
-  <script src="js/pipelines.js?v=3.0"></script>
-  <script src="js/workitems.js?v=3.0"></script>
-  <script src="js/app.js?v=3.0"></script>
+  <script src="js/repos.js?v=3.1"></script>
+  <script src="js/access.js?v=3.1"></script>
+  <script src="js/activity.js?v=3.1"></script>
+  <script src="js/pipelines.js?v=3.1"></script>
+  <script src="js/workitems.js?v=3.1"></script>
+  <script src="js/app.js?v=3.1"></script>
 </body>
 </html>
