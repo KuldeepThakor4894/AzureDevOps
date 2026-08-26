@@ -8,8 +8,8 @@
   --success-subtle: #dff6dd;
   --warning: #b45309;
   --warning-subtle: #fef3c7;
-  --danger: #d13438;
-  --danger-subtle: #fde7e9;
+  --danger: #dc2626;
+  --danger-subtle: #fee2e2;
   --slate-900: #0f172a;
   --slate-800: #1e293b;
   --slate-700: #334155;
@@ -97,7 +97,7 @@ body {
   margin-top: 20px;
 }
 
-/* Top App Bar */
+/* Header */
 .header-container {
   display: flex;
   justify-content: space-between;
@@ -158,7 +158,7 @@ body {
   accent-color: var(--primary);
 }
 
-/* Filter Config Card */
+/* Configurations */
 .config-card {
   background: var(--card-bg);
   border: 1px solid var(--slate-200);
@@ -372,7 +372,7 @@ body {
 .text-purple { color: #9333ea; }
 .text-slate { color: var(--slate-800); }
 
-/* Chart Container */
+/* Chart Section */
 .chart-card {
   background: #fff;
   border: 1px solid var(--slate-200);
@@ -474,7 +474,26 @@ body {
   background: var(--slate-900);
 }
 
-/* Data Tables */
+.btn-export-green {
+  background: #107c41;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s ease;
+}
+
+.btn-export-green:hover {
+  background: #0b5a2f;
+}
+
+/* Tables */
 .data-card {
   background: #fff;
   border: 1px solid var(--slate-200);
@@ -564,7 +583,8 @@ code {
   white-space: nowrap;
 }
 
-.badge-active { background: var(--success-subtle); color: var(--success); }
+.badge-active { background: #dcfce7; color: #16a34a; }
+.badge-danger { background: #fee2e2; color: #dc2626; }
 .badge-stale { background: var(--warning-subtle); color: var(--warning); }
 .badge-blue { background: var(--primary-subtle); color: var(--primary); }
 
