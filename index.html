@@ -4,8 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Azure DevOps Intelligence Hub</title>
-  <link rel="stylesheet" href="css/styles.css?v=5.0">
+  <link rel="stylesheet" href="css/styles.css?v=6.0">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -92,16 +93,16 @@
             <button type="button" id="btnInspectRepo" class="btn-primary">Inspect Repositories</button>
           </div>
         </div>
-        <p class="substep-hint">Choose <strong>"-- All Repositories --"</strong> or select an individual repository to analyze branch health and policies.</p>
+        <p class="substep-hint">Choose <strong>"-- All Repositories --"</strong> or select an individual repository.</p>
       </div>
 
       <!-- 5B: User Access & Security -->
       <div id="substepAccess" class="substep-row hidden">
         <div class="form-group flex-2">
-          <label for="targetAccessUserQuery">5. Search Group or Member Name</label>
-          <input type="text" id="targetAccessUserQuery" placeholder="e.g. Project Administrators, Contributors, or user@domain.com">
+          <label for="targetAccessUserQuery">5. Search Group or Member Name <span class="text-slate-400 font-normal">(Leave blank to scan all project security groups)</span></label>
+          <input type="text" id="targetAccessUserQuery" placeholder="e.g. user@domain.com or First Last">
         </div>
-        <button type="button" id="btnFetchAccess" class="btn-primary">Fetch Security Groups</button>
+        <button type="button" id="btnFetchAccess" class="btn-primary">Scan All Groups & Members</button>
       </div>
 
       <!-- 5C: User Activity -->
@@ -410,11 +411,11 @@
   </main>
 
   <!-- Modular Scripts -->
-  <script src="js/repos.js?v=5.0"></script>
-  <script src="js/access.js?v=5.0"></script>
-  <script src="js/activity.js?v=5.0"></script>
-  <script src="js/pipelines.js?v=5.0"></script>
-  <script src="js/workitems.js?v=5.0"></script>
-  <script src="js/app.js?v=5.0"></script>
+  <script src="js/repos.js?v=6.0"></script>
+  <script src="js/access.js?v=6.0"></script>
+  <script src="js/activity.js?v=6.0"></script>
+  <script src="js/pipelines.js?v=6.0"></script>
+  <script src="js/workitems.js?v=6.0"></script>
+  <script src="js/app.js?v=6.0"></script>
 </body>
 </html>
