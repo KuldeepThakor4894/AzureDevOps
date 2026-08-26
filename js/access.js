@@ -44,8 +44,8 @@ window.AccessModule = {
     const teamMembersMap = new Map();
 
     const addRecord = (projScope, groupName, parentGroups, userDisplayName, mailAddress, isPlaceholder = false) => {
-      let cleanScope = projScope.replace(/^\[/, '').replace(/\]$/, '').trim();
-      let cleanGroup = groupName.replace(/^\[.*?\]\\/, '').replace(/^\[.*?\]/, '').trim();
+      let cleanScope = (projScope || '').replace(/^\[/, '').replace(/\]$/, '').trim();
+      let cleanGroup = (groupName || '').replace(/^\[.*?\]\\/, '').replace(/^\[.*?\]/, '').trim();
 
       if (!cleanGroup) return;
       if (!cleanScope) cleanScope = cleanProject || org;
@@ -104,40 +104,46 @@ window.AccessModule = {
           const memberOfDescriptors = userIdent.memberOf || [];
 
           if (memberOfDescriptors.length > 0) {
-            const chunkSize = 25;
+            const chunkSize = 20;
             for (let i = 0; i < memberOfDescriptors.length; i += chunkSize) {
               const chunk = memberOfDescriptors.slice(i, i + chunkSize);
-              const descriptorParams = chunk.map(d => encodeURIComponent(typeof d === 'string' ? d : (d.descriptor || d.id))).join(',');
+              const idStrings = chunk.map(d => typeof d === 'string' ? d : (d.descriptor || d.id));
 
-              try {
-                const grpRes = await window.HubApp.fetchAdo(org, `_apis/identities?descriptors=${descriptorParams}&queryMembership=None&api-version=6.0`, auth);
-                const resolvedGroups = grpRes.value || [];
+              // Resolve via both identityIds and descriptors parameter
+              const resolveEndpoints = [
+                `_apis/identities?identityIds=${idStrings.map(encodeURIComponent).join(',')}&queryMembership=None&api-version=6.0`,
+                `_apis/identities?descriptors=${idStrings.map(encodeURIComponent).join(',')}&queryMembership=None&api-version=6.0`
+              ];
 
-                resolvedGroups.forEach(g => {
-                  const rawGrpName = g.providerDisplayName || g.customDisplayName || g.displayName || '';
-                  if (!rawGrpName) return;
+              for (const ep of resolveEndpoints) {
+                try {
+                  const grpRes = await window.HubApp.fetchAdo(org, ep, auth);
+                  const resolvedGroups = grpRes.value || [];
 
-                  // Parse [Scope]\GroupName
-                  let scopeName = cleanProject;
-                  let groupOnlyName = rawGrpName;
+                  resolvedGroups.forEach(g => {
+                    if (!g) return;
+                    const rawGrpName = g.providerDisplayName || g.customDisplayName || g.displayName || '';
+                    if (!rawGrpName) return;
 
-                  if (rawGrpName.includes('\\')) {
-                    const parts = rawGrpName.split('\\');
-                    scopeName = parts[0].replace(/^\[/, '').replace(/\]$/, '').trim();
-                    groupOnlyName = parts[1].trim();
-                  } else if (rawGrpName.startsWith('[')) {
-                    const match = rawGrpName.match(/^\[(.*?)\]\s*(.*)$/);
-                    if (match) {
-                      scopeName = match[1].trim();
-                      groupOnlyName = match[2].trim();
+                    let scopeName = cleanProject;
+                    let groupOnlyName = rawGrpName;
+
+                    if (rawGrpName.includes('\\')) {
+                      const parts = rawGrpName.split('\\');
+                      scopeName = parts[0].replace(/^\[/, '').replace(/\]$/, '').trim();
+                      groupOnlyName = parts[1].trim();
+                    } else if (rawGrpName.startsWith('[')) {
+                      const match = rawGrpName.match(/^\[(.*?)\]\s*(.*)$/);
+                      if (match) {
+                        scopeName = match[1].trim();
+                        groupOnlyName = match[2].trim();
+                      }
                     }
-                  }
 
-                  const parentGroups = this.determineParentGroups(groupOnlyName);
-                  addRecord(scopeName, groupOnlyName, parentGroups, uName, uEmail, false);
-                });
-              } catch (dErr) {
-                console.warn('Descriptor batch resolve warning:', dErr);
+                    const parentGroups = this.determineParentGroups(groupOnlyName);
+                    addRecord(scopeName, groupOnlyName, parentGroups, uName, uEmail, false);
+                  });
+                } catch (e) { }
               }
             }
           }
@@ -232,7 +238,7 @@ window.AccessModule = {
         console.warn('Identities query notice:', idErr);
       }
 
-      // 4. Scan Core Project Security Groups
+      // 4. Scan Core Built-in Security Groups
       const coreSecurityGroups = [
         'Project Administrators',
         'Build Administrators',
@@ -280,7 +286,7 @@ window.AccessModule = {
     // Save project master items
     this.allItems = allDiscoveredRows;
 
-    // 5. Apply Filter Logic (User Name, Email, Group Name, or Scope)
+    // 5. Filter Data by User Query
     let finalRows = this.allItems;
     let groupCounts = {};
 
@@ -295,7 +301,7 @@ window.AccessModule = {
     }
 
     finalRows.forEach(r => {
-      const label = `${r.projectName} (${r.groupName})`;
+      const label = `[${r.projectName}]\\${r.groupName}`;
       if (!r.isPlaceholder) {
         groupCounts[label] = (groupCounts[label] || 0) + 1;
       } else if (groupCounts[label] === undefined) {
