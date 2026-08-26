@@ -3,7 +3,7 @@ window.ActivityModule = {
   commitIndex: 0,
   prs: [],
   prIndex: 0,
-  pageSize: 20,
+  pageSize: 25,
 
   async fetch(org, project, pat, query, days, cachedRepos) {
     const auth = 'Basic ' + btoa(':' + pat);
@@ -11,9 +11,10 @@ window.ActivityModule = {
     let userCommits = [];
     let userPRs = [];
     let authorCounts = {};
-    let reposWithActivity = new Set();
+    let activeReposSet = new Set();
+    const processedPrIds = new Set();
 
-    // Calculate cutoff date based on selected timeframe
+    // 1. Calculate timeframe cutoff date
     let fromDate = null;
     let fromDateStr = '';
     if (days > 0) {
@@ -22,13 +23,13 @@ window.ActivityModule = {
       fromDateStr = `&searchCriteria.fromDate=${encodeURIComponent(fromDate.toISOString())}`;
     }
 
-    // Ensure we have repositories
+    // Ensure we have repositories list
     let targetRepos = cachedRepos;
     if (!targetRepos || targetRepos.length === 0) {
       try {
         const repoData = await window.HubApp.fetchAdo(
           org,
-          `${encodeURIComponent(project)}/_apis/git/repositories?api-version=7.1-preview.1`,
+          `${encodeURIComponent(project)}/_apis/git/repositories?api-version=6.0`,
           auth
         );
         targetRepos = repoData.value || [];
@@ -37,14 +38,70 @@ window.ActivityModule = {
       }
     }
 
-    // Scan Commits and Pull Requests in parallel across repositories
-    const tasks = targetRepos.map(async (r) => {
-      // 1. Fetch Commits
-      const commitsPromise = (async () => {
+    // Helper to check if a user string matches the query
+    const isUserMatch = (userObj) => {
+      if (!qLower) return true;
+      if (!userObj) return false;
+      const name = (userObj.displayName || userObj.name || '').toLowerCase();
+      const email = (userObj.uniqueName || userObj.mailAddress || userObj.email || '').toLowerCase();
+      return name.includes(qLower) || email.includes(qLower);
+    };
+
+    // Helper to safely add PR
+    const addPullRequest = (pr, repoName) => {
+      if (!pr || processedPrIds.has(pr.pullRequestId)) return;
+
+      const createdDate = pr.creationDate ? new Date(pr.creationDate) : null;
+      const closedDate = pr.closedDate ? new Date(pr.closedDate) : null;
+      const effectiveDate = closedDate || createdDate;
+
+      // Timeframe validation
+      if (fromDate && effectiveDate && effectiveDate < fromDate) return;
+
+      // Match against creator or reviewers
+      const isCreator = isUserMatch(pr.createdBy);
+      const isReviewer = (pr.reviewers || []).some(r => isUserMatch(r));
+
+      if (isCreator || isReviewer) {
+        processedPrIds.add(pr.pullRequestId);
+        const resolvedRepoName = repoName || pr.repository?.name || project;
+        activeReposSet.add(resolvedRepoName);
+
+        userPRs.push({
+          repo: resolvedRepoName,
+          title: `#${pr.pullRequestId}: ${pr.title || 'Untitled PR'}`,
+          source: pr.sourceRefName ? pr.sourceRefName.replace('refs/heads/', '') : '-',
+          target: pr.targetRefName ? pr.targetRefName.replace('refs/heads/', '') : '-',
+          status: pr.status || 'unknown',
+          date: effectiveDate ? effectiveDate.toLocaleDateString() : 'N/A',
+          rawDate: effectiveDate ? effectiveDate.getTime() : 0,
+          role: isCreator ? 'Author' : 'Reviewer'
+        });
+      }
+    };
+
+    // 2. Fetch Project-Level Pull Requests (Unified Call for all active + completed + abandoned PRs)
+    const prStatuses = ['all', 'completed', 'active', 'abandoned'];
+    await Promise.all(
+      prStatuses.map(async (status) => {
+        try {
+          const prProjectUrl = `${encodeURIComponent(project)}/_apis/git/pullrequests?searchCriteria.status=${status}&$top=500&api-version=6.0`;
+          const prData = await window.HubApp.fetchAdo(org, prProjectUrl, auth);
+          (prData.value || []).forEach(p => addPullRequest(p, p.repository?.name));
+        } catch (err) {
+          console.warn(`Project-level PR fetch (${status}) notice:`, err);
+        }
+      })
+    );
+
+    // 3. Scan Commits & Repository-Level PR Fallback in Parallel
+    const repoTasks = targetRepos.map(async (r) => {
+      // Fetch Commits
+      const commitsTask = (async () => {
         try {
           const cRes = await window.HubApp.fetchAdo(
             org,
-            `${encodeURIComponent(project)}/_apis/git/repositories/${r.id}/commits?$top=500${fromDateStr}&api-version=7.1-preview.1`,
+            `${encodeURIComponent(project)}/_apis/git/repositories/${r.id}/commits?$top=500${fromDateStr}&api-version=6.0`,
             auth
           );
           const commitList = cRes.value || [];
@@ -54,16 +111,14 @@ window.ActivityModule = {
             const authorEmail = c.author?.email || c.committer?.email || '';
             const authorDate = c.author?.date ? new Date(c.author.date) : (c.committer?.date ? new Date(c.committer.date) : null);
 
-            // Timeframe check
             if (fromDate && authorDate && authorDate < fromDate) return;
 
-            // User query match check
             if (
               !qLower ||
               authorName.toLowerCase().includes(qLower) ||
               authorEmail.toLowerCase().includes(qLower)
             ) {
-              reposWithActivity.add(r.name);
+              activeReposSet.add(r.name);
               authorCounts[authorName] = (authorCounts[authorName] || 0) + 1;
 
               userCommits.push({
@@ -77,56 +132,23 @@ window.ActivityModule = {
             }
           });
         } catch (e) {
-          console.warn(`Commits fetch error for repo ${r.name}:`, e);
+          console.warn(`Commits fetch notice for repo ${r.name}:`, e);
         }
       })();
 
-      // 2. Fetch Pull Requests (Active, Completed, & Abandoned)
-      const prsPromise = (async () => {
+      // Fallback Repository-level PR query
+      const repoPrTask = (async () => {
         try {
-          // Fetch with searchCriteria.status=all and higher top limit
-          const prUrl = `${encodeURIComponent(project)}/_apis/git/repositories/${r.id}/pullrequests?searchCriteria.status=all&$top=250&api-version=7.1-preview.1`;
-          const pRes = await window.HubApp.fetchAdo(org, prUrl, auth);
-          const prList = pRes.value || [];
-
-          prList.forEach(p => {
-            const creatorName = p.createdBy?.displayName || '';
-            const creatorEmail = p.createdBy?.uniqueName || p.createdBy?.mailAddress || '';
-            const createdDate = p.creationDate ? new Date(p.creationDate) : null;
-            const closedDate = p.closedDate ? new Date(p.closedDate) : null;
-
-            // Timeframe check against creation or completion date
-            const effectiveDate = closedDate || createdDate;
-            if (fromDate && effectiveDate && effectiveDate < fromDate) return;
-
-            // User query match check against PR creator
-            if (
-              !qLower ||
-              creatorName.toLowerCase().includes(qLower) ||
-              creatorEmail.toLowerCase().includes(qLower)
-            ) {
-              reposWithActivity.add(r.name);
-
-              userPRs.push({
-                repo: r.name,
-                title: `#${p.pullRequestId}: ${p.title}`,
-                source: p.sourceRefName ? p.sourceRefName.replace('refs/heads/', '') : '-',
-                target: p.targetRefName ? p.targetRefName.replace('refs/heads/', '') : '-',
-                status: p.status || 'unknown',
-                date: createdDate ? createdDate.toLocaleDateString() : 'N/A',
-                rawDate: createdDate ? createdDate.getTime() : 0
-              });
-            }
-          });
-        } catch (e) {
-          console.warn(`PRs fetch error for repo ${r.name}:`, e);
-        }
+          const repoPrUrl = `${encodeURIComponent(project)}/_apis/git/repositories/${r.id}/pullrequests?searchCriteria.status=all&$top=200&api-version=6.0`;
+          const rPrData = await window.HubApp.fetchAdo(org, repoPrUrl, auth);
+          (rPrData.value || []).forEach(p => addPullRequest(p, r.name));
+        } catch (e) { }
       })();
 
-      return Promise.all([commitsPromise, prsPromise]);
+      return Promise.all([commitsTask, repoPrTask]);
     });
 
-    await Promise.all(tasks);
+    await Promise.all(repoTasks);
 
     // Sort newest first
     userCommits.sort((a, b) => b.rawDate - a.rawDate);
@@ -141,14 +163,14 @@ window.ActivityModule = {
     window.HubApp.setKpis(
       query || `${project} (All Activity)`,
       'Active Repos',
-      reposWithActivity.size,
+      activeReposSet.size,
       'Pull Requests',
       userPRs.length,
       'Commits',
       userCommits.length
     );
 
-    // Render table batches
+    // Render tables
     this.renderCommits(false);
     this.renderPRs(false);
 
@@ -157,13 +179,14 @@ window.ActivityModule = {
     const chartValues = Object.values(authorCounts).slice(0, 10);
     window.HubApp.renderChart(
       chartLabels.length ? chartLabels : [query || 'User Activity'],
-      chartValues.length ? chartValues : [userCommits.length],
-      'Commits by Author'
+      chartValues.length ? chartValues : [userCommits.length || userPRs.length],
+      'Commits / PR Activity'
     );
   },
 
   renderCommits(append = false) {
     const tbody = document.getElementById('userCommitsTableBody');
+    if (!tbody) return;
     if (!append) tbody.innerHTML = '';
 
     if (this.commits.length === 0) {
