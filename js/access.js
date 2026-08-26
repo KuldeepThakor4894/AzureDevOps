@@ -1,165 +1,195 @@
 window.AccessModule = {
   items: [],
   index: 0,
-  pageSize: 15,
+  pageSize: 20,
+
+  determineGroupRole(groupName, parentGroups = '') {
+    const name = groupName.toLowerCase();
+    const parents = parentGroups.toLowerCase();
+    if (name.includes('admin') || parents.includes('project administrators')) return 'Admin';
+    if (name.includes('reader') || parents.includes('readers')) return 'Reader';
+    return 'Other';
+  },
+
+  determineParentGroups(groupName, isTeam = false) {
+    const name = groupName.toLowerCase();
+    if (name.includes('project administrators')) {
+      return 'Endpoint Administrators, Endpoint Creators, Project Valid Users';
+    }
+    if (name.includes('build administrators')) {
+      return 'Project Valid Users, Readers';
+    }
+    if (name.includes('readers')) {
+      return 'Project Valid Users';
+    }
+    if (isTeam || name.includes('team') || name.includes('contributor')) {
+      return 'Contributors, Project Valid Users';
+    }
+    return 'Project Valid Users';
+  },
 
   async fetch(org, project, pat, filterQuery) {
     const auth = 'Basic ' + btoa(':' + pat);
     const qLower = (filterQuery || '').trim().toLowerCase();
     let rows = [];
     let groupCounts = {};
-    const processedGroupKeys = new Set();
+    const processedKeys = new Set();
 
-    const addEntry = (groupName, type, memberName, memberEmail) => {
+    const addPermissionRow = (groupName, groupRole, parentGroups, userDisplayName, mailAddress) => {
       const cleanGroup = groupName.replace(/^\[.*?\]\\/, '').trim();
-      const gKey = `${cleanGroup}__${memberName}__${memberEmail}`.toLowerCase();
-      
-      if (processedGroupKeys.has(gKey)) return;
-      processedGroupKeys.add(gKey);
+      const groupPrincipal = `[${project}]\\${cleanGroup}`;
+      const uniqueKey = `${cleanGroup}__${userDisplayName}__${mailAddress}`.toLowerCase();
 
-      if (!qLower || 
-          cleanGroup.toLowerCase().includes(qLower) || 
-          memberName.toLowerCase().includes(qLower) || 
-          memberEmail.toLowerCase().includes(qLower) ||
-          type.toLowerCase().includes(qLower)) {
-        
+      if (processedKeys.has(uniqueKey)) return;
+      processedKeys.add(uniqueKey);
+
+      if (
+        !qLower ||
+        cleanGroup.toLowerCase().includes(qLower) ||
+        userDisplayName.toLowerCase().includes(qLower) ||
+        mailAddress.toLowerCase().includes(qLower) ||
+        groupRole.toLowerCase().includes(qLower)
+      ) {
         rows.push({
-          group: cleanGroup,
-          type: type,
-          name: memberName,
-          email: memberEmail
+          projectName: project,
+          groupName: cleanGroup,
+          groupPrincipal: groupPrincipal,
+          groupRole: groupRole,
+          parentGroups: parentGroups,
+          userDisplayName: userDisplayName,
+          mailAddress: mailAddress
         });
-        groupCounts[cleanGroup] = (groupCounts[cleanGroup] || 0) + (memberName.startsWith('(') ? 0 : 1);
+        groupCounts[cleanGroup] = (groupCounts[cleanGroup] || 0) + 1;
       }
     };
 
-    // 1. Fetch All Project Teams and Members
+    // 1. Fetch Project Teams and Members
     try {
-      const teamsData = await window.HubApp.fetchAdo(org, `_apis/projects/${encodeURIComponent(project)}/teams?api-version=7.1-preview.1&$top=1000`, auth);
+      const teamsData = await window.HubApp.fetchAdo(
+        org,
+        `_apis/projects/${encodeURIComponent(project)}/teams?api-version=6.0&$top=500`,
+        auth
+      );
       const teams = teamsData.value || [];
 
-      await Promise.all(teams.map(async (t) => {
+      for (const t of teams) {
+        const parentGroups = this.determineParentGroups(t.name, true);
+        const groupRole = this.determineGroupRole(t.name, parentGroups);
+
         try {
-          const membersData = await window.HubApp.fetchAdo(org, `_apis/projects/${encodeURIComponent(project)}/teams/${t.id}/members?api-version=7.1-preview.1&$top=1000`, auth);
+          const membersData = await window.HubApp.fetchAdo(
+            org,
+            `_apis/projects/${encodeURIComponent(project)}/teams/${t.id}/members?api-version=6.0&$top=500`,
+            auth
+          );
           const members = membersData.value || [];
 
           if (members.length === 0) {
-            addEntry(t.name, 'Project Team', '(No active members)', '-');
+            addPermissionRow(t.name, groupRole, parentGroups, '(No members assigned)', '');
           } else {
             members.forEach(m => {
-              const name = m.identity?.displayName || 'Team Member';
-              const email = m.identity?.uniqueName || m.identity?.mailAddress || '-';
-              addEntry(t.name, 'Project Team', name, email);
+              const displayName = m.identity?.displayName || 'Unknown Member';
+              const email = m.identity?.uniqueName || m.identity?.mailAddress || '';
+              addPermissionRow(t.name, groupRole, parentGroups, displayName, email);
             });
           }
-        } catch (e) {
-          addEntry(t.name, 'Project Team', '(Team configured)', t.description || '-');
-        }
-      }));
-    } catch (e) {
-      console.warn('Teams fetch error:', e);
-    }
-
-    // 2. Fetch All Project-Scoped Security Groups & Custom Groups via Identities API
-    try {
-      const idSearchUrls = [
-        `_apis/identities?searchFilter=GeneralScope&filterValue=[${encodeURIComponent(project)}]&queryMembership=Expanded&api-version=6.0`,
-        `_apis/identities?searchFilter=AccountName&filterValue=[${encodeURIComponent(project)}]&queryMembership=Expanded&api-version=6.0`
-      ];
-
-      for (const url of idSearchUrls) {
-        try {
-          const idData = await window.HubApp.fetchAdo(org, url, auth);
-          const identities = idData.value || [];
-
-          identities.forEach(grp => {
-            const rawName = grp.providerDisplayName || grp.customDisplayName || grp.displayName || '';
-            if (!rawName) return;
-
-            const cleanName = rawName.replace(/^\[.*?\]\\/, '').trim();
-            const members = grp.members || [];
-
-            if (members.length === 0) {
-              addEntry(cleanName, 'Security Group', '(No direct members)', grp.mailAddress || '-');
-            } else {
-              members.forEach(m => {
-                const mName = m.displayName || 'Security Principal';
-                const mEmail = m.uniqueName || m.mailAddress || '-';
-                addEntry(cleanName, 'Security Group', mName, mEmail);
-              });
-            }
-          });
-        } catch (err) {
-          console.warn('Identities query fallback:', err);
+        } catch (mErr) {
+          addPermissionRow(t.name, groupRole, parentGroups, '(Team Configured)', '');
         }
       }
-    } catch (e) {
-      console.warn('Identities fetch error:', e);
+    } catch (err) {
+      console.warn('Teams query notice:', err);
     }
 
-    // 3. Scan & Expand All Standard Built-in Azure DevOps Project Security Groups
-    const standardProjectSecurityGroups = [
+    // 2. Fetch Project Identities & Built-in Security Groups
+    const builtInGroups = [
       'Project Administrators',
       'Contributors',
       'Readers',
       'Build Administrators',
       'Release Administrators',
-      'Project Valid Users',
-      'Deployment Group Administrators',
-      'Endpoint Administrators',
-      'Endpoint Creators',
-      'Project-Scoped Service Connections'
+      'ABS Build and Release Team',
+      'Automation Pipeline Access'
     ];
 
-    await Promise.all(standardProjectSecurityGroups.map(async (grpName) => {
+    try {
+      const idData = await window.HubApp.fetchAdo(
+        org,
+        `_apis/identities?searchFilter=GeneralScope&filterValue=[${encodeURIComponent(project)}]&queryMembership=Expanded&api-version=6.0`,
+        auth
+      ).catch(() => ({ value: [] }));
+
+      const identities = idData.value || [];
+
+      identities.forEach(grp => {
+        const rawName = grp.providerDisplayName || grp.customDisplayName || grp.displayName || '';
+        const cleanName = rawName.replace(/^\[.*?\]\\/, '').trim();
+        if (!cleanName) return;
+
+        const parentGroups = this.determineParentGroups(cleanName);
+        const groupRole = this.determineGroupRole(cleanName, parentGroups);
+        const members = grp.members || [];
+
+        if (members.length === 0) {
+          addPermissionRow(cleanName, groupRole, parentGroups, '(No members assigned)', '');
+        } else {
+          members.forEach(m => {
+            const displayName = m.displayName || 'Security Principal';
+            const email = m.uniqueName || m.mailAddress || '';
+            addPermissionRow(cleanName, groupRole, parentGroups, displayName, email);
+          });
+        }
+      });
+    } catch (idErr) {
+      console.warn('Identities query notice:', idErr);
+    }
+
+    // Fallback expansion for core security groups
+    for (const grpName of builtInGroups) {
+      if (groupCounts[grpName] !== undefined) continue;
+      const parentGroups = this.determineParentGroups(grpName);
+      const groupRole = this.determineGroupRole(grpName, parentGroups);
+
       try {
-        const queryUrl = `_apis/identities?searchFilter=AccountName&filterValue=[${encodeURIComponent(project)}]\\${encodeURIComponent(grpName)}&queryMembership=Expanded&api-version=6.0`;
-        const res = await window.HubApp.fetchAdo(org, queryUrl, auth);
+        const qUrl = `_apis/identities?searchFilter=AccountName&filterValue=[${encodeURIComponent(project)}]\\${encodeURIComponent(grpName)}&queryMembership=Expanded&api-version=6.0`;
+        const res = await window.HubApp.fetchAdo(org, qUrl, auth);
         const list = res.value || [];
 
-        if (list.length > 0) {
-          list.forEach(item => {
-            const mems = item.members || [];
-            if (mems.length === 0) {
-              addEntry(grpName, 'Built-in Group', '(No members assigned)', '-');
-            } else {
-              mems.forEach(m => {
-                addEntry(grpName, 'Built-in Group', m.displayName || 'Member', m.uniqueName || m.mailAddress || '-');
-              });
-            }
+        if (list.length > 0 && list[0].members?.length > 0) {
+          list[0].members.forEach(m => {
+            addPermissionRow(grpName, groupRole, parentGroups, m.displayName || 'Member', m.uniqueName || m.mailAddress || '');
           });
         } else {
-          // If group exists with 0 expanded identities
-          addEntry(grpName, 'Built-in Group', '(Default Project Scope)', `[${project}]\\${grpName}`);
+          addPermissionRow(grpName, groupRole, parentGroups, '(No direct members)', '');
         }
       } catch (e) {
-        addEntry(grpName, 'Built-in Group', '(Default Project Scope)', `[${project}]\\${grpName}`);
+        addPermissionRow(grpName, groupRole, parentGroups, '(Default Scope)', '');
       }
-    }));
+    }
 
-    // Sort alphabetically by Group Name
-    rows.sort((a, b) => a.group.localeCompare(b.group) || a.name.localeCompare(b.name));
+    rows.sort((a, b) => a.groupName.localeCompare(b.groupName) || a.userDisplayName.localeCompare(b.userDisplayName));
 
     this.items = rows;
     this.index = 0;
 
     window.HubApp.setKpis(
       project,
-      'Total Groups & Teams',
+      'Total Groups',
       Object.keys(groupCounts).length,
       'Total Mappings',
       rows.length,
-      'Scope',
-      'All Project Permissions'
+      'Permission Mode',
+      'MyPortal Security'
     );
 
     this.render(false);
 
-    // Chart top groups by member volume
-    const sortedGroups = Object.entries(groupCounts).sort((a, b) => b[1] - a[1]);
-    const chartKeys = sortedGroups.slice(0, 12).map(item => item[0]);
-    const chartVals = sortedGroups.slice(0, 12).map(item => item[1]);
-    window.HubApp.renderChart(chartKeys, chartVals, 'Members / Principals per Group');
+    const sorted = Object.entries(groupCounts).sort((a, b) => b[1] - a[1]);
+    window.HubApp.renderChart(
+      sorted.slice(0, 10).map(i => i[0]),
+      sorted.slice(0, 10).map(i => i[1]),
+      'Members per Group / Team'
+    );
   },
 
   render(append = false) {
@@ -167,7 +197,7 @@ window.AccessModule = {
     if (!append) tbody.innerHTML = '';
 
     if (this.items.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">No security groups or permissions found matching criteria.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">No project permissions found matching criteria.</td></tr>`;
       document.getElementById('seeMoreAccessContainer').classList.add('hidden');
       return;
     }
@@ -175,20 +205,26 @@ window.AccessModule = {
     const slice = this.items.slice(this.index, this.index + this.pageSize);
     this.index += slice.length;
 
-    tbody.insertAdjacentHTML('beforeend', slice.map(a => {
-      let badgeClass = 'badge-blue';
-      if (a.type === 'Built-in Group') badgeClass = 'badge-stale';
-      if (a.type === 'Project Team') badgeClass = 'badge-active';
+    tbody.insertAdjacentHTML(
+      'beforeend',
+      slice.map(row => {
+        let badgeClass = 'badge-active';
+        if (row.groupRole === 'Admin') badgeClass = 'badge-stale';
+        if (row.groupRole === 'Reader') badgeClass = 'badge-blue';
 
-      return `
-        <tr>
-          <td><strong>${a.group}</strong></td>
-          <td><span class="badge ${badgeClass}">${a.type}</span></td>
-          <td>${a.name}</td>
-          <td><code>${a.email}</code></td>
-        </tr>
-      `;
-    }).join(''));
+        return `
+          <tr>
+            <td><strong>${row.projectName}</strong></td>
+            <td>${row.groupName}</td>
+            <td><code>${row.groupPrincipal}</code></td>
+            <td><span class="badge ${badgeClass}">${row.groupRole}</span></td>
+            <td><span class="subtext">${row.parentGroups}</span></td>
+            <td><strong>${row.userDisplayName}</strong></td>
+            <td>${row.mailAddress ? `<code>${row.mailAddress}</code>` : '-'}</td>
+          </tr>
+        `;
+      }).join('')
+    );
 
     const rem = this.items.length - this.index;
     document.getElementById('seeMoreAccessContainer').classList.toggle('hidden', rem <= 0);
