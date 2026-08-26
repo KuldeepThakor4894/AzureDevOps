@@ -22,14 +22,14 @@ window.HubApp = {
     document.getElementById('categorySelect').addEventListener('change', () => self.handleCategorySelect());
     document.getElementById('btnModalClose').addEventListener('click', () => self.closeModal());
 
-    // Step 5 Trigger Actions
+    // Step 5 Execution Buttons
     document.getElementById('btnInspectRepo').addEventListener('click', () => self.execRepoInspect());
     document.getElementById('btnFetchAccess').addEventListener('click', () => self.execAccessFetch());
     document.getElementById('btnFetchActivity').addEventListener('click', () => self.execActivityFetch());
     document.getElementById('btnFetchPipelines').addEventListener('click', () => self.execPipelineFetch());
     document.getElementById('btnFetchWorkItems').addEventListener('click', () => self.execWorkItemsFetch());
 
-    // Pagination Click Listeners
+    // Pagination Listeners
     document.getElementById('btnMoreRepos').addEventListener('click', () => window.RepoModule.renderBranches(true));
     document.getElementById('btnMorePrs').addEventListener('click', () => window.RepoModule.renderPrs(true));
     document.getElementById('btnMoreAccess').addEventListener('click', () => window.AccessModule.render(true));
@@ -47,7 +47,7 @@ window.HubApp = {
       });
     });
 
-    // Search filter
+    // Instant Search filter
     document.getElementById('tableFilterInput').addEventListener('input', (e) => {
       const term = e.target.value.toLowerCase();
       document.querySelectorAll('#mainDashboard tbody tr').forEach(r => {
@@ -130,7 +130,7 @@ window.HubApp = {
 
       const select = document.getElementById('projectSelect');
       select.innerHTML = '<option value="">-- Choose Project --</option>' +
-        projects.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+        projects.sort((a, b) => a.name.localeCompare(b.name)).map(p => `<option value="${p.name}">${p.name}</option>`).join('');
       select.disabled = false;
 
       document.getElementById('categorySelect').disabled = true;
@@ -146,7 +146,7 @@ window.HubApp = {
     }
   },
 
-  async handleProjectSelect() {
+  handleProjectSelect() {
     const project = document.getElementById('projectSelect').value;
     const catSelect = document.getElementById('categorySelect');
     document.getElementById('step5Container').classList.add('hidden');
@@ -160,17 +160,11 @@ window.HubApp = {
 
     catSelect.disabled = false;
     catSelect.value = '';
-
-    // Prefetch Repos
-    const auth = 'Basic ' + btoa(':' + this.getPat());
-    try {
-      const data = await this.fetchAdo(this.getOrg(), `${project}/_apis/git/repositories?api-version=7.1-preview.1`, auth);
-      this.cachedRepos = data.value || [];
-    } catch (e) { this.cachedRepos = []; }
   },
 
-  handleCategorySelect() {
+  async handleCategorySelect() {
     const cat = document.getElementById('categorySelect').value;
+    const project = document.getElementById('projectSelect').value;
     const step5 = document.getElementById('step5Container');
     document.getElementById('mainDashboard').classList.add('hidden');
 
@@ -186,10 +180,26 @@ window.HubApp = {
 
     if (cat === 'repositories') {
       document.getElementById('substepRepo').classList.remove('hidden');
-      const list = document.getElementById('repoDatalist');
-      list.innerHTML = '<option value="-- All Repositories --"></option>' +
-        this.cachedRepos.map(r => `<option value="${r.name}"></option>`).join('');
-      document.getElementById('repoSelect').value = '-- All Repositories --';
+      const repoDropdown = document.getElementById('repoSelect');
+      repoDropdown.innerHTML = '<option value="">Loading repositories...</option>';
+      repoDropdown.disabled = true;
+
+      try {
+        const auth = 'Basic ' + btoa(':' + this.getPat());
+        const data = await this.fetchAdo(this.getOrg(), `${encodeURIComponent(project)}/_apis/git/repositories?api-version=7.1-preview.1`, auth);
+        this.cachedRepos = data.value || [];
+        this.cachedRepos.sort((a, b) => a.name.localeCompare(b.name));
+
+        repoDropdown.innerHTML = '<option value="-- All Repositories --">-- All Repositories --</option>' +
+          this.cachedRepos.map(r => `<option value="${r.name}">${r.name}</option>`).join('');
+        repoDropdown.disabled = false;
+      } catch (err) {
+        console.error('Error fetching repositories:', err);
+        repoDropdown.innerHTML = '<option value="-- All Repositories --">-- All Repositories --</option>';
+        repoDropdown.disabled = false;
+        this.setStatus(`Could not load repositories: ${err.message}`, 'error');
+      }
+
     } else if (cat === 'user_access') {
       document.getElementById('substepAccess').classList.remove('hidden');
     } else if (cat === 'user_activity') {
@@ -230,6 +240,11 @@ window.HubApp = {
     try {
       this.showDashboard('activity');
       this.setStatus('Scanning activity & commits...', 'info');
+      if (!this.cachedRepos.length) {
+        const auth = 'Basic ' + btoa(':' + this.getPat());
+        const data = await this.fetchAdo(this.getOrg(), `${encodeURIComponent(document.getElementById('projectSelect').value)}/_apis/git/repositories?api-version=7.1-preview.1`, auth);
+        this.cachedRepos = data.value || [];
+      }
       await window.ActivityModule.fetch(this.getOrg(), document.getElementById('projectSelect').value, this.getPat(), document.getElementById('targetUserQuery').value.trim(), parseInt(document.getElementById('userTimeframeDays').value, 10), this.cachedRepos);
       this.setStatus('User activity loaded.', 'success');
     } catch (e) { this.setStatus(e.message, 'error'); }
