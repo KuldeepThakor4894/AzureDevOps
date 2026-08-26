@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Azure DevOps Intelligence Hub</title>
-  <link rel="stylesheet" href="css/styles.css?v=3.1">
+  <link rel="stylesheet" href="css/styles.css?v=4.0">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-  <!-- Step Validation Modal -->
+  <!-- Modal -->
   <div id="validationModal" class="modal-backdrop hidden">
     <div class="modal-card">
       <div class="modal-header">
@@ -25,45 +25,48 @@
 
   <!-- Header -->
   <header class="header-container">
-    <div>
-      <h1>Azure DevOps Intelligence Hub</h1>
-      <p>Details of Repositories, Pipelines, Work Items, Security & User Activity</p>
+    <div class="header-brand">
+      <div class="header-logo">⚡</div>
+      <div class="header-title">
+        <h1>Azure DevOps Intelligence Hub</h1>
+        <p>Enterprise Repository Matrix, Compliance, Security & Activity Analytics</p>
+      </div>
     </div>
     <label class="remember-creds">
       <input type="checkbox" id="chkRememberCreds"> Remember Credentials
     </label>
   </header>
 
-  <!-- Step-by-Step Configuration Container -->
+  <!-- Step Configurations -->
   <section class="config-card">
     <div class="form-grid">
       
       <!-- Step 1 -->
       <div class="form-group">
-        <label for="targetOrg">1. ORGANIZATION URL / NAME <span>*</span></label>
-        <input type="text" id="targetOrg" placeholder="e.g. Enter Org Name">
+        <label for="targetOrg">1. Organization URL / Name <span class="req">*</span></label>
+        <input type="text" id="targetOrg" placeholder="e.g. CornerstoneBuildingBrands">
       </div>
       
       <!-- Step 2 -->
       <div class="form-group">
-        <label for="targetPat">2. AZURE DEVOPS PAT <span>*</span></label>
+        <label for="targetPat">2. Azure DevOps PAT <span class="req">*</span></label>
         <div class="input-with-button">
           <input type="password" id="targetPat" placeholder="Enter PAT token">
-          <button type="button" id="btnLoadProjects" class="btn-primary">Load Projects</button>
+          <button type="button" id="btnLoadProjects" class="btn-primary">Connect</button>
         </div>
       </div>
 
       <!-- Step 3 -->
       <div class="form-group">
-        <label for="projectSelect">3. SELECT PROJECT <span>*</span></label>
+        <label for="projectSelect">3. Select Project <span class="req">*</span></label>
         <select id="projectSelect" disabled>
-          <option value="">-- Load PAT first --</option>
+          <option value="">-- Connect PAT first --</option>
         </select>
       </div>
 
       <!-- Step 4 -->
       <div class="form-group">
-        <label for="categorySelect">4. SELECT CATEGORY <span>*</span></label>
+        <label for="categorySelect">4. Select Category <span class="req">*</span></label>
         <select id="categorySelect" disabled>
           <option value="">-- Select Project first --</option>
           <option value="repositories">Repositories & Branches</option>
@@ -75,13 +78,13 @@
       </div>
     </div>
 
-    <!-- Step 5 Sub-filters (Revealed only after Step 4 selection) -->
+    <!-- Step 5 Dynamic Sub-selector -->
     <div id="step5Container" class="step5-container hidden">
       
-      <!-- Step 5A: Repositories Dropdown -->
+      <!-- 5A: Repositories -->
       <div id="substepRepo" class="substep-row hidden">
         <div class="form-group flex-2">
-          <label for="repoSelect">5. SELECT REPOSITORY <span>*</span></label>
+          <label for="repoSelect">5. Select Repository Scope <span class="req">*</span></label>
           <div class="input-with-button">
             <select id="repoSelect">
               <option value="-- All Repositories --">-- All Repositories --</option>
@@ -89,26 +92,26 @@
             <button type="button" id="btnInspectRepo" class="btn-primary">Inspect Repositories</button>
           </div>
         </div>
-        <p class="substep-hint">Select <strong>"-- All Repositories --"</strong> or pick an individual repository to scan.</p>
+        <p class="substep-hint">Choose <strong>"-- All Repositories --"</strong> or select an individual repository to analyze branch health and policies.</p>
       </div>
 
-      <!-- Step 5B: User Access & Security -->
+      <!-- 5B: User Access -->
       <div id="substepAccess" class="substep-row hidden">
         <div class="form-group flex-2">
-          <label for="targetAccessUserQuery">5. FILTER BY GROUP OR USER NAME</label>
+          <label for="targetAccessUserQuery">5. Search Group or Member Name</label>
           <input type="text" id="targetAccessUserQuery" placeholder="e.g. Project Administrators, Contributors, or user@domain.com">
         </div>
         <button type="button" id="btnFetchAccess" class="btn-primary">Fetch Security Groups</button>
       </div>
 
-      <!-- Step 5C: User Activity -->
+      <!-- 5C: User Activity -->
       <div id="substepActivity" class="substep-row hidden">
         <div class="form-group flex-2">
-          <label for="targetUserQuery">5. USER EMAIL / AUTHOR NAME</label>
+          <label for="targetUserQuery">5. User Email / Author Name</label>
           <input type="text" id="targetUserQuery" placeholder="e.g. user@domain.com or leave blank for all">
         </div>
         <div class="form-group flex-1">
-          <label for="userTimeframeDays">TIMEFRAME</label>
+          <label for="userTimeframeDays">Timeframe</label>
           <select id="userTimeframeDays">
             <option value="30">Last 30 Days</option>
             <option value="90" selected>Last 90 Days</option>
@@ -120,10 +123,10 @@
         <button type="button" id="btnFetchActivity" class="btn-primary">Search Activity</button>
       </div>
 
-      <!-- Step 5D: Pipelines -->
+      <!-- 5D: Pipelines -->
       <div id="substepPipelines" class="substep-row hidden">
         <div class="form-group flex-2">
-          <label for="pipelineRunsTop">TOP RUNS TO SCAN</label>
+          <label for="pipelineRunsTop">Top Runs to Scan</label>
           <select id="pipelineRunsTop">
             <option value="25">Latest 25 Runs</option>
             <option value="50" selected>Latest 50 Runs</option>
@@ -133,10 +136,10 @@
         <button type="button" id="btnFetchPipelines" class="btn-primary">Fetch Pipeline Runs</button>
       </div>
 
-      <!-- Step 5E: Work Items -->
+      <!-- 5E: Work Items -->
       <div id="substepWorkItems" class="substep-row hidden">
         <div class="form-group flex-2">
-          <label for="targetWorkItemUser">ASSIGNED USER EMAIL / NAME</label>
+          <label for="targetWorkItemUser">Assigned User Email / Name</label>
           <input type="text" id="targetWorkItemUser" placeholder="e.g. user@domain.com or leave blank for all">
         </div>
         <button type="button" id="btnFetchWorkItems" class="btn-primary">Query Work Items</button>
@@ -147,11 +150,11 @@
     <!-- Status & Active Link -->
     <div id="statusBar" class="status-banner hidden"></div>
     <div class="path-preview">
-      Active Azure DevOps Path: <a id="generatedUrlLink" href="javascript:void(0)">https://dev.azure.com/</a>
+      Active Endpoint: <a id="generatedUrlLink" href="javascript:void(0)">https://dev.azure.com/</a>
     </div>
   </section>
 
-  <!-- Results Dashboard (Hidden until action execution in Step 5) -->
+  <!-- Results Dashboard -->
   <main id="mainDashboard" class="hidden">
     
     <!-- KPI Summary Row -->
@@ -190,21 +193,21 @@
       </div>
     </div>
 
-    <!-- Search & CSV Export Toolbar -->
+    <!-- Toolbar -->
     <div class="toolbar">
       <input type="text" id="tableFilterInput" class="search-input" placeholder="Quick filter displayed rows...">
       <button type="button" id="btnExportCSV" class="btn-export">📥 Export to CSV</button>
     </div>
 
-    <!-- VIEW 1: Repositories, Branches & Policy Compliance Matrix -->
+    <!-- VIEW 1: Repositories & Policies -->
     <section id="view-repositories" class="data-view hidden">
       
-      <!-- Branch Matrix with Policy Column -->
+      <!-- Branch Matrix -->
       <div class="data-card">
         <div class="data-card-header">
           <div>
             <h3>Repositories & Active Branch Matrix</h3>
-            <span class="subtext">Branches older than 90 days are flagged as Stale | Branch Policy setup details included</span>
+            <span class="subtext">Branches older than 90 days flagged as Stale | Branch Policy status included</span>
           </div>
         </div>
         <div class="table-responsive">
@@ -228,12 +231,12 @@
         </div>
       </div>
 
-      <!-- Dedicated Branch Policies Details Table -->
+      <!-- Policy Rules Details -->
       <div class="data-card">
         <div class="data-card-header">
           <div>
             <h3>Branch Policy Configurations & Enforcement Rules</h3>
-            <span class="subtext">Configured branch protection rules (Minimum Reviewers, Build Validation, Work Items, Comments)</span>
+            <span class="subtext">Protection policies for selected repository scope</span>
           </div>
         </div>
         <div class="table-responsive">
@@ -253,7 +256,7 @@
         </div>
       </div>
 
-      <!-- Pull Requests Matrix -->
+      <!-- Pull Requests -->
       <div class="data-card">
         <div class="data-card-header">
           <h3>Pull Requests (Active & Completed)</h3>
@@ -279,13 +282,13 @@
       </div>
     </section>
 
-    <!-- VIEW 2: Security Groups, Permissions & Members -->
+    <!-- VIEW 2: Security Groups (MyPortal Schema) -->
     <section id="view-access" class="data-view hidden">
       <div class="data-card">
         <div class="data-card-header">
           <div>
             <h3>Project Permissions, Security Groups & Members</h3>
-            <span class="subtext">Permission matrix mapped to MyPortalProjectPermission format</span>
+            <span class="subtext">Permission matrix mapped to MyPortalProjectPermission schema</span>
           </div>
           <button type="button" id="btnExportAccessXlsx" class="btn-export">📥 Export Permissions (.csv)</button>
         </div>
@@ -311,7 +314,7 @@
       </div>
     </section>
 
-    <!-- VIEW 3: User Activity & Commits -->
+    <!-- VIEW 3: Activity & Commits -->
     <section id="view-activity" class="data-view hidden">
       <div class="data-card">
         <div class="data-card-header">
@@ -413,12 +416,12 @@
 
   </main>
 
-  <!-- Modular Linked Scripts -->
-  <script src="js/repos.js?v=3.1"></script>
-  <script src="js/access.js?v=3.1"></script>
-  <script src="js/activity.js?v=3.1"></script>
-  <script src="js/pipelines.js?v=3.1"></script>
-  <script src="js/workitems.js?v=3.1"></script>
-  <script src="js/app.js?v=3.1"></script>
+  <!-- Modular Scripts -->
+  <script src="js/repos.js?v=4.0"></script>
+  <script src="js/access.js?v=4.0"></script>
+  <script src="js/activity.js?v=4.0"></script>
+  <script src="js/pipelines.js?v=4.0"></script>
+  <script src="js/workitems.js?v=4.0"></script>
+  <script src="js/app.js?v=4.0"></script>
 </body>
 </html>
