@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Azure DevOps Intelligence Hub</title>
-  <link rel="stylesheet" href="css/styles.css?v=2.0">
+  <link rel="stylesheet" href="css/styles.css?v=2.1">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -78,13 +78,14 @@
     <!-- Step 5 Sub-filters (Revealed only after Step 4 selection) -->
     <div id="step5Container" class="step5-container hidden">
       
-      <!-- Step 5A: Repositories -->
+      <!-- Step 5A: Repositories Dropdown -->
       <div id="substepRepo" class="substep-row hidden">
         <div class="form-group flex-2">
-          <label for="repoSelect">5. SELECT OR TYPE REPOSITORY <span>*</span></label>
+          <label for="repoSelect">5. SELECT REPOSITORY <span>*</span></label>
           <div class="input-with-button">
-            <input list="repoDatalist" id="repoSelect" placeholder="Type or select repository...">
-            <datalist id="repoDatalist"></datalist>
+            <select id="repoSelect">
+              <option value="-- All Repositories --">-- All Repositories --</option>
+            </select>
             <button type="button" id="btnInspectRepo" class="btn-primary">Inspect Repositories</button>
           </div>
         </div>
@@ -375,11 +376,11 @@
   </main>
 
   <!-- Modular Linked Scripts -->
-  <script src="js/repos.js?v=2.0"></script>
-  <script src="js/access.js?v=2.0"></script>
-  <script src="js/activity.js?v=2.0"></script>
-  <script src="js/pipelines.js?v=2.0"></script>
-  <script src="js/workitems.js?v=2.0"></script>
-  <script src="js/app.js?v=2.0"></script>
+  <script src="js/repos.js?v=2.1"></script>
+  <script src="js/access.js?v=2.1"></script>
+  <script src="js/activity.js?v=2.1"></script>
+  <script src="js/pipelines.js?v=2.1"></script>
+  <script src="js/workitems.js?v=2.1"></script>
+  <script src="js/app.js?v=2.1"></script>
 </body>
 </html>
