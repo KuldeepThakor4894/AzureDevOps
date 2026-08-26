@@ -294,6 +294,10 @@ body {
   cursor: pointer;
 }
 
+.btn-export:hover {
+  background: #0f172a;
+}
+
 .data-card {
   background: #fff;
   border: 1px solid var(--border-color);
