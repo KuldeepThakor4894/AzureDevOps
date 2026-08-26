@@ -69,7 +69,7 @@ window.AccessModule = {
       });
     };
 
-    // 1. Direct User Identity & Full "Member Of" Tree Expansion
+    // 1. Resolve Individual User's Complete "Member Of" Hierarchy (All Scopes & Projects)
     if (qLower) {
       try {
         const userQueryUrls = [
@@ -97,63 +97,62 @@ window.AccessModule = {
           }
         });
 
-        // Resolve all memberOf groups across all projects
+        // For each user, resolve their complete memberOf descriptor list
         for (const userIdent of uniqueUsers) {
           const uName = userIdent.displayName || userIdent.customDisplayName || userIdent.providerDisplayName || '';
           const uEmail = userIdent.mailAddress || userIdent.uniqueName || '';
           const memberOfDescriptors = userIdent.memberOf || [];
 
           if (memberOfDescriptors.length > 0) {
-            const chunkSize = 20;
-            for (let i = 0; i < memberOfDescriptors.length; i += chunkSize) {
-              const chunk = memberOfDescriptors.slice(i, i + chunkSize);
-              const idStrings = chunk.map(d => typeof d === 'string' ? d : (d.descriptor || d.id));
+            const descriptorTasks = memberOfDescriptors.map(async (rawDesc) => {
+              const descStr = typeof rawDesc === 'string' ? rawDesc : (rawDesc.descriptor || rawDesc.id || '');
+              if (!descStr) return;
 
-              // Resolve via both identityIds and descriptors parameter
-              const resolveEndpoints = [
-                `_apis/identities?identityIds=${idStrings.map(encodeURIComponent).join(',')}&queryMembership=None&api-version=6.0`,
-                `_apis/identities?descriptors=${idStrings.map(encodeURIComponent).join(',')}&queryMembership=None&api-version=6.0`
-              ];
+              let resolvedRawName = '';
 
-              for (const ep of resolveEndpoints) {
+              // Strategy A: Direct Graph Group Endpoint
+              try {
+                const gRes = await window.HubApp.fetchAdo(org, `_apis/graph/groups/${encodeURIComponent(descStr)}?api-version=6.0-preview.1`, auth);
+                resolvedRawName = gRes.principalName || gRes.displayName || '';
+              } catch (e) {
+                // Strategy B: Subject Descriptors Identities Endpoint
                 try {
-                  const grpRes = await window.HubApp.fetchAdo(org, ep, auth);
-                  const resolvedGroups = grpRes.value || [];
-
-                  resolvedGroups.forEach(g => {
-                    if (!g) return;
-                    const rawGrpName = g.providerDisplayName || g.customDisplayName || g.displayName || '';
-                    if (!rawGrpName) return;
-
-                    let scopeName = cleanProject;
-                    let groupOnlyName = rawGrpName;
-
-                    if (rawGrpName.includes('\\')) {
-                      const parts = rawGrpName.split('\\');
-                      scopeName = parts[0].replace(/^\[/, '').replace(/\]$/, '').trim();
-                      groupOnlyName = parts[1].trim();
-                    } else if (rawGrpName.startsWith('[')) {
-                      const match = rawGrpName.match(/^\[(.*?)\]\s*(.*)$/);
-                      if (match) {
-                        scopeName = match[1].trim();
-                        groupOnlyName = match[2].trim();
-                      }
-                    }
-
-                    const parentGroups = this.determineParentGroups(groupOnlyName);
-                    addRecord(scopeName, groupOnlyName, parentGroups, uName, uEmail, false);
-                  });
-                } catch (e) { }
+                  const idRes = await window.HubApp.fetchAdo(org, `_apis/identities?subjectDescriptors=${encodeURIComponent(descStr)}&queryMembership=None&api-version=6.0`, auth);
+                  const item = idRes.value?.[0];
+                  resolvedRawName = item?.providerDisplayName || item?.customDisplayName || item?.displayName || '';
+                } catch (e2) { }
               }
-            }
+
+              if (resolvedRawName) {
+                let scopeName = cleanProject || org;
+                let groupOnlyName = resolvedRawName;
+
+                if (resolvedRawName.includes('\\')) {
+                  const parts = resolvedRawName.split('\\');
+                  scopeName = parts[0].replace(/^\[/, '').replace(/\]$/, '').trim();
+                  groupOnlyName = parts[1].trim();
+                } else if (resolvedRawName.startsWith('[')) {
+                  const match = resolvedRawName.match(/^\[(.*?)\]\s*(.*)$/);
+                  if (match) {
+                    scopeName = match[1].trim();
+                    groupOnlyName = match[2].trim();
+                  }
+                }
+
+                const parentGroups = this.determineParentGroups(groupOnlyName);
+                addRecord(scopeName, groupOnlyName, parentGroups, uName, uEmail, false);
+              }
+            });
+
+            await Promise.all(descriptorTasks);
           }
         }
       } catch (uErr) {
-        console.warn('User search notice:', uErr);
+        console.warn('User direct search error:', uErr);
       }
     }
 
-    // 2. Fetch Project Teams & Team Members
+    // 2. Fetch Project Teams and Members
     if (cleanProject) {
       try {
         const teamsData = await window.HubApp.fetchAdo(
@@ -238,7 +237,7 @@ window.AccessModule = {
         console.warn('Identities query notice:', idErr);
       }
 
-      // 4. Scan Core Built-in Security Groups
+      // 4. Scan Core Project Security Groups
       const coreSecurityGroups = [
         'Project Administrators',
         'Build Administrators',
@@ -286,7 +285,7 @@ window.AccessModule = {
     // Save project master items
     this.allItems = allDiscoveredRows;
 
-    // 5. Filter Data by User Query
+    // 5. Apply Filter Logic (User Name, Email, Group Name, or Scope)
     let finalRows = this.allItems;
     let groupCounts = {};
 
