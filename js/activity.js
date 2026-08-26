@@ -5,7 +5,7 @@ window.ActivityModule = {
 
   async fetch(org, project, pat, query, days, cachedRepos) {
     const auth = 'Basic ' + btoa(':' + pat);
-    const qLower = query.toLowerCase();
+    const qLower = (query || '').toLowerCase();
     let commits = [];
     let prs = [];
     let authorCounts = {};
@@ -19,7 +19,7 @@ window.ActivityModule = {
 
     const tasks = cachedRepos.map(async (r) => {
       try {
-        const cRes = await window.HubApp.fetchAdo(org, `${project}/_apis/git/repositories/${r.id}/commits?$top=100${fromStr}&api-version=7.1-preview.1`, auth);
+        const cRes = await window.HubApp.fetchAdo(org, `${encodeURIComponent(project)}/_apis/git/repositories/${r.id}/commits?$top=100${fromStr}&api-version=7.1-preview.1`, auth);
         (cRes.value || []).forEach(c => {
           const aName = c.author?.name || 'Unknown';
           const aEmail = c.author?.email || '';
@@ -35,7 +35,7 @@ window.ActivityModule = {
           }
         });
 
-        const pRes = await window.HubApp.fetchAdo(org, `${project}/_apis/git/repositories/${r.id}/pullrequests?searchCriteria.status=all&$top=50&api-version=7.1-preview.1`, auth);
+        const pRes = await window.HubApp.fetchAdo(org, `${encodeURIComponent(project)}/_apis/git/repositories/${r.id}/pullrequests?searchCriteria.status=all&$top=50&api-version=7.1-preview.1`, auth);
         (pRes.value || []).forEach(p => {
           const cName = p.createdBy?.displayName || '';
           if (!qLower || cName.toLowerCase().includes(qLower)) {
@@ -53,13 +53,14 @@ window.ActivityModule = {
     });
 
     await Promise.all(tasks);
+    commits.sort((a, b) => new Date(b.date) - new Date(a.date));
     this.commits = commits;
     this.index = 0;
 
     window.HubApp.setKpis(query || `${project} (All)`, 'Active Repos', cachedRepos.length, 'Pull Requests', prs.length, 'Commits', commits.length);
     this.render(false);
 
-    document.getElementById('userPrTableBody').innerHTML = prs.map(p => `
+    document.getElementById('userPrTableBody').innerHTML = prs.length ? prs.map(p => `
       <tr>
         <td><strong>${p.repo}</strong></td>
         <td>${p.title}</td>
@@ -67,7 +68,7 @@ window.ActivityModule = {
         <td><span class="badge badge-blue">${p.status}</span></td>
         <td>${p.date}</td>
       </tr>
-    `).join('');
+    `).join('') : `<tr><td colspan="5" class="p-4 text-center text-slate-400">No pull requests found.</td></tr>`;
 
     window.HubApp.renderChart(Object.keys(authorCounts).slice(0, 10), Object.values(authorCounts).slice(0, 10), 'Commits by Contributor');
   },
