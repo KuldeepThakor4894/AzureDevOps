@@ -35,13 +35,29 @@ window.AccessModule = {
   async fetch(org, project, pat, filterQuery) {
     const auth = 'Basic ' + btoa(':' + pat);
     const cleanProject = project.trim();
+    const qLower = (filterQuery || '').trim().toLowerCase();
     let allDiscoveredRows = [];
     const processedKeys = new Set();
-    const teamMembersMap = new Map(); // teamName -> array of { displayName, mailAddress }
+    const teamMembersMap = new Map(); // CleanTeamName -> array of { displayName, mailAddress }
+
+    // 1. Resolve Project Info (Get both Name and GUID)
+    let projectId = cleanProject;
+    try {
+      const pInfo = await window.HubApp.fetchAdo(org, `_apis/projects/${encodeURIComponent(cleanProject)}?api-version=6.0`, auth);
+      if (pInfo && pInfo.id) {
+        projectId = pInfo.id;
+      }
+    } catch (e) {
+      console.warn('Could not fetch project info:', e);
+    }
 
     const addRecord = (groupName, parentGroups, userDisplayName, mailAddress, isPlaceholder = false) => {
-      const cleanGroup = groupName.replace(/^\[.*?\]\\/, '').trim();
-      if (!cleanGroup || cleanGroup === cleanProject) return;
+      let cleanGroup = groupName
+        .replace(/^\[.*?\]\\/, '')
+        .replace(/^\[.*?\]/, '')
+        .trim();
+
+      if (!cleanGroup || cleanGroup.toLowerCase() === cleanProject.toLowerCase() || cleanGroup.toLowerCase() === projectId.toLowerCase()) return;
 
       const groupPrincipal = `[${cleanProject}]\\${cleanGroup}`;
       const groupRole = this.determineGroupRole(cleanGroup, parentGroups);
@@ -62,7 +78,75 @@ window.AccessModule = {
       });
     };
 
-    // 1. Fetch ALL Project Teams and Cache their Members
+    // 2. Direct User Search & Reverse Descriptor Resolution (Guarantees all groups for individual users across ANY project)
+    if (qLower) {
+      try {
+        const userQueryUrls = [
+          `_apis/identities?searchFilter=GeneralScope&filterValue=${encodeURIComponent(qLower)}&queryMembership=Expanded&api-version=6.0`,
+          `_apis/identities?searchFilter=AccountName&filterValue=${encodeURIComponent(qLower)}&queryMembership=Expanded&api-version=6.0`,
+          `_apis/identities?searchFilter=DisplayName&filterValue=${encodeURIComponent(qLower)}&queryMembership=Expanded&api-version=6.0`
+        ];
+
+        let matchedUsers = [];
+        for (const uUrl of userQueryUrls) {
+          const res = await window.HubApp.fetchAdo(org, uUrl, auth).catch(() => ({ value: [] }));
+          if (res.value && res.value.length) {
+            matchedUsers = matchedUsers.concat(res.value);
+          }
+        }
+
+        // Deduplicate matched users
+        const uniqueUsers = [];
+        const seenUserIds = new Set();
+        matchedUsers.forEach(u => {
+          if (u.id && !seenUserIds.has(u.id)) {
+            seenUserIds.add(u.id);
+            uniqueUsers.push(u);
+          }
+        });
+
+        for (const userIdent of uniqueUsers) {
+          const uName = userIdent.displayName || userIdent.customDisplayName || userIdent.providerDisplayName || '';
+          const uEmail = userIdent.mailAddress || userIdent.uniqueName || '';
+          const memberOfDescriptors = userIdent.memberOf || [];
+
+          if (memberOfDescriptors.length > 0) {
+            const chunkSize = 20;
+            for (let i = 0; i < memberOfDescriptors.length; i += chunkSize) {
+              const chunk = memberOfDescriptors.slice(i, i + chunkSize);
+              const descriptorParams = chunk.map(d => encodeURIComponent(typeof d === 'string' ? d : (d.descriptor || d.id))).join(',');
+
+              try {
+                const grpRes = await window.HubApp.fetchAdo(org, `_apis/identities?descriptors=${descriptorParams}&queryMembership=None&api-version=6.0`, auth);
+                const resolvedGroups = grpRes.value || [];
+
+                resolvedGroups.forEach(g => {
+                  const rawGrpName = g.providerDisplayName || g.customDisplayName || g.displayName || '';
+                  if (!rawGrpName) return;
+
+                  // Check if group belongs to this project by Name, by GUID, or is a project-level role
+                  const isProjectMatch = rawGrpName.includes(`[${cleanProject}]`) ||
+                                        (projectId && rawGrpName.includes(`[${projectId}]`)) ||
+                                        !rawGrpName.includes('[');
+
+                  if (isProjectMatch) {
+                    const cleanGrp = rawGrpName.replace(/^\[.*?\]\\/, '').replace(/^\[.*?\]/, '').trim();
+                    const parentGroups = this.determineParentGroups(cleanGrp);
+                    addRecord(cleanGrp, parentGroups, uName, uEmail, false);
+                  }
+                });
+              } catch (dErr) {
+                console.warn('Descriptor batch resolve warning:', dErr);
+              }
+            }
+          }
+        }
+      } catch (uErr) {
+        console.warn('User search notice:', uErr);
+      }
+    }
+
+    // 3. Fetch All Project Teams and Members
     try {
       const teamsData = await window.HubApp.fetchAdo(
         org,
@@ -99,24 +183,30 @@ window.AccessModule = {
         }
       }));
     } catch (err) {
-      console.warn('Teams fetch notice:', err);
+      console.warn('Teams discovery warning:', err);
     }
 
-    // 2. Fetch All Identities & Expand Nested Groups
-    try {
-      const idSearchUrls = [
-        `_apis/identities?searchFilter=GeneralScope&filterValue=[${encodeURIComponent(cleanProject)}]&queryMembership=Expanded&api-version=6.0`,
-        `_apis/identities?searchFilter=AccountName&filterValue=[${encodeURIComponent(cleanProject)}]&queryMembership=Expanded&api-version=6.0`
-      ];
+    // 4. Fetch All Identities using both Project Name and Project GUID
+    const idSearchUrls = [
+      `_apis/identities?searchFilter=GeneralScope&filterValue=[${encodeURIComponent(cleanProject)}]&queryMembership=Expanded&api-version=6.0`,
+      `_apis/identities?searchFilter=AccountName&filterValue=[${encodeURIComponent(cleanProject)}]&queryMembership=Expanded&api-version=6.0`
+    ];
 
-      for (const url of idSearchUrls) {
+    if (projectId && projectId !== cleanProject) {
+      idSearchUrls.push(`_apis/identities?searchFilter=GeneralScope&filterValue=[${encodeURIComponent(projectId)}]&queryMembership=Expanded&api-version=6.0`);
+    }
+
+    for (const url of idSearchUrls) {
+      try {
         const idData = await window.HubApp.fetchAdo(org, url, auth).catch(() => ({ value: [] }));
         const identities = idData.value || [];
 
         identities.forEach(grp => {
           const rawName = grp.providerDisplayName || grp.customDisplayName || grp.displayName || '';
-          const cleanName = rawName.replace(/^\[.*?\]\\/, '').trim();
-          if (!cleanName || cleanName === cleanProject) return;
+          if (!rawName) return;
+
+          const cleanName = rawName.replace(/^\[.*?\]\\/, '').replace(/^\[.*?\]/, '').trim();
+          if (!cleanName || cleanName === cleanProject || cleanName === projectId) return;
 
           const parentGroups = this.determineParentGroups(cleanName);
           const members = grp.members || [];
@@ -128,7 +218,6 @@ window.AccessModule = {
               const mName = m.displayName || m.providerDisplayName || m.customDisplayName || '';
               const mEmail = m.uniqueName || m.mailAddress || '';
 
-              // If the member is a nested Team, unpack all team members into this security group
               const cleanMName = mName.replace(/^\[.*?\]\\/, '').trim().toLowerCase();
               if (teamMembersMap.has(cleanMName) && teamMembersMap.get(cleanMName).length > 0) {
                 teamMembersMap.get(cleanMName).forEach(tm => {
@@ -140,12 +229,12 @@ window.AccessModule = {
             });
           }
         });
+      } catch (idErr) {
+        console.warn('Identities query notice:', idErr);
       }
-    } catch (idErr) {
-      console.warn('Identities query notice:', idErr);
     }
 
-    // 3. Scan & Deep-Expand Core Built-in Groups (Project Administrators, Build Administrators, Readers, etc.)
+    // 5. Expand Core Project Security Roles (Project Administrators, Build Administrators, Contributors, Readers, etc.)
     const coreSecurityGroups = [
       'Project Administrators',
       'Build Administrators',
@@ -171,7 +260,6 @@ window.AccessModule = {
               const mName = m.displayName || m.providerDisplayName || '';
               const mEmail = m.uniqueName || m.mailAddress || '';
 
-              // Unpack nested teams if present inside built-in groups
               const cleanMName = mName.replace(/^\[.*?\]\\/, '').trim().toLowerCase();
               if (teamMembersMap.has(cleanMName) && teamMembersMap.get(cleanMName).length > 0) {
                 teamMembersMap.get(cleanMName).forEach(tm => {
@@ -190,11 +278,10 @@ window.AccessModule = {
       })
     );
 
-    // Store master project records
+    // Save project master items
     this.allItems = allDiscoveredRows;
 
-    // 4. Apply Query Filter (Matches User Display Name, Email, or Group Name)
-    const qLower = (filterQuery || '').trim().toLowerCase();
+    // 6. Filter by User Query or Group Name
     let finalRows = this.allItems;
     let groupCounts = {};
 
@@ -207,7 +294,6 @@ window.AccessModule = {
       });
     }
 
-    // Calculate group counts
     finalRows.forEach(r => {
       if (!r.isPlaceholder) {
         groupCounts[r.groupName] = (groupCounts[r.groupName] || 0) + 1;
@@ -216,7 +302,6 @@ window.AccessModule = {
       }
     });
 
-    // Sort to match Excel order
     finalRows.sort((a, b) => a.groupName.localeCompare(b.groupName) || a.userDisplayName.localeCompare(b.userDisplayName));
 
     this.filteredItems = finalRows;
@@ -237,7 +322,6 @@ window.AccessModule = {
 
     this.render(false);
 
-    // Chart results
     const sortedGroups = Object.entries(groupCounts).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
     const chartKeys = sortedGroups.map(i => i[0]);
     const chartVals = sortedGroups.map(i => i[1]);
