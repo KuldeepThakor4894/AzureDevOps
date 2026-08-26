@@ -5,7 +5,7 @@ window.PipelineModule = {
 
   async fetch(org, project, pat, topRuns) {
     const auth = 'Basic ' + btoa(':' + pat);
-    const data = await window.HubApp.fetchAdo(org, `${project}/_apis/build/builds?$top=${topRuns}&api-version=7.1-preview.1`, auth);
+    const data = await window.HubApp.fetchAdo(org, `${encodeURIComponent(project)}/_apis/build/builds?$top=${topRuns}&api-version=7.1-preview.1`, auth);
     const builds = data.value || [];
 
     let counts = { succeeded: 0, failed: 0, inProgress: 0 };
