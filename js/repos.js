@@ -18,13 +18,13 @@ window.RepoModule = {
 
     const repoTasks = targetRepos.map(async (r) => {
       try {
-        const res = await window.HubApp.fetchAdo(org, `${project}/_apis/git/repositories/${r.id}/refs?filter=heads/&api-version=7.1-preview.1`, auth);
+        const res = await window.HubApp.fetchAdo(org, `${encodeURIComponent(project)}/_apis/git/repositories/${r.id}/refs?filter=heads/&api-version=7.1-preview.1`, auth);
         const refs = res.value || [];
         counts[r.name] = refs.length;
 
         return await Promise.all(refs.map(async (ref) => {
           const bName = ref.name.replace(/^refs\/heads\//, '');
-          const cRes = await window.HubApp.fetchAdo(org, `${project}/_apis/git/repositories/${r.id}/commits?searchCriteria.itemVersion.version=${encodeURIComponent(bName)}&$top=1&api-version=7.1-preview.1`, auth);
+          const cRes = await window.HubApp.fetchAdo(org, `${encodeURIComponent(project)}/_apis/git/repositories/${r.id}/commits?searchCriteria.itemVersion.version=${encodeURIComponent(bName)}&$top=1&api-version=7.1-preview.1`, auth);
           const topC = cRes.value?.[0];
           const d = topC?.author?.date ? new Date(topC.author.date) : null;
           return {
@@ -41,7 +41,7 @@ window.RepoModule = {
 
     const prTasks = targetRepos.map(async (r) => {
       try {
-        const prRes = await window.HubApp.fetchAdo(org, `${project}/_apis/git/repositories/${r.id}/pullrequests?searchCriteria.status=all&$top=50&api-version=7.1-preview.1`, auth);
+        const prRes = await window.HubApp.fetchAdo(org, `${encodeURIComponent(project)}/_apis/git/repositories/${r.id}/pullrequests?searchCriteria.status=all&$top=50&api-version=7.1-preview.1`, auth);
         return (prRes.value || []).map(pr => ({
           repo: r.name,
           title: pr.title,
