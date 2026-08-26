@@ -55,8 +55,9 @@ window.HubApp = {
       });
     });
 
-    // CSV Export
+    // CSV Exports
     document.getElementById('btnExportCSV').addEventListener('click', () => self.exportActiveCSV());
+    document.getElementById('btnExportAccessXlsx')?.addEventListener('click', () => self.exportAccessCSV());
   },
 
   getOrg() {
@@ -230,7 +231,7 @@ window.HubApp = {
   async execAccessFetch() {
     try {
       this.showDashboard('access');
-      this.setStatus('Scanning security groups...', 'info');
+      this.setStatus('Scanning security groups & permissions...', 'info');
       await window.AccessModule.fetch(this.getOrg(), document.getElementById('projectSelect').value, this.getPat(), document.getElementById('targetAccessUserQuery').value.trim());
       this.setStatus('Security permissions loaded.', 'success');
     } catch (e) { this.setStatus(e.message, 'error'); }
@@ -281,7 +282,7 @@ window.HubApp = {
         datasets: [{
           label,
           data: values.length ? values : [0],
-          backgroundColor: isPie ? ['#2563eb', '#16a34a', '#9333ea', '#f59e0b', '#ec4899'] : '#2563eb',
+          backgroundColor: isPie ? ['#2563eb', '#16a34a', '#9333ea', '#f59e0b', '#ec4899', '#06b6d4', '#84cc16'] : '#2563eb',
           borderRadius: 4
         }]
       },
@@ -291,6 +292,19 @@ window.HubApp = {
         plugins: { legend: { display: isPie } }
       }
     });
+  },
+
+  exportAccessCSV() {
+    if (!window.AccessModule.items || !window.AccessModule.items.length) return;
+    let csv = ['"ProjectName","GroupName","GroupPrincipal","GroupRole","ParentGroups","UserDisplayName","MailAddress"'];
+    window.AccessModule.items.forEach(row => {
+      csv.push(`"${row.projectName}","${row.groupName}","${row.groupPrincipal}","${row.groupRole}","${row.parentGroups}","${row.userDisplayName}","${row.mailAddress}"`);
+    });
+    const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `MyPortalProjectPermission_${Date.now()}.csv`;
+    a.click();
   },
 
   exportActiveCSV() {
