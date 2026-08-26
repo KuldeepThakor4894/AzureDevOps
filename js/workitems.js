@@ -9,7 +9,7 @@ window.WorkItemModule = {
     if (userQuery) wiql += ` AND [System.AssignedTo] CONTAINS '${userQuery}'`;
     wiql += ` ORDER BY [System.CreatedDate] DESC`;
 
-    const qRes = await fetch(`https://dev.azure.com/${org}/${project}/_apis/wit/wiql?api-version=7.1-preview.1`, {
+    const qRes = await fetch(`https://dev.azure.com/${org}/${encodeURIComponent(project)}/_apis/wit/wiql?api-version=7.1-preview.1`, {
       method: 'POST',
       headers: { 'Authorization': auth, 'Content-Type': 'application/json' },
       body: JSON.stringify({ query: wiql })
@@ -24,7 +24,7 @@ window.WorkItemModule = {
       return;
     }
 
-    const dData = await window.HubApp.fetchAdo(org, `${project}/_apis/wit/workitems?ids=${ids.join(',')}&api-version=7.1-preview.1`, auth);
+    const dData = await window.HubApp.fetchAdo(org, `${encodeURIComponent(project)}/_apis/wit/workitems?ids=${ids.join(',')}&api-version=7.1-preview.1`, auth);
     let types = {};
 
     this.items = (dData.value || []).map(w => {
