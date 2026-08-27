@@ -14,16 +14,42 @@ window.HubApp = {
     }
   },
 
+  // Trigger Full Screen Emoji Splash Reflection
+  showEmojiReflection(emoji, message, durationMs = 1200) {
+    return new Promise(resolve => {
+      const overlay = document.getElementById('emojiOverlay');
+      const icon = document.getElementById('emojiIcon');
+      const text = document.getElementById('emojiText');
+
+      icon.textContent = emoji;
+      text.textContent = message || '';
+      overlay.classList.remove('hidden');
+
+      setTimeout(() => {
+        overlay.classList.add('hidden');
+        resolve();
+      }, durationMs);
+    });
+  },
+
   bindEvents() {
     const self = this;
     
-    // Wizard Navigation Listeners
-    document.getElementById('btnStartWizard').addEventListener('click', () => self.goToScreen(2));
+    // 1. Get Started Button -> Heart Eyes Emoji (😍) -> Step 2
+    document.getElementById('btnStartWizard').addEventListener('click', async () => {
+      await self.showEmojiReflection('😍', 'Welcome! Launching Explorer...', 1100);
+      self.goToScreen(2);
+    });
+
+    // 2. Back & Switch Navigation
     document.getElementById('btnBackToStep1').addEventListener('click', () => self.goToScreen(1));
     document.getElementById('btnSwitchOrg').addEventListener('click', () => self.goToScreen(2));
 
     document.getElementById('targetOrg').addEventListener('input', () => self.updateOrgPath());
+    
+    // 3. Connect Button -> Party Emoji (🥳) on Success or Crying Emoji (😭) on Error
     document.getElementById('btnConnect').addEventListener('click', () => self.connectAndGoToStep3());
+    
     document.getElementById('projectSelect').addEventListener('change', () => self.handleProjectSelect());
     document.getElementById('categorySelect').addEventListener('change', () => self.handleCategorySelect());
     document.getElementById('btnModalClose').addEventListener('click', () => self.closeModal());
@@ -124,7 +150,12 @@ window.HubApp = {
   async connectAndGoToStep3() {
     const org = this.getOrg();
     const pat = this.getPat();
-    if (!org || !pat) return this.showModal('Please enter both Organization Name and Personal Access Token (PAT).');
+
+    // Check if fields are empty -> Trigger Crying Emoji
+    if (!org || !pat) {
+      await this.showEmojiReflection('😭', 'Missing details! Please enter both Organization and PAT.', 1400);
+      return this.showModal('Please enter both Organization Name and Personal Access Token (PAT).');
+    }
 
     if (document.getElementById('chkRememberCreds').checked) {
       localStorage.setItem('ado_saved', 'true');
@@ -141,6 +172,9 @@ window.HubApp = {
       const data = await this.fetchAdo(org, '_apis/projects?api-version=7.1-preview.1&$top=500', auth);
       const projects = data.value || [];
 
+      // Valid Credentials -> Trigger Party Emoji (🥳)
+      await this.showEmojiReflection('🥳', `Connected to ${org} successfully!`, 1300);
+
       const select = document.getElementById('projectSelect');
       select.innerHTML = '<option value="">-- Choose Project --</option>' +
         projects.sort((a, b) => a.name.localeCompare(b.name)).map(p => `<option value="${p.name}">${p.name}</option>`).join('');
@@ -155,6 +189,8 @@ window.HubApp = {
       this.goToScreen(3);
       this.setStatus(`Connected to ${org} successfully (${projects.length} projects loaded).`, 'success');
     } catch (e) {
+      // Invalid Credentials / Error -> Trigger Crying Emoji (😭)
+      await this.showEmojiReflection('😭', 'Connection Failed! Please verify Organization & PAT.', 1500);
       this.showModal(`Authentication error: ${e.message}`);
     } finally {
       btn.textContent = 'Connect \u2192';
