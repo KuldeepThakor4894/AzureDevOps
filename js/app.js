@@ -6,6 +6,7 @@ window.HubApp = {
 
   init() {
     this.bindEvents();
+    this.setAzureTheme('welcome');
     if (localStorage.getItem('ado_saved') === 'true') {
       document.getElementById('chkRememberCreds').checked = true;
       document.getElementById('targetOrg').value = localStorage.getItem('ado_org') || '';
@@ -14,13 +15,31 @@ window.HubApp = {
     }
   },
 
+  // Dynamic Azure Background Theme Switcher
+  setAzureTheme(themeName) {
+    const body = document.body;
+    body.className = ''; // reset classes
+    body.classList.add(`bg-theme-${themeName}`);
+  },
+
   bindEvents() {
     const self = this;
     
     // Step Navigation
-    document.getElementById('btnStartWizard').addEventListener('click', () => self.goToScreen(2));
-    document.getElementById('btnBackToStep1').addEventListener('click', () => self.goToScreen(1));
-    document.getElementById('btnSwitchOrg').addEventListener('click', () => self.goToScreen(2));
+    document.getElementById('btnStartWizard').addEventListener('click', () => {
+      self.goToScreen(2);
+      self.setAzureTheme('connect');
+    });
+
+    document.getElementById('btnBackToStep1').addEventListener('click', () => {
+      self.goToScreen(1);
+      self.setAzureTheme('welcome');
+    });
+
+    document.getElementById('btnSwitchOrg').addEventListener('click', () => {
+      self.goToScreen(2);
+      self.setAzureTheme('connect');
+    });
 
     document.getElementById('targetOrg').addEventListener('input', () => self.updateOrgPath());
     document.getElementById('btnConnect').addEventListener('click', () => self.connectAndGoToStep3());
@@ -124,10 +143,7 @@ window.HubApp = {
   async connectAndGoToStep3() {
     const org = this.getOrg();
     const pat = this.getPat();
-
-    if (!org || !pat) {
-      return this.showModal('Please enter both Organization Name and Personal Access Token (PAT).');
-    }
+    if (!org || !pat) return this.showModal('Please enter both Organization Name and Personal Access Token (PAT).');
 
     if (document.getElementById('chkRememberCreds').checked) {
       localStorage.setItem('ado_saved', 'true');
@@ -156,6 +172,7 @@ window.HubApp = {
       document.getElementById('mainDashboard').classList.add('hidden');
 
       this.goToScreen(3);
+      this.setAzureTheme('repos'); // default workspace theme
       this.setStatus(`Connected to ${org} successfully (${projects.length} projects loaded).`, 'success');
     } catch (e) {
       this.showModal(`Authentication error: ${e.message}`);
@@ -191,6 +208,13 @@ window.HubApp = {
       step5.classList.add('hidden');
       return;
     }
+
+    // Set dynamic Azure background theme based on selected category view
+    if (cat === 'repositories') this.setAzureTheme('repos');
+    else if (cat === 'user_access') this.setAzureTheme('security');
+    else if (cat === 'user_activity') this.setAzureTheme('activity');
+    else if (cat === 'pipelines') this.setAzureTheme('pipelines');
+    else if (cat === 'work_items') this.setAzureTheme('workitems');
 
     step5.classList.remove('hidden');
     ['substepRepo', 'substepAccess', 'substepActivity', 'substepPipelines', 'substepWorkItems'].forEach(id => {
@@ -236,6 +260,7 @@ window.HubApp = {
 
   async execRepoInspect() {
     try {
+      this.setAzureTheme('repos');
       this.showDashboard('repositories');
       this.setStatus('Inspecting repository branches and PRs...', 'info');
       await window.RepoModule.inspect(this.getOrg(), document.getElementById('projectSelect').value, this.getPat(), document.getElementById('repoSelect').value, this.cachedRepos);
@@ -245,6 +270,7 @@ window.HubApp = {
 
   async execAccessFetch() {
     try {
+      this.setAzureTheme('security');
       this.showDashboard('access');
       await window.AccessModule.fetch(this.getOrg(), document.getElementById('projectSelect').value, this.getPat(), document.getElementById('targetAccessUserQuery').value.trim());
       this.setStatus('Security permissions loaded successfully.', 'success');
@@ -253,6 +279,7 @@ window.HubApp = {
 
   async execActivityFetch() {
     try {
+      this.setAzureTheme('activity');
       this.showDashboard('activity');
       this.setStatus('Scanning activity & commits...', 'info');
       if (!this.cachedRepos.length) {
@@ -267,6 +294,7 @@ window.HubApp = {
 
   async execPipelineFetch() {
     try {
+      this.setAzureTheme('pipelines');
       this.showDashboard('pipelines');
       this.setStatus('Fetching pipeline runs...', 'info');
       await window.PipelineModule.fetch(this.getOrg(), document.getElementById('projectSelect').value, this.getPat(), document.getElementById('pipelineRunsTop').value);
@@ -276,6 +304,7 @@ window.HubApp = {
 
   async execWorkItemsFetch() {
     try {
+      this.setAzureTheme('workitems');
       this.showDashboard('workitems');
       this.setStatus('Querying work items...', 'info');
       await window.WorkItemModule.fetch(this.getOrg(), document.getElementById('projectSelect').value, this.getPat(), document.getElementById('targetWorkItemUser').value.trim());
