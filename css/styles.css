@@ -35,13 +35,13 @@
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
-/* Dynamic Azure Themed Background Classes */
+/* Professional Azure Cloud Gradient Background Themes (Guaranteed Rendering) */
 body {
-  background-color: #0b1329;
-  background-size: cover !important;
-  background-position: center center !important;
-  background-repeat: no-repeat !important;
-  background-attachment: fixed !important;
+  background-color: #0d1b3e;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   color: var(--slate-800);
   min-height: 100vh;
   display: flex;
@@ -49,36 +49,42 @@ body {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  transition: background-image 0.4s ease-in-out;
+  transition: background 0.5s ease-in-out;
 }
 
-/* Specific Azure Category Background Textures */
+/* 1. Welcome Screen Theme: Azure Deep Cloud Gradient */
 body.bg-theme-welcome {
-  background-image: linear-gradient(rgba(10, 25, 47, 0.75), rgba(10, 25, 47, 0.85)), url('https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1920&auto=format&fit=crop');
+  background: radial-gradient(circle at 20% 30%, #0078d4 0%, #0a2540 50%, #060b19 100%);
 }
 
+/* 2. Connect Screen Theme: Azure Enterprise Tech Gradient */
 body.bg-theme-connect {
-  background-image: linear-gradient(rgba(10, 25, 47, 0.78), rgba(10, 25, 47, 0.88)), url('https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=1920&auto=format&fit=crop');
+  background: radial-gradient(circle at 80% 20%, #005a9e 0%, #0c1b33 60%, #040812 100%);
 }
 
+/* 3. Repositories Theme: Git / Code Branch Azure Gradient */
 body.bg-theme-repos {
-  background-image: linear-gradient(rgba(10, 25, 47, 0.80), rgba(10, 25, 47, 0.90)), url('https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=1920&auto=format&fit=crop');
+  background: radial-gradient(circle at 10% 80%, #0078d4 0%, #172554 55%, #090d16 100%);
 }
 
+/* 4. Security Theme: Azure Security / Key Vault Gradient */
 body.bg-theme-security {
-  background-image: linear-gradient(rgba(10, 25, 47, 0.80), rgba(10, 25, 47, 0.90)), url('https://images.unsplash.com/photo-1563986768609-322da13575f3?q=80&w=1920&auto=format&fit=crop');
+  background: radial-gradient(circle at 90% 90%, #0e7490 0%, #0f172a 55%, #020617 100%);
 }
 
+/* 5. Activity Theme: Telemetry & Metrics Azure Gradient */
 body.bg-theme-activity {
-  background-image: linear-gradient(rgba(10, 25, 47, 0.80), rgba(10, 25, 47, 0.90)), url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1920&auto=format&fit=crop');
+  background: radial-gradient(circle at 50% 10%, #1e40af 0%, #0f172a 60%, #020617 100%);
 }
 
+/* 6. Pipelines Theme: CI/CD Build Pipeline Azure Gradient */
 body.bg-theme-pipelines {
-  background-image: linear-gradient(rgba(10, 25, 47, 0.80), rgba(10, 25, 47, 0.90)), url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1920&auto=format&fit=crop');
+  background: radial-gradient(circle at 30% 70%, #047857 0%, #0f172a 60%, #020617 100%);
 }
 
+/* 7. Work Items Theme: Azure Boards & Backlog Gradient */
 body.bg-theme-workitems {
-  background-image: linear-gradient(rgba(10, 25, 47, 0.80), rgba(10, 25, 47, 0.90)), url('https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?q=80&w=1920&auto=format&fit=crop');
+  background: radial-gradient(circle at 70% 30%, #4338ca 0%, #0f172a 60%, #020617 100%);
 }
 
 .hidden {
@@ -162,10 +168,10 @@ body.bg-theme-workitems {
   width: 100%;
   background: var(--card-bg);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 16px;
   padding: 44px 40px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
   text-align: center;
   position: relative;
   overflow: hidden;
@@ -278,10 +284,10 @@ body.bg-theme-workitems {
   width: 100%;
   background: var(--card-bg);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 16px;
   padding: 36px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
   margin: auto;
   position: relative;
 }
@@ -376,7 +382,7 @@ body.bg-theme-workitems {
   margin-bottom: 24px;
   padding-bottom: 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(8px);
   padding: 16px 24px;
   border-radius: var(--radius-lg);
