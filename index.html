@@ -4,11 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Azure DevOps Intelligence Hub</title>
-  <link rel="stylesheet" href="css/styles.css?v=7.0">
+  <link rel="stylesheet" href="css/styles.css?v=8.0">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
+
+  <!-- Animated Emoji Reflection Overlay -->
+  <div id="emojiOverlay" class="emoji-overlay hidden">
+    <div id="emojiContainer" class="emoji-container">
+      <span id="emojiIcon" class="main-emoji">😍</span>
+      <p id="emojiText" class="emoji-subtext"></p>
+    </div>
+  </div>
 
   <!-- Input Validation Modal -->
   <div id="validationModal" class="modal-backdrop hidden">
@@ -24,7 +32,7 @@
     </div>
   </div>
 
-  <!-- STEP 1: WELCOME SCREEN (Black Box Highlighted Header with Background) -->
+  <!-- STEP 1: WELCOME SCREEN -->
   <div id="screen-step1" class="wizard-screen">
     <div class="welcome-card">
       <div class="header-brand-hero">
@@ -63,7 +71,7 @@
     </div>
   </div>
 
-  <!-- STEP 2: CREDENTIALS AUTHENTICATION SCREEN (Red Box Options) -->
+  <!-- STEP 2: CREDENTIALS AUTHENTICATION SCREEN -->
   <div id="screen-step2" class="wizard-screen hidden">
     <div class="auth-card">
       <div class="auth-header">
@@ -102,7 +110,7 @@
     </div>
   </div>
 
-  <!-- STEP 3: WORKSPACE & RESULTS DASHBOARD (Green Box Options) -->
+  <!-- STEP 3: WORKSPACE & RESULTS DASHBOARD -->
   <div id="screen-step3" class="wizard-screen hidden">
     
     <!-- Top Persistent Header Bar -->
@@ -117,7 +125,7 @@
       <button type="button" id="btnSwitchOrg" class="btn-secondary">⚙️ Switch Organization</button>
     </header>
 
-    <!-- Workspace Controls Card (Green Box) -->
+    <!-- Workspace Controls Card -->
     <section class="config-card">
       <div class="form-grid-step3">
         <!-- 3. Select Project -->
@@ -472,11 +480,11 @@
   </div>
 
   <!-- Modular Linked Scripts -->
-  <script src="js/repos.js?v=7.0"></script>
-  <script src="js/access.js?v=7.0"></script>
-  <script src="js/activity.js?v=7.0"></script>
-  <script src="js/pipelines.js?v=7.0"></script>
-  <script src="js/workitems.js?v=7.0"></script>
-  <script src="js/app.js?v=7.0"></script>
+  <script src="js/repos.js?v=8.0"></script>
+  <script src="js/access.js?v=8.0"></script>
+  <script src="js/activity.js?v=8.0"></script>
+  <script src="js/pipelines.js?v=8.0"></script>
+  <script src="js/workitems.js?v=8.0"></script>
+  <script src="js/app.js?v=8.0"></script>
 </body>
 </html>
