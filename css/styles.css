@@ -54,60 +54,6 @@ body {
   display: none !important;
 }
 
-/* =========================================
-   EMOJI REFLECTION OVERLAY ANIMATIONS
-   ========================================= */
-.emoji-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  animation: overlayFade 0.25s ease-out;
-}
-
-@keyframes overlayFade {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.emoji-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 32px;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 24px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-  border: 1px solid var(--slate-200);
-}
-
-.main-emoji {
-  font-size: 84px;
-  line-height: 1;
-  display: inline-block;
-  animation: emojiPopBounce 0.9s cubic-bezier(0.175, 0.885, 0.32, 1.275) infinite alternate;
-}
-
-@keyframes emojiPopBounce {
-  0% { transform: scale(0.6) rotate(-8deg); }
-  50% { transform: scale(1.18) rotate(6deg); }
-  100% { transform: scale(1.0) rotate(0deg); }
-}
-
-.emoji-subtext {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--slate-900);
-  margin-top: 14px;
-  letter-spacing: -0.01em;
-}
-
 /* Modal */
 .modal-backdrop {
   position: fixed;
@@ -159,7 +105,7 @@ body {
   margin-top: 20px;
 }
 
-/* WIZARD SCREEN CONTAINERS */
+/* WIZARD SCREEN CONTAINERS (Centered Viewport Alignment) */
 .wizard-screen {
   width: 100%;
   display: flex;
@@ -179,7 +125,7 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* STEP 1: WELCOME HERO CARD */
+/* STEP 1: WELCOME HERO (Fully Centered Card) */
 .welcome-card {
   max-width: 720px;
   width: 100%;
