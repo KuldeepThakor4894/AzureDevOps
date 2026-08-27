@@ -22,7 +22,7 @@
   --card-bg: #ffffff;
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
@@ -36,14 +36,18 @@
 }
 
 body {
-  background-color: var(--slate-50);
+  background-color: #f8fafc;
   background-image: 
-    radial-gradient(circle at 10% 20%, rgba(0, 120, 212, 0.05) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(16, 124, 65, 0.04) 0%, transparent 40%);
+    radial-gradient(circle at 15% 20%, rgba(0, 120, 212, 0.06) 0%, transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(16, 124, 65, 0.05) 0%, transparent 45%);
   background-attachment: fixed;
   color: var(--slate-800);
   min-height: 100vh;
-  padding: 24px 32px 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
 }
 
 .hidden {
@@ -101,11 +105,19 @@ body {
   margin-top: 20px;
 }
 
-/* WIZARD SCREEN CONTAINERS */
+/* WIZARD SCREEN CONTAINERS (Centered Viewport Alignment) */
 .wizard-screen {
-  max-width: 1280px;
-  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   animation: fadeIn 0.25s ease-in-out;
+}
+
+#screen-step3 {
+  max-width: 1280px;
+  display: block; /* Allows natural full-page scrolling for dashboard tables */
 }
 
 @keyframes fadeIn {
@@ -113,18 +125,19 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* STEP 1: WELCOME HERO (Black Box Redesign with Azure Background) */
+/* STEP 1: WELCOME HERO (Fully Centered Card) */
 .welcome-card {
-  max-width: 760px;
-  margin: 60px auto;
+  max-width: 720px;
+  width: 100%;
   background: #ffffff;
   border: 1px solid var(--slate-200);
   border-radius: 16px;
-  padding: 48px;
+  padding: 44px 40px;
   box-shadow: var(--shadow-lg);
   text-align: center;
   position: relative;
   overflow: hidden;
+  margin: auto;
 }
 
 .welcome-card::before {
@@ -133,7 +146,7 @@ body {
   top: 0;
   left: 0;
   right: 0;
-  height: 6px;
+  height: 5px;
   background: linear-gradient(90deg, #0078d4, #00c7fd, #107c41);
 }
 
@@ -141,41 +154,41 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 32px;
+  gap: 14px;
+  margin-bottom: 28px;
 }
 
 .header-logo-hero {
-  width: 58px;
-  height: 58px;
+  width: 52px;
+  height: 52px;
   background: linear-gradient(135deg, #0078d4, #004578);
-  border-radius: 14px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
-  font-size: 28px;
-  box-shadow: 0 8px 20px rgba(0, 120, 212, 0.35);
+  font-size: 24px;
+  box-shadow: 0 6px 16px rgba(0, 120, 212, 0.35);
 }
 
 .header-brand-hero h1 {
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 800;
   color: var(--slate-900);
   letter-spacing: -0.02em;
 }
 
 .header-brand-hero p {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--slate-500);
-  max-width: 540px;
+  max-width: 480px;
 }
 
 .welcome-features {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin: 32px 0;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin: 28px 0;
   text-align: left;
 }
 
@@ -183,18 +196,19 @@ body {
   background: var(--slate-50);
   border: 1px solid var(--slate-200);
   border-radius: var(--radius-md);
-  padding: 16px;
+  padding: 14px;
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: flex-start;
 }
 
 .feature-icon {
-  font-size: 22px;
+  font-size: 18px;
+  flex-shrink: 0;
 }
 
 .feature-item strong {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--slate-900);
   display: block;
 }
@@ -203,17 +217,17 @@ body {
   font-size: 11px;
   color: var(--slate-500);
   margin-top: 2px;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
 .btn-hero-start {
-  height: 48px;
-  padding: 0 36px;
+  height: 42px;
+  padding: 0 32px;
   background: var(--primary);
   color: #fff;
   border: none;
   border-radius: var(--radius-md);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -226,15 +240,27 @@ body {
   box-shadow: 0 6px 16px rgba(0, 120, 212, 0.4);
 }
 
-/* STEP 2: AUTH CARD (Red Box Focus) */
+/* STEP 2: AUTH CARD (Fully Centered Card) */
 .auth-card {
-  max-width: 680px;
-  margin: 60px auto;
+  max-width: 640px;
+  width: 100%;
   background: #ffffff;
   border: 1px solid var(--slate-200);
   border-radius: 16px;
   padding: 36px;
   box-shadow: var(--shadow-lg);
+  margin: auto;
+  position: relative;
+}
+
+.auth-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, #0078d4, #107c41);
 }
 
 .auth-header {
@@ -292,13 +318,13 @@ body {
 }
 
 .btn-primary-connect {
-  height: 42px;
+  height: 40px;
   padding: 0 28px;
   background: var(--primary);
   color: #fff;
   border: none;
   border-radius: var(--radius-md);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -309,7 +335,7 @@ body {
   box-shadow: 0 2px 8px rgba(0, 120, 212, 0.3);
 }
 
-/* STEP 3: WORKSPACE & HEADER BAR (Green Box Focus) */
+/* STEP 3: WORKSPACE & HEADER */
 .header-container {
   display: flex;
   justify-content: space-between;
@@ -813,4 +839,16 @@ code {
 
 .btn-secondary:hover {
   background: var(--slate-200);
+}
+
+@media (max-width: 768px) {
+  .welcome-features {
+    grid-template-columns: 1fr;
+  }
+  .auth-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .form-grid-step3 {
+    grid-template-columns: 1fr;
+  }
 }
