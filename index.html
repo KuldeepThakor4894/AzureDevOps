@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Microsoft Azure DevOps - Executive Intelligence Hub</title>
+  <link rel="stylesheet" href="css/styles.css?v=13.0">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body class="theme-light">
+
+  <!-- Top Suite Navigation Bar (Microsoft Azure Corporate Standard) -->
+  <header class="azure-suite-bar">
+    <div class="suite-brand">
+      <a href="javascript:void(0)" class="suite-logo" id="btnLogoHome">
+        <svg viewBox="0 0 24 24">
+          <!-- Microsoft Azure Logo Mark -->
+          <path d="M12.7 2.3c-.4-.4-1-.4-1.4 0l-9 9c-.4.4-.4 1 0 1.4l9 9c.4.4 1 .4 1.4 0l9-9c.4-.4.4-1 0-1.4l-9-9zm-6.6 9.7L12 6.1l5.9 5.9L12 17.9 6.1 12z"/>
+          <path d="M9.5 12l2.5-2.5 2.5 2.5-2.5 2.5z"/>
+        </svg>
+        <span class="app-title">Azure DevOps Intelligence Hub</span>
+      </a>
+      <div class="suite-divider"></div>
+      <nav class="suite-breadcrumbs" aria-label="Breadcrumb">
+        <span>Microsoft Azure</span>
+        <span class="crumb-sep">/</span>
+        <span>DevOps Hub</span>
+        <span class="crumb-sep">/</span>
+        <span id="suiteBreadcrumbOrg">Not Connected</span>
+        <span class="crumb-sep">/</span>
+        <span id="suiteBreadcrumbProject" class="crumb-active">Overview</span>
+      </nav>
+    </div>
+
+    <div class="suite-actions">
+      <!-- Theme Switcher for Stakeholder / Management Presentation -->
+      <button type="button" id="btnThemeToggle" class="btn-theme-toggle" title="Toggle Executive Bright / Azure Dark Presentation Mode">
+        <span id="themeToggleIcon">🌙</span>
+        <span id="themeToggleText">Dark Mode</span>
+      </button>
+
+      <div id="suiteEnvBadge" class="suite-badge-env">
+        <span id="suiteConnectionDot" class="pulse-dot"></span>
+        <span id="suiteConnectionText">Ready</span>
+      </div>
+
+      <button type="button" id="btnTopSwitchOrg" class="btn-theme-toggle hidden" title="Change Organization or PAT credentials">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        Switch Org
+      </button>
+    </div>
+  </header>
+
+  <div class="app-container">
+
+    <!-- Input Validation Modal -->
+    <div id="validationModal" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <svg class="modal-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <h3>Configuration Notice</h3>
+        </div>
+        <p id="modalMessage"></p>
+        <div class="modal-actions">
+          <button type="button" id="btnModalClose" class="btn-primary">Acknowledge</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 1: WELCOME SCREEN -->
+    <div id="screen-step1" class="wizard-screen">
+      <div class="welcome-card">
+        <div class="header-brand-hero">
+          <div class="header-logo-hero">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+              <path d="M2 17l10 5 10-5"></path>
+              <path d="M2 12l10 5 10-5"></path>
+            </svg>
+          </div>
+          <div>
+            <h1>Azure DevOps Intelligence Hub</h1>
+            <p>Unified Enterprise Repository Matrix, Branch Policy Compliance, CI/CD Telemetry & Security Analysis</p>
+          </div>
+        </div>
+
+        <div class="welcome-features">
+          <div class="feature-item">
+            <div class="feature-icon-wrapper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </div>
+            <div>
+              <strong>Security & Access Graph</strong>
+              <p>Audit project security groups, inherited permissions, and member roles.</p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon-wrapper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="6" y1="3" x2="6" y2="15"></line>
+                <circle cx="18" cy="6" r="3"></circle>
+                <circle cx="6" cy="18" r="3"></circle>
+                <path d="M18 9a9 9 0 0 1-9 9"></path>
+              </svg>
+            </div>
+            <div>
+              <strong>Branch Policies & Health</strong>
+              <p>Verify enforcement rules, stale branch flags, and pull request flows.</p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon-wrapper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+              </svg>
+            </div>
+            <div>
+              <strong>Deep Blade Telemetry</strong>
+              <p>Inspect build stages, work items, and diagnostic telemetry in real-time.</p>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" id="btnStartWizard" class="btn-hero-start">
+          Get Started
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 2: CREDENTIALS AUTHENTICATION SCREEN -->
+    <div id="screen-step2" class="wizard-screen hidden">
+      <div class="auth-card">
+        <div class="auth-header">
+          <div class="auth-title">
+            <div class="header-logo-sm">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </div>
+            <div>
+              <h2>Connect to Azure DevOps Service</h2>
+              <p>Authenticate with Organization endpoint & Personal Access Token</p>
+            </div>
+          </div>
+          <label class="remember-creds">
+            <input type="checkbox" id="chkRememberCreds"> Remember Credentials
+          </label>
+        </div>
+
+        <div class="auth-form-grid">
+          <div class="form-group">
+            <label for="targetOrg">1. Organization Name / URL <span class="req">*</span></label>
+            <input type="text" id="targetOrg" placeholder="e.g. MyAzureOrg or https://dev.azure.com/MyOrg">
+          </div>
+
+          <div class="form-group">
+            <label for="targetPat">2. Personal Access Token (PAT) <span class="req">*</span></label>
+            <input type="password" id="targetPat" placeholder="Enter PAT with Code/Build/Graph Read scope">
+          </div>
+        </div>
+
+        <div class="path-preview">
+          <span>Active Azure Endpoint:</span>
+          <a id="generatedUrlLink" href="javascript:void(0)">https://dev.azure.com/</a>
+        </div>
+
+        <div class="auth-actions">
+          <button type="button" id="btnBackToStep1" class="btn-secondary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            Back
+          </button>
+          <button type="button" id="btnConnect" class="btn-primary-connect">
+            Connect Workspace
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: WORKSPACE & RESULTS DASHBOARD -->
+    <div id="screen-step3" class="wizard-screen hidden">
+      
+      <!-- Top Persistent Workspace Header -->
+      <header class="header-container">
+        <div class="header-brand">
+          <div class="header-logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+              <polyline points="2 17 12 22 22 17"></polyline>
+              <polyline points="2 12 12 17 22 12"></polyline>
+            </svg>
+          </div>
+          <div class="header-title">
+            <h1>Azure DevOps Intelligence Hub</h1>
+            <p id="topBarOrgSubtitle">Enterprise Intelligence & Workspace Dashboard</p>
+          </div>
+        </div>
+        <button type="button" id="btnSwitchOrg" class="btn-secondary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          Switch Org
+        </button>
+      </header>
+
+      <!-- Workspace Controls Card -->
+      <section class="config-card">
+        <div class="form-grid-step3">
+          <!-- 3. Select Project -->
+          <div class="form-group">
+            <label for="projectSelect">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+              </svg>
+              3. SELECT PROJECT <span class="req">*</span>
+            </label>
+            <select id="projectSelect">
+              <option value="">-- Choose Project --</option>
+            </select>
+          </div>
+
+          <!-- 4. Select Category -->
+          <div class="form-group">
+            <label for="categorySelect">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+              4. SELECT CATEGORY <span class="req">*</span>
+            </label>
+            <select id="categorySelect" disabled>
+              <option value="">-- Select Project first --</option>
+              <option value="repositories">Repositories & Branches</option>
+              <option value="user_access">Project Security Groups & Permissions</option>
+              <option value="user_activity">User Activity & Commits</option>
+              <option value="pipelines">Pipelines & CI/CD Builds</option>
+              <option value="work_items">Work Items & Backlog</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Step 5 Dynamic Sub-selector -->
+        <div id="step5Container" class="step5-container hidden">
+          
+          <!-- 5A: Repositories -->
+          <div id="substepRepo" class="substep-row hidden">
+            <div class="form-group flex-2">
+              <label for="repoSelect">5. SELECT REPOSITORY SCOPE <span class="req">*</span></label>
+              <div class="input-with-button">
+                <select id="repoSelect">
+                  <option value="-- All Repositories --">-- All Repositories --</option>
+                </select>
+                <button type="button" id="btnInspectRepo" class="btn-primary">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                  Inspect Repositories
+                </button>
+              </div>
+            </div>
+            <p class="substep-hint">Choose <strong>"-- All Repositories --"</strong> or select a specific repository.</p>
+          </div>
+
+          <!-- 5B: User Access -->
+          <div id="substepAccess" class="substep-row hidden">
+            <div class="form-group flex-2">
+              <label for="targetAccessUserQuery">5. USER ID / EMAIL / NAME <span class="subtext">(Leave blank to scan all project security groups)</span></label>
+              <input type="text" id="targetAccessUserQuery" placeholder="e.g. user@domain.com or First Last">
+            </div>
+            <button type="button" id="btnFetchAccess" class="btn-primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+              Scan Groups & Members
+            </button>
+          </div>
+
+          <!-- 5C: User Activity -->
+          <div id="substepActivity" class="substep-row hidden">
+            <div class="form-group flex-2">
+              <label for="targetUserQuery">5. USER EMAIL / ID <span class="req">*</span></label>
+              <input type="text" id="targetUserQuery" placeholder="e.g. user@domain.com or First Last">
+            </div>
+            <div class="form-group flex-1">
+              <label for="userTimeframeDays">TIMEFRAME</label>
+              <select id="userTimeframeDays">
+                <option value="30">Last 30 Days</option>
+                <option value="90" selected>Last 90 Days</option>
+                <option value="180">Last 6 Months</option>
+                <option value="365">Last 1 Year</option>
+                <option value="0">All Time</option>
+              </select>
+            </div>
+            <button type="button" id="btnFetchActivity" class="btn-primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+              </svg>
+              Search Activity
+            </button>
+          </div>
+
+          <!-- 5D: Pipelines -->
+          <div id="substepPipelines" class="substep-row hidden">
+            <div class="form-group flex-2">
+              <label for="pipelineRunsTop">TOP RUNS TO SCAN</label>
+              <select id="pipelineRunsTop">
+                <option value="25">Latest 25 Runs</option>
+                <option value="50" selected>Latest 50 Runs</option>
+                <option value="100">Latest 100 Runs</option>
+              </select>
+            </div>
+            <button type="button" id="btnFetchPipelines" class="btn-primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              Fetch Pipeline Runs
+            </button>
+          </div>
+
+          <!-- 5E: Work Items -->
+          <div id="substepWorkItems" class="substep-row hidden">
+            <div class="form-group flex-2">
+              <label for="targetWorkItemUser">ASSIGNED USER EMAIL / NAME</label>
+              <input type="text" id="targetWorkItemUser" placeholder="e.g. user@domain.com or leave blank for all">
+            </div>
+            <button type="button" id="btnFetchWorkItems" class="btn-primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+              Query Work Items
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Status Banner -->
+        <div id="statusBar" class="status-banner hidden"></div>
+      </section>
+
+      <!-- Results Dashboard -->
+      <main id="mainDashboard" class="hidden">
+        
+        <!-- KPI Summary Row -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-header-row">
+              <p class="kpi-label">Active Scope</p>
+              <div class="kpi-icon-wrapper">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+                  <path d="M2 12h20"></path>
+                </svg>
+              </div>
+            </div>
+            <p id="kpi-1-val" class="kpi-value text-slate">-</p>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-header-row">
+              <p id="kpi-2-label" class="kpi-label">Security Groups</p>
+              <div class="kpi-icon-wrapper">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                </svg>
+              </div>
+            </div>
+            <p id="kpi-2-val" class="kpi-value text-cyan">0</p>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-header-row">
+              <p id="kpi-3-label" class="kpi-label">Assigned Roles / Members</p>
+              <div class="kpi-icon-wrapper">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+            </div>
+            <p id="kpi-3-val" class="kpi-value text-green">0</p>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-header-row">
+              <p id="kpi-4-label" class="kpi-label">Mode</p>
+              <div class="kpi-icon-wrapper">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+              </div>
+            </div>
+            <p id="kpi-4-val" class="kpi-value text-purple">Security Matrix</p>
+          </div>
+        </div>
+
+        <!-- Analytics Chart -->
+        <div id="chartSection" class="chart-card">
+          <div class="chart-header">
+            <h2 id="chartTitle">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg>
+              Activity Overview
+            </h2>
+            <div class="chart-controls">
+              <span>Chart Type:</span>
+              <button type="button" class="btn-chart active" data-chart="bar">Bar</button>
+              <button type="button" class="btn-chart" data-chart="line">Line</button>
+              <button type="button" class="btn-chart" data-chart="pie">Pie</button>
+            </div>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="analyticsChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+          <div class="search-input-wrapper">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="tableFilterInput" class="search-input" placeholder="Quick filter displayed rows or search items...">
+          </div>
+          <div class="toolbar-actions">
+            <button type="button" id="btnExportCSV" class="btn-export">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Export to CSV
+            </button>
+          </div>
+        </div>
+
+        <!-- VIEW 1: Repositories & Policies -->
+        <section id="view-repositories" class="data-view hidden">
+          <div class="data-card">
+            <div class="data-card-header">
+              <div>
+                <h3>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="6" y1="3" x2="6" y2="15"></line>
+                    <circle cx="18" cy="6" r="3"></circle>
+                    <circle cx="6" cy="18" r="3"></circle>
+                    <path d="M18 9a9 9 0 0 1-9 9"></path>
+                  </svg>
+                  Repositories & Active Branch Matrix
+                </h3>
+                <span class="subtext">Click any row to open the Azure Blade telemetry inspector | Stale branch (>90 days) flagged</span>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>REPOSITORY</th>
+                    <th>BRANCH NAME</th>
+                    <th>STATUS / HEALTH</th>
+                    <th>BRANCH POLICIES</th>
+                    <th>LAST AUTHOR</th>
+                    <th>LAST COMMIT DATE</th>
+                    <th>COMMIT MESSAGE</th>
+                  </tr>
+                </thead>
+                <tbody id="branchesTableBody"></tbody>
+              </table>
+            </div>
+            <div id="seeMoreRepoContainer" class="pagination-footer hidden">
+              <button type="button" id="btnMoreRepos" class="btn-secondary">See More (<span id="repoRemainingCount">0</span> remaining)</button>
+            </div>
+          </div>
+
+          <div class="data-card">
+            <div class="data-card-header">
+              <div>
+                <h3>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                  </svg>
+                  Branch Policy Configurations & Enforcement Rules
+                </h3>
+                <span class="subtext">Protection policies for selected repository scope</span>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>REPOSITORY</th>
+                    <th>PROTECTED BRANCH</th>
+                    <th>POLICY TYPE</th>
+                    <th>ENFORCEMENT</th>
+                    <th>POLICY CONFIGURATION DETAILS</th>
+                    <th>STATUS</th>
+                  </tr>
+                </thead>
+                <tbody id="policyTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="data-card">
+            <div class="data-card-header">
+              <h3>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="18" cy="18" r="3"></circle>
+                  <circle cx="6" cy="6" r="3"></circle>
+                  <path d="M13 6h3a2 2 0 0 1 2 2v7"></path>
+                  <line x1="6" y1="9" x2="6" y2="21"></line>
+                </svg>
+                Pull Requests (Active & Completed)
+              </h3>
+            </div>
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>REPOSITORY</th>
+                    <th>PR TITLE</th>
+                    <th>SOURCE → TARGET</th>
+                    <th>CREATOR</th>
+                    <th>STATUS</th>
+                    <th>CREATED DATE</th>
+                  </tr>
+                </thead>
+                <tbody id="repoPrsTableBody"></tbody>
+              </table>
+            </div>
+            <div id="seeMoreRepoPrsContainer" class="pagination-footer hidden">
+              <button type="button" id="btnMorePrs" class="btn-secondary">See More (<span id="repoPrsRemainingCount">0</span> remaining)</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW 2: Project Security Groups, Roles & Member Permissions -->
+        <section id="view-access" class="data-view hidden">
+          <div class="data-card">
+            <div class="data-card-header">
+              <div>
+                <h3>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                  </svg>
+                  Project Security Groups, Roles & Member Permissions
+                </h3>
+              </div>
+              <button type="button" id="btnExportAccessXlsx" class="btn-export-green">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Export Permissions (.xlsx)
+              </button>
+            </div>
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>PROJECT</th>
+                    <th>SECURITY GROUP NAME</th>
+                    <th>ROLE</th>
+                    <th>USER DISPLAY NAME</th>
+                    <th>USER PRINCIPAL / EMAIL</th>
+                  </tr>
+                </thead>
+                <tbody id="accessTableBody"></tbody>
+              </table>
+            </div>
+            <div id="seeMoreAccessContainer" class="pagination-footer hidden">
+              <button type="button" id="btnMoreAccess" class="btn-secondary">See More (<span id="accessRemainingCount">0</span> remaining)</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW 3: Activity & Commits -->
+        <section id="view-activity" class="data-view hidden">
+          <div class="data-card">
+            <div class="data-card-header">
+              <h3>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+                Recent Commit History & Code Changes
+              </h3>
+            </div>
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>REPOSITORY</th>
+                    <th>COMMIT ID</th>
+                    <th>AUTHOR</th>
+                    <th>COMMIT DATE</th>
+                    <th>MESSAGE / CHANGES</th>
+                  </tr>
+                </thead>
+                <tbody id="userCommitsTableBody"></tbody>
+              </table>
+            </div>
+            <div id="seeMoreCommitsContainer" class="pagination-footer hidden">
+              <button type="button" id="btnMoreCommits" class="btn-secondary">See More (<span id="commitsRemainingCount">0</span> remaining)</button>
+            </div>
+          </div>
+
+          <div class="data-card">
+            <div class="data-card-header">
+              <h3>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="18" cy="18" r="3"></circle>
+                  <circle cx="6" cy="6" r="3"></circle>
+                  <path d="M13 6h3a2 2 0 0 1 2 2v7"></path>
+                  <line x1="6" y1="9" x2="6" y2="21"></line>
+                </svg>
+                Pull Requests (Created / Authored)
+              </h3>
+            </div>
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>REPOSITORY</th>
+                    <th>PR TITLE</th>
+                    <th>SOURCE → TARGET</th>
+                    <th>STATUS</th>
+                    <th>CREATION DATE</th>
+                  </tr>
+                </thead>
+                <tbody id="userPrTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW 4: Pipelines -->
+        <section id="view-pipelines" class="data-view hidden">
+          <div class="data-card">
+            <div class="data-card-header">
+              <div>
+                <h3>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
+                  Pipeline & CI/CD Build Runs
+                </h3>
+                <span class="subtext">Click any build run to slide in the Azure Stage Flow & Diagnostic Telemetry Blade</span>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>PIPELINE NAME</th>
+                    <th>BUILD #</th>
+                    <th>BRANCH</th>
+                    <th>TRIGGERED BY</th>
+                    <th>RESULT</th>
+                    <th>FINISH TIME</th>
+                  </tr>
+                </thead>
+                <tbody id="pipelineTableBody"></tbody>
+              </table>
+            </div>
+            <div id="seeMorePipelinesContainer" class="pagination-footer hidden">
+              <button type="button" id="btnMorePipelines" class="btn-secondary">See More (<span id="pipelinesRemainingCount">0</span> remaining)</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW 5: Work Items -->
+        <section id="view-workitems" class="data-view hidden">
+          <div class="data-card">
+            <div class="data-card-header">
+              <div>
+                <h3>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                  </svg>
+                  Active Work Items & Backlog Status
+                </h3>
+                <span class="subtext">Click any work item to inspect state details and iteration info in the Azure Blade</span>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>TYPE</th>
+                    <th>TITLE</th>
+                    <th>ASSIGNED TO</th>
+                    <th>STATE</th>
+                    <th>CREATED DATE</th>
+                  </tr>
+                </thead>
+                <tbody id="workItemsTableBody"></tbody>
+              </table>
+            </div>
+            <div id="seeMoreWorkItemsContainer" class="pagination-footer hidden">
+              <button type="button" id="btnMoreWorkItems" class="btn-secondary">See More (<span id="workItemsRemainingCount">0</span> remaining)</button>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+  </div> <!-- /app-container -->
+
+  <!-- ==========================================================================
+       AZURE "BLADE" SLIDING DRAWER CONTAINER
+       ========================================================================== -->
+  <div id="bladeBackdrop" class="blade-backdrop"></div>
+  
+  <aside id="azureBladePanel" class="azure-blade-panel" aria-label="Azure Resource Blade" aria-hidden="true">
+    <!-- Blade Header -->
+    <div class="blade-header">
+      <div class="blade-header-top">
+        <div class="blade-breadcrumbs" id="bladeBreadcrumb">
+          <span class="crumb-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+            <span id="bladeCrumbProject">Project</span>
+          </span>
+          <span class="crumb-sep">/</span>
+          <span class="crumb-item" id="bladeCrumbCategory">Resource</span>
+        </div>
+        <button type="button" id="btnBladeClose" class="blade-close-btn" title="Close Blade (Esc)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="blade-title-row">
+        <div class="blade-title-icon" id="bladeTitleIcon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+        </div>
+        <div class="blade-title-content">
+          <h2 id="bladeTitle">Resource Overview</h2>
+          <p id="bladeSubtitle">Telemetry & Diagnostics</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Blade Action Toolbar -->
+    <div class="blade-toolbar">
+      <button type="button" id="btnBladeOpenAdo" class="blade-tool-btn" title="View in Azure DevOps">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+          <polyline points="15 3 21 3 21 9"></polyline>
+          <line x1="10" y1="14" x2="21" y2="3"></line>
+        </svg>
+        Open in Azure DevOps
+      </button>
+      <button type="button" id="btnBladeCopyJson" class="blade-tool-btn" title="Copy Resource JSON">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+        Copy Telemetry
+      </button>
+    </div>
+
+    <!-- Blade Tabs Navigation -->
+    <div class="blade-tabs" id="bladeTabsContainer">
+      <button type="button" class="blade-tab-btn active" data-tab="overview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
+        Overview
+      </button>
+      <button type="button" class="blade-tab-btn" data-tab="stages" id="bladeTabStages">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+        Stages & Flow
+      </button>
+      <button type="button" class="blade-tab-btn" data-tab="logs" id="bladeTabLogs">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+        Diagnostic Logs
+      </button>
+      <button type="button" class="blade-tab-btn" data-tab="raw">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+        JSON Payload
+      </button>
+    </div>
+
+    <!-- Blade Body / Content Panels -->
+    <div class="blade-body" id="bladeBody">
+      <!-- Dynamically Rendered by BladeController -->
+    </div>
+  </aside>
+
+  <!-- Modular Scripts -->
+  <script src="js/repos.js?v=13.0"></script>
+  <script src="js/access.js?v=13.0"></script>
+  <script src="js/activity.js?v=13.0"></script>
+  <script src="js/pipelines.js?v=13.0"></script>
+  <script src="js/workitems.js?v=13.0"></script>
+  <script src="js/app.js?v=13.0"></script>
+</body>
+</html>
