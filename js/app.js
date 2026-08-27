@@ -16,8 +16,14 @@ window.HubApp = {
 
   bindEvents() {
     const self = this;
+    
+    // Wizard Navigation Listeners
+    document.getElementById('btnStartWizard').addEventListener('click', () => self.goToScreen(2));
+    document.getElementById('btnBackToStep1').addEventListener('click', () => self.goToScreen(1));
+    document.getElementById('btnSwitchOrg').addEventListener('click', () => self.goToScreen(2));
+
     document.getElementById('targetOrg').addEventListener('input', () => self.updateOrgPath());
-    document.getElementById('btnLoadProjects').addEventListener('click', () => self.loadProjects());
+    document.getElementById('btnConnect').addEventListener('click', () => self.connectAndGoToStep3());
     document.getElementById('projectSelect').addEventListener('change', () => self.handleProjectSelect());
     document.getElementById('categorySelect').addEventListener('change', () => self.handleCategorySelect());
     document.getElementById('btnModalClose').addEventListener('click', () => self.closeModal());
@@ -37,7 +43,7 @@ window.HubApp = {
     document.getElementById('btnMorePipelines')?.addEventListener('click', () => window.PipelineModule.render(true));
     document.getElementById('btnMoreWorkItems')?.addEventListener('click', () => window.WorkItemModule.render(true));
 
-    // Chart Type Switcher
+    // Chart Switchers
     document.querySelectorAll('.btn-chart').forEach(btn => {
       btn.addEventListener('click', (e) => {
         document.querySelectorAll('.btn-chart').forEach(b => b.classList.remove('active'));
@@ -47,7 +53,7 @@ window.HubApp = {
       });
     });
 
-    // Quick Search Filter
+    // Instant Search filter
     document.getElementById('tableFilterInput').addEventListener('input', (e) => {
       const term = e.target.value.toLowerCase();
       document.querySelectorAll('#mainDashboard tbody tr').forEach(r => {
@@ -58,6 +64,12 @@ window.HubApp = {
     // Exports
     document.getElementById('btnExportCSV')?.addEventListener('click', () => self.exportActiveCSV());
     document.getElementById('btnExportAccessXlsx')?.addEventListener('click', () => self.exportAccessXLSX());
+  },
+
+  goToScreen(stepNumber) {
+    document.getElementById('screen-step1').classList.toggle('hidden', stepNumber !== 1);
+    document.getElementById('screen-step2').classList.toggle('hidden', stepNumber !== 2);
+    document.getElementById('screen-step3').classList.toggle('hidden', stepNumber !== 3);
   },
 
   getOrg() {
@@ -109,10 +121,10 @@ window.HubApp = {
     document.getElementById('kpi-4-val').textContent = v4;
   },
 
-  async loadProjects() {
+  async connectAndGoToStep3() {
     const org = this.getOrg();
     const pat = this.getPat();
-    if (!org || !pat) return this.showModal('Please provide both Organization Name and PAT.');
+    if (!org || !pat) return this.showModal('Please enter both Organization Name and Personal Access Token (PAT).');
 
     if (document.getElementById('chkRememberCreds').checked) {
       localStorage.setItem('ado_saved', 'true');
@@ -120,7 +132,7 @@ window.HubApp = {
       localStorage.setItem('ado_pat', pat);
     }
 
-    const btn = document.getElementById('btnLoadProjects');
+    const btn = document.getElementById('btnConnect');
     btn.textContent = 'Connecting...';
     btn.disabled = true;
 
@@ -134,15 +146,18 @@ window.HubApp = {
         projects.sort((a, b) => a.name.localeCompare(b.name)).map(p => `<option value="${p.name}">${p.name}</option>`).join('');
       select.disabled = false;
 
+      document.getElementById('topBarOrgSubtitle').textContent = `Connected: https://dev.azure.com/${org}`;
       document.getElementById('categorySelect').disabled = true;
       document.getElementById('categorySelect').value = '';
       document.getElementById('step5Container').classList.add('hidden');
       document.getElementById('mainDashboard').classList.add('hidden');
-      this.setStatus(`Loaded ${projects.length} projects successfully.`, 'success');
+
+      this.goToScreen(3);
+      this.setStatus(`Connected to ${org} successfully (${projects.length} projects loaded).`, 'success');
     } catch (e) {
-      this.setStatus(`Error loading projects: ${e.message}`, 'error');
+      this.showModal(`Authentication error: ${e.message}`);
     } finally {
-      btn.textContent = 'Connect';
+      btn.textContent = 'Connect \u2192';
       btn.disabled = false;
     }
   },
