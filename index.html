@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Azure DevOps Intelligence Hub</title>
-  <link rel="stylesheet" href="css/styles.css?v=6.0">
+  <link rel="stylesheet" href="css/styles.css?v=7.0">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
@@ -24,398 +24,459 @@
     </div>
   </div>
 
-  <!-- Header -->
-  <header class="header-container">
-    <div class="header-brand">
-      <div class="header-logo">⚡</div>
-      <div class="header-title">
-        <h1>Azure DevOps Intelligence Hub</h1>
-        <p>Enterprise Repository Matrix, Compliance, Security & Activity Analytics</p>
+  <!-- STEP 1: WELCOME SCREEN (Black Box Highlighted Header with Background) -->
+  <div id="screen-step1" class="wizard-screen">
+    <div class="welcome-card">
+      <div class="header-brand-hero">
+        <div class="header-logo-hero">⚡</div>
+        <div>
+          <h1>Azure DevOps Intelligence Hub</h1>
+          <p>Enterprise Repository Matrix, Compliance, Security & Activity Analytics</p>
+        </div>
       </div>
+      <div class="welcome-features">
+        <div class="feature-item">
+          <span class="feature-icon">🛡️</span>
+          <div>
+            <strong>Graph Security Discovery</strong>
+            <p>Scan all project security groups, built-in roles, and memberships.</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <span class="feature-icon">🌿</span>
+          <div>
+            <strong>Branch Policy Matrix</strong>
+            <p>Verify compliance rules, reviewers, and stale branch metrics.</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <span class="feature-icon">📊</span>
+          <div>
+            <strong>Telemetry & Pipelines</strong>
+            <p>Query CI/CD build runs, WIQL work item backlogs, and pull requests.</p>
+          </div>
+        </div>
+      </div>
+      <button type="button" id="btnStartWizard" class="btn-hero-start">
+        Get Started &rarr;
+      </button>
     </div>
-    <label class="remember-creds">
-      <input type="checkbox" id="chkRememberCreds"> Remember Credentials
-    </label>
-  </header>
+  </div>
 
-  <!-- Step Configurations -->
-  <section class="config-card">
-    <div class="form-grid">
-      
-      <!-- Step 1 -->
-      <div class="form-group">
-        <label for="targetOrg">1. Organization URL / Name <span class="req">*</span></label>
-        <input type="text" id="targetOrg" placeholder="e.g. Enter Org Name">
+  <!-- STEP 2: CREDENTIALS AUTHENTICATION SCREEN (Red Box Options) -->
+  <div id="screen-step2" class="wizard-screen hidden">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-title">
+          <div class="header-logo-sm">⚡</div>
+          <div>
+            <h2>Connect to Azure DevOps</h2>
+            <p>Authenticate with your organization name and Personal Access Token (PAT)</p>
+          </div>
+        </div>
+        <label class="remember-creds">
+          <input type="checkbox" id="chkRememberCreds"> Remember Credentials
+        </label>
       </div>
-      
-      <!-- Step 2 -->
-      <div class="form-group">
-        <label for="targetPat">2. Azure DevOps PAT <span class="req">*</span></label>
-        <div class="input-with-button">
+
+      <div class="auth-form-grid">
+        <div class="form-group">
+          <label for="targetOrg">1. ORGANIZATION URL / NAME <span class="req">*</span></label>
+          <input type="text" id="targetOrg" placeholder="e.g. Enter Org Name">
+        </div>
+
+        <div class="form-group">
+          <label for="targetPat">2. AZURE DEVOPS PAT <span class="req">*</span></label>
           <input type="password" id="targetPat" placeholder="Enter PAT token">
-          <button type="button" id="btnLoadProjects" class="btn-primary">Connect</button>
         </div>
       </div>
 
-      <!-- Step 3 -->
-      <div class="form-group">
-        <label for="projectSelect">3. Select Project <span class="req">*</span></label>
-        <select id="projectSelect" disabled>
-          <option value="">-- Connect PAT first --</option>
-        </select>
+      <div class="path-preview">
+        Active Endpoint: <a id="generatedUrlLink" href="javascript:void(0)">https://dev.azure.com/</a>
       </div>
 
-      <!-- Step 4 -->
-      <div class="form-group">
-        <label for="categorySelect">4. Select Category <span class="req">*</span></label>
-        <select id="categorySelect" disabled>
-          <option value="">-- Select Project first --</option>
-          <option value="repositories">Repositories & Branches</option>
-          <option value="user_access">Project Security Groups & Permissions</option>
-          <option value="user_activity">User Activity & Commits</option>
-          <option value="pipelines">Pipelines & Builds</option>
-          <option value="work_items">Work Items & Backlog</option>
-        </select>
+      <div class="auth-actions">
+        <button type="button" id="btnBackToStep1" class="btn-secondary">&larr; Back</button>
+        <button type="button" id="btnConnect" class="btn-primary-connect">Connect &rarr;</button>
       </div>
     </div>
+  </div>
 
-    <!-- Step 5 Dynamic Sub-selector -->
-    <div id="step5Container" class="step5-container hidden">
-      
-      <!-- 5A: Repositories -->
-      <div id="substepRepo" class="substep-row hidden">
-        <div class="form-group flex-2">
-          <label for="repoSelect">5. Select Repository Scope <span class="req">*</span></label>
-          <div class="input-with-button">
-            <select id="repoSelect">
-              <option value="-- All Repositories --">-- All Repositories --</option>
-            </select>
-            <button type="button" id="btnInspectRepo" class="btn-primary">Inspect Repositories</button>
-          </div>
-        </div>
-        <p class="substep-hint">Choose <strong>"-- All Repositories --"</strong> or select an individual repository.</p>
-      </div>
-
-      <!-- 5B: User Access & Security -->
-      <div id="substepAccess" class="substep-row hidden">
-        <div class="form-group flex-2">
-          <label for="targetAccessUserQuery">5. Search Group or Member Name <span class="text-slate-400 font-normal">(Leave blank to scan all project security groups)</span></label>
-          <input type="text" id="targetAccessUserQuery" placeholder="e.g. user@domain.com or First Last">
-        </div>
-        <button type="button" id="btnFetchAccess" class="btn-primary">Scan All Groups & Members</button>
-      </div>
-
-      <!-- 5C: User Activity -->
-      <div id="substepActivity" class="substep-row hidden">
-        <div class="form-group flex-2">
-          <label for="targetUserQuery">5. User Email / Author Name</label>
-          <input type="text" id="targetUserQuery" placeholder="e.g. user@domain.com or leave blank for all">
-        </div>
-        <div class="form-group flex-1">
-          <label for="userTimeframeDays">Timeframe</label>
-          <select id="userTimeframeDays">
-            <option value="30">Last 30 Days</option>
-            <option value="90" selected>Last 90 Days</option>
-            <option value="180">Last 6 Months</option>
-            <option value="365">Last 1 Year</option>
-            <option value="0">All Time</option>
-          </select>
-        </div>
-        <button type="button" id="btnFetchActivity" class="btn-primary">Search Activity</button>
-      </div>
-
-      <!-- 5D: Pipelines -->
-      <div id="substepPipelines" class="substep-row hidden">
-        <div class="form-group flex-2">
-          <label for="pipelineRunsTop">Top Runs to Scan</label>
-          <select id="pipelineRunsTop">
-            <option value="25">Latest 25 Runs</option>
-            <option value="50" selected>Latest 50 Runs</option>
-            <option value="100">Latest 100 Runs</option>
-          </select>
-        </div>
-        <button type="button" id="btnFetchPipelines" class="btn-primary">Fetch Pipeline Runs</button>
-      </div>
-
-      <!-- 5E: Work Items -->
-      <div id="substepWorkItems" class="substep-row hidden">
-        <div class="form-group flex-2">
-          <label for="targetWorkItemUser">Assigned User Email / Name</label>
-          <input type="text" id="targetWorkItemUser" placeholder="e.g. user@domain.com or leave blank for all">
-        </div>
-        <button type="button" id="btnFetchWorkItems" class="btn-primary">Query Work Items</button>
-      </div>
-
-    </div>
-
-    <!-- Status & Active Link -->
-    <div id="statusBar" class="status-banner hidden"></div>
-    <div class="path-preview">
-      Active Endpoint: <a id="generatedUrlLink" href="javascript:void(0)">https://dev.azure.com/</a>
-    </div>
-  </section>
-
-  <!-- Results Dashboard -->
-  <main id="mainDashboard" class="hidden">
+  <!-- STEP 3: WORKSPACE & RESULTS DASHBOARD (Green Box Options) -->
+  <div id="screen-step3" class="wizard-screen hidden">
     
-    <!-- KPI Summary Row -->
-    <div class="kpi-grid">
-      <div class="kpi-card">
-        <p class="kpi-label">Active Scope</p>
-        <p id="kpi-1-val" class="kpi-value text-slate">-</p>
-      </div>
-      <div class="kpi-card">
-        <p id="kpi-2-label" class="kpi-label">Security Groups</p>
-        <p id="kpi-2-val" class="kpi-value text-blue">0</p>
-      </div>
-      <div class="kpi-card">
-        <p id="kpi-3-label" class="kpi-label">Assigned Roles/Members</p>
-        <p id="kpi-3-val" class="kpi-value text-green">0</p>
-      </div>
-      <div class="kpi-card">
-        <p id="kpi-4-label" class="kpi-label">Mode</p>
-        <p id="kpi-4-val" class="kpi-value text-purple">Security Matrix</p>
-      </div>
-    </div>
-
-    <!-- Analytics Chart -->
-    <div id="chartSection" class="chart-card">
-      <div class="chart-header">
-        <h2 id="chartTitle">Activity Overview</h2>
-        <div class="chart-controls">
-          <span>Chart Type:</span>
-          <button type="button" class="btn-chart active" data-chart="bar">Bar</button>
-          <button type="button" class="btn-chart" data-chart="line">Line</button>
-          <button type="button" class="btn-chart" data-chart="pie">Pie</button>
+    <!-- Top Persistent Header Bar -->
+    <header class="header-container">
+      <div class="header-brand">
+        <div class="header-logo">⚡</div>
+        <div class="header-title">
+          <h1>Azure DevOps Intelligence Hub</h1>
+          <p id="topBarOrgSubtitle">Enterprise Intelligence & Workspace</p>
         </div>
       </div>
-      <div class="chart-wrapper">
-        <canvas id="analyticsChart"></canvas>
+      <button type="button" id="btnSwitchOrg" class="btn-secondary">⚙️ Switch Organization</button>
+    </header>
+
+    <!-- Workspace Controls Card (Green Box) -->
+    <section class="config-card">
+      <div class="form-grid-step3">
+        <!-- 3. Select Project -->
+        <div class="form-group">
+          <label for="projectSelect">3. SELECT PROJECT <span class="req">*</span></label>
+          <select id="projectSelect">
+            <option value="">-- Choose Project --</option>
+          </select>
+        </div>
+
+        <!-- 4. Select Category -->
+        <div class="form-group">
+          <label for="categorySelect">4. SELECT CATEGORY <span class="req">*</span></label>
+          <select id="categorySelect" disabled>
+            <option value="">-- Select Project first --</option>
+            <option value="repositories">Repositories & Branches</option>
+            <option value="user_access">Project Security Groups & Permissions</option>
+            <option value="user_activity">User Activity & Commits</option>
+            <option value="pipelines">Pipelines & Builds</option>
+            <option value="work_items">Work Items & Backlog</option>
+          </select>
+        </div>
       </div>
-    </div>
 
-    <!-- Toolbar -->
-    <div class="toolbar">
-      <input type="text" id="tableFilterInput" class="search-input" placeholder="Quick filter displayed rows...">
-      <button type="button" id="btnExportCSV" class="btn-export">📥 Export to CSV</button>
-    </div>
+      <!-- Step 5 Dynamic Sub-selector -->
+      <div id="step5Container" class="step5-container hidden">
+        
+        <!-- 5A: Repositories -->
+        <div id="substepRepo" class="substep-row hidden">
+          <div class="form-group flex-2">
+            <label for="repoSelect">5. SELECT REPOSITORY SCOPE <span class="req">*</span></label>
+            <div class="input-with-button">
+              <select id="repoSelect">
+                <option value="-- All Repositories --">-- All Repositories --</option>
+              </select>
+              <button type="button" id="btnInspectRepo" class="btn-primary">Inspect Repositories</button>
+            </div>
+          </div>
+          <p class="substep-hint">Choose <strong>"-- All Repositories --"</strong> or pick an individual repository.</p>
+        </div>
 
-    <!-- VIEW 1: Repositories & Policies -->
-    <section id="view-repositories" class="data-view hidden">
-      <div class="data-card">
-        <div class="data-card-header">
-          <div>
-            <h3>Repositories & Active Branch Matrix</h3>
-            <span class="subtext">Branches older than 90 days flagged as Stale | Branch Policy status included</span>
+        <!-- 5B: User Access -->
+        <div id="substepAccess" class="substep-row hidden">
+          <div class="form-group flex-2">
+            <label for="targetAccessUserQuery">5. USER ID / EMAIL / NAME <span class="text-slate-400 font-normal">(Leave blank to scan all project security groups)</span></label>
+            <input type="text" id="targetAccessUserQuery" placeholder="e.g. user@domain.com or First Last">
+          </div>
+          <button type="button" id="btnFetchAccess" class="btn-primary">Scan All Groups & Members</button>
+        </div>
+
+        <!-- 5C: User Activity -->
+        <div id="substepActivity" class="substep-row hidden">
+          <div class="form-group flex-2">
+            <label for="targetUserQuery">5. USER EMAIL / ID <span class="req">*</span></label>
+            <input type="text" id="targetUserQuery" placeholder="e.g. user@domain.com or First Last">
+          </div>
+          <div class="form-group flex-1">
+            <label for="userTimeframeDays">TIMEFRAME</label>
+            <select id="userTimeframeDays">
+              <option value="30">Last 30 Days</option>
+              <option value="90" selected>Last 90 Days</option>
+              <option value="180">Last 6 Months</option>
+              <option value="365">Last 1 Year</option>
+              <option value="0">All Time</option>
+            </select>
+          </div>
+          <button type="button" id="btnFetchActivity" class="btn-primary">Search Activity</button>
+        </div>
+
+        <!-- 5D: Pipelines -->
+        <div id="substepPipelines" class="substep-row hidden">
+          <div class="form-group flex-2">
+            <label for="pipelineRunsTop">TOP RUNS TO SCAN</label>
+            <select id="pipelineRunsTop">
+              <option value="25">Latest 25 Runs</option>
+              <option value="50" selected>Latest 50 Runs</option>
+              <option value="100">Latest 100 Runs</option>
+            </select>
+          </div>
+          <button type="button" id="btnFetchPipelines" class="btn-primary">Fetch Pipeline Runs</button>
+        </div>
+
+        <!-- 5E: Work Items -->
+        <div id="substepWorkItems" class="substep-row hidden">
+          <div class="form-group flex-2">
+            <label for="targetWorkItemUser">ASSIGNED USER EMAIL / NAME</label>
+            <input type="text" id="targetWorkItemUser" placeholder="e.g. user@domain.com or leave blank for all">
+          </div>
+          <button type="button" id="btnFetchWorkItems" class="btn-primary">Query Work Items</button>
+        </div>
+
+      </div>
+
+      <!-- Status Banner -->
+      <div id="statusBar" class="status-banner hidden"></div>
+    </section>
+
+    <!-- Results Dashboard -->
+    <main id="mainDashboard" class="hidden">
+      
+      <!-- KPI Summary Row -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <p class="kpi-label">Active Scope</p>
+          <p id="kpi-1-val" class="kpi-value text-slate">-</p>
+        </div>
+        <div class="kpi-card">
+          <p id="kpi-2-label" class="kpi-label">Security Groups</p>
+          <p id="kpi-2-val" class="kpi-value text-blue">0</p>
+        </div>
+        <div class="kpi-card">
+          <p id="kpi-3-label" class="kpi-label">Assigned Roles/Members</p>
+          <p id="kpi-3-val" class="kpi-value text-green">0</p>
+        </div>
+        <div class="kpi-card">
+          <p id="kpi-4-label" class="kpi-label">Mode</p>
+          <p id="kpi-4-val" class="kpi-value text-purple">Security Matrix</p>
+        </div>
+      </div>
+
+      <!-- Analytics Chart -->
+      <div id="chartSection" class="chart-card">
+        <div class="chart-header">
+          <h2 id="chartTitle">Activity Overview</h2>
+          <div class="chart-controls">
+            <span>Chart Type:</span>
+            <button type="button" class="btn-chart active" data-chart="bar">Bar</button>
+            <button type="button" class="btn-chart" data-chart="line">Line</button>
+            <button type="button" class="btn-chart" data-chart="pie">Pie</button>
           </div>
         </div>
-        <div class="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th>REPOSITORY</th>
-                <th>BRANCH NAME</th>
-                <th>STATUS / HEALTH</th>
-                <th>BRANCH POLICIES</th>
-                <th>LAST AUTHOR</th>
-                <th>LAST COMMIT DATE</th>
-                <th>COMMIT MESSAGE</th>
-              </tr>
-            </thead>
-            <tbody id="branchesTableBody"></tbody>
-          </table>
-        </div>
-        <div id="seeMoreRepoContainer" class="pagination-footer hidden">
-          <button type="button" id="btnMoreRepos" class="btn-secondary">See More (<span id="repoRemainingCount">0</span> remaining)</button>
+        <div class="chart-wrapper">
+          <canvas id="analyticsChart"></canvas>
         </div>
       </div>
 
-      <div class="data-card">
-        <div class="data-card-header">
-          <div>
-            <h3>Branch Policy Configurations & Enforcement Rules</h3>
-            <span class="subtext">Protection policies for selected repository scope</span>
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <input type="text" id="tableFilterInput" class="search-input" placeholder="Quick filter displayed rows...">
+        <button type="button" id="btnExportCSV" class="btn-export">📥 Export to CSV</button>
+      </div>
+
+      <!-- VIEW 1: Repositories & Policies -->
+      <section id="view-repositories" class="data-view hidden">
+        <div class="data-card">
+          <div class="data-card-header">
+            <div>
+              <h3>Repositories & Active Branch Matrix</h3>
+              <span class="subtext">Branches older than 90 days flagged as Stale | Branch Policy status included</span>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>REPOSITORY</th>
+                  <th>BRANCH NAME</th>
+                  <th>STATUS / HEALTH</th>
+                  <th>BRANCH POLICIES</th>
+                  <th>LAST AUTHOR</th>
+                  <th>LAST COMMIT DATE</th>
+                  <th>COMMIT MESSAGE</th>
+                </tr>
+              </thead>
+              <tbody id="branchesTableBody"></tbody>
+            </table>
+          </div>
+          <div id="seeMoreRepoContainer" class="pagination-footer hidden">
+            <button type="button" id="btnMoreRepos" class="btn-secondary">See More (<span id="repoRemainingCount">0</span> remaining)</button>
           </div>
         </div>
-        <div class="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th>REPOSITORY</th>
-                <th>PROTECTED BRANCH</th>
-                <th>POLICY TYPE</th>
-                <th>ENFORCEMENT</th>
-                <th>POLICY CONFIGURATION DETAILS</th>
-                <th>STATUS</th>
-              </tr>
-            </thead>
-            <tbody id="policyTableBody"></tbody>
-          </table>
-        </div>
-      </div>
 
-      <div class="data-card">
-        <div class="data-card-header">
-          <h3>Pull Requests (Active & Completed)</h3>
-        </div>
-        <div class="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th>REPOSITORY</th>
-                <th>PR TITLE</th>
-                <th>SOURCE → TARGET</th>
-                <th>CREATOR</th>
-                <th>STATUS</th>
-                <th>CREATED DATE</th>
-              </tr>
-            </thead>
-            <tbody id="repoPrsTableBody"></tbody>
-          </table>
-        </div>
-        <div id="seeMoreRepoPrsContainer" class="pagination-footer hidden">
-          <button type="button" id="btnMorePrs" class="btn-secondary">See More (<span id="repoPrsRemainingCount">0</span> remaining)</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- VIEW 2: Project Security Groups, Roles & Member Permissions -->
-    <section id="view-access" class="data-view hidden">
-      <div class="data-card">
-        <div class="data-card-header">
-          <div>
-            <h3>Project Security Groups, Roles & Member Permissions</h3>
+        <div class="data-card">
+          <div class="data-card-header">
+            <div>
+              <h3>Branch Policy Configurations & Enforcement Rules</h3>
+              <span class="subtext">Protection policies for selected repository scope</span>
+            </div>
           </div>
-          <button type="button" id="btnExportAccessXlsx" class="btn-export-green">📥 Export Permissions (.xlsx)</button>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>REPOSITORY</th>
+                  <th>PROTECTED BRANCH</th>
+                  <th>POLICY TYPE</th>
+                  <th>ENFORCEMENT</th>
+                  <th>POLICY CONFIGURATION DETAILS</th>
+                  <th>STATUS</th>
+                </tr>
+              </thead>
+              <tbody id="policyTableBody"></tbody>
+            </table>
+          </div>
         </div>
-        <div class="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th>PROJECT</th>
-                <th>SECURITY GROUP NAME</th>
-                <th>ROLE</th>
-                <th>USER DISPLAY NAME</th>
-                <th>USER PRINCIPAL / EMAIL</th>
-              </tr>
-            </thead>
-            <tbody id="accessTableBody"></tbody>
-          </table>
-        </div>
-        <div id="seeMoreAccessContainer" class="pagination-footer hidden">
-          <button type="button" id="btnMoreAccess" class="btn-secondary">See More (<span id="accessRemainingCount">0</span> remaining)</button>
-        </div>
-      </div>
-    </section>
 
-    <!-- VIEW 3: Activity & Commits -->
-    <section id="view-activity" class="data-view hidden">
-      <div class="data-card">
-        <div class="data-card-header">
-          <h3>Recent Commit History & Code Changes</h3>
+        <div class="data-card">
+          <div class="data-card-header">
+            <h3>Pull Requests (Active & Completed)</h3>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>REPOSITORY</th>
+                  <th>PR TITLE</th>
+                  <th>SOURCE → TARGET</th>
+                  <th>CREATOR</th>
+                  <th>STATUS</th>
+                  <th>CREATED DATE</th>
+                </tr>
+              </thead>
+              <tbody id="repoPrsTableBody"></tbody>
+            </table>
+          </div>
+          <div id="seeMoreRepoPrsContainer" class="pagination-footer hidden">
+            <button type="button" id="btnMorePrs" class="btn-secondary">See More (<span id="repoPrsRemainingCount">0</span> remaining)</button>
+          </div>
         </div>
-        <div class="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th>REPOSITORY</th>
-                <th>COMMIT ID</th>
-                <th>AUTHOR</th>
-                <th>COMMIT DATE</th>
-                <th>MESSAGE / CHANGES</th>
-              </tr>
-            </thead>
-            <tbody id="userCommitsTableBody"></tbody>
-          </table>
-        </div>
-        <div id="seeMoreCommitsContainer" class="pagination-footer hidden">
-          <button type="button" id="btnMoreCommits" class="btn-secondary">See More (<span id="commitsRemainingCount">0</span> remaining)</button>
-        </div>
-      </div>
+      </section>
 
-      <div class="data-card">
-        <div class="data-card-header">
-          <h3>Pull Requests (Created / Authored)</h3>
+      <!-- VIEW 2: Project Security Groups, Roles & Member Permissions -->
+      <section id="view-access" class="data-view hidden">
+        <div class="data-card">
+          <div class="data-card-header">
+            <div>
+              <h3>Project Security Groups, Roles & Member Permissions</h3>
+            </div>
+            <button type="button" id="btnExportAccessXlsx" class="btn-export-green">📥 Export Permissions (.xlsx)</button>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>PROJECT</th>
+                  <th>SECURITY GROUP NAME</th>
+                  <th>ROLE</th>
+                  <th>USER DISPLAY NAME</th>
+                  <th>USER PRINCIPAL / EMAIL</th>
+                </tr>
+              </thead>
+              <tbody id="accessTableBody"></tbody>
+            </table>
+          </div>
+          <div id="seeMoreAccessContainer" class="pagination-footer hidden">
+            <button type="button" id="btnMoreAccess" class="btn-secondary">See More (<span id="accessRemainingCount">0</span> remaining)</button>
+          </div>
         </div>
-        <div class="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th>REPOSITORY</th>
-                <th>PR TITLE</th>
-                <th>SOURCE → TARGET</th>
-                <th>STATUS</th>
-                <th>CREATION DATE</th>
-              </tr>
-            </thead>
-            <tbody id="userPrTableBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- VIEW 4: Pipelines -->
-    <section id="view-pipelines" class="data-view hidden">
-      <div class="data-card">
-        <div class="data-card-header">
-          <h3>Pipeline & CI/CD Build Runs</h3>
+      <!-- VIEW 3: Activity & Commits -->
+      <section id="view-activity" class="data-view hidden">
+        <div class="data-card">
+          <div class="data-card-header">
+            <h3>Recent Commit History & Code Changes</h3>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>REPOSITORY</th>
+                  <th>COMMIT ID</th>
+                  <th>AUTHOR</th>
+                  <th>COMMIT DATE</th>
+                  <th>MESSAGE / CHANGES</th>
+                </tr>
+              </thead>
+              <tbody id="userCommitsTableBody"></tbody>
+            </table>
+          </div>
+          <div id="seeMoreCommitsContainer" class="pagination-footer hidden">
+            <button type="button" id="btnMoreCommits" class="btn-secondary">See More (<span id="commitsRemainingCount">0</span> remaining)</button>
+          </div>
         </div>
-        <div class="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th>PIPELINE NAME</th>
-                <th>BUILD #</th>
-                <th>BRANCH</th>
-                <th>TRIGGERED BY</th>
-                <th>RESULT</th>
-                <th>FINISH TIME</th>
-              </tr>
-            </thead>
-            <tbody id="pipelineTableBody"></tbody>
-          </table>
-        </div>
-        <div id="seeMorePipelinesContainer" class="pagination-footer hidden">
-          <button type="button" id="btnMorePipelines" class="btn-secondary">See More (<span id="pipelinesRemainingCount">0</span> remaining)</button>
-        </div>
-      </div>
-    </section>
 
-    <!-- VIEW 5: Work Items -->
-    <section id="view-workitems" class="data-view hidden">
-      <div class="data-card">
-        <div class="data-card-header">
-          <h3>Active Work Items & Backlog Status</h3>
+        <div class="data-card">
+          <div class="data-card-header">
+            <h3>Pull Requests (Created / Authored)</h3>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>REPOSITORY</th>
+                  <th>PR TITLE</th>
+                  <th>SOURCE → TARGET</th>
+                  <th>STATUS</th>
+                  <th>CREATION DATE</th>
+                </tr>
+              </thead>
+              <tbody id="userPrTableBody"></tbody>
+            </table>
+          </div>
         </div>
-        <div class="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>TYPE</th>
-                <th>TITLE</th>
-                <th>ASSIGNED TO</th>
-                <th>STATE</th>
-                <th>CREATED DATE</th>
-              </tr>
-            </thead>
-            <tbody id="workItemsTableBody"></tbody>
-          </table>
-        </div>
-        <div id="seeMoreWorkItemsContainer" class="pagination-footer hidden">
-          <button type="button" id="btnMoreWorkItems" class="btn-secondary">See More (<span id="workItemsRemainingCount">0</span> remaining)</button>
-        </div>
-      </div>
-    </section>
+      </section>
 
-  </main>
+      <!-- VIEW 4: Pipelines -->
+      <section id="view-pipelines" class="data-view hidden">
+        <div class="data-card">
+          <div class="data-card-header">
+            <h3>Pipeline & CI/CD Build Runs</h3>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>PIPELINE NAME</th>
+                  <th>BUILD #</th>
+                  <th>BRANCH</th>
+                  <th>TRIGGERED BY</th>
+                  <th>RESULT</th>
+                  <th>FINISH TIME</th>
+                </tr>
+              </thead>
+              <tbody id="pipelineTableBody"></tbody>
+            </table>
+          </div>
+          <div id="seeMorePipelinesContainer" class="pagination-footer hidden">
+            <button type="button" id="btnMorePipelines" class="btn-secondary">See More (<span id="pipelinesRemainingCount">0</span> remaining)</button>
+          </div>
+        </div>
+      </section>
 
-  <!-- Modular Scripts -->
-  <script src="js/repos.js?v=6.0"></script>
-  <script src="js/access.js?v=6.0"></script>
-  <script src="js/activity.js?v=6.0"></script>
-  <script src="js/pipelines.js?v=6.0"></script>
-  <script src="js/workitems.js?v=6.0"></script>
-  <script src="js/app.js?v=6.0"></script>
+      <!-- VIEW 5: Work Items -->
+      <section id="view-workitems" class="data-view hidden">
+        <div class="data-card">
+          <div class="data-card-header">
+            <h3>Active Work Items & Backlog Status</h3>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>TYPE</th>
+                  <th>TITLE</th>
+                  <th>ASSIGNED TO</th>
+                  <th>STATE</th>
+                  <th>CREATED DATE</th>
+                </tr>
+              </thead>
+              <tbody id="workItemsTableBody"></tbody>
+            </table>
+          </div>
+          <div id="seeMoreWorkItemsContainer" class="pagination-footer hidden">
+            <button type="button" id="btnMoreWorkItems" class="btn-secondary">See More (<span id="workItemsRemainingCount">0</span> remaining)</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Modular Linked Scripts -->
+  <script src="js/repos.js?v=7.0"></script>
+  <script src="js/access.js?v=7.0"></script>
+  <script src="js/activity.js?v=7.0"></script>
+  <script src="js/pipelines.js?v=7.0"></script>
+  <script src="js/workitems.js?v=7.0"></script>
+  <script src="js/app.js?v=7.0"></script>
 </body>
 </html>
