@@ -174,20 +174,90 @@ window.PipelineModule = {
         releaseUrl = `https://dev.azure.com/${org}/${encodeURIComponent(project)}/_releaseProgress?_a=release-pipeline-progress&releaseId=${linkedRelease.id}`;
 
         environments = (linkedRelease.environments || []).map(env => {
-          const envStatus = (env.status || '').toLowerCase();
+          const rawStatus = env.status;
+          const statusStr = String(rawStatus || '').toLowerCase();
           let normalizedEnvStatus = 'notStarted';
-          if (envStatus.includes('success') || envStatus.includes('completed')) normalizedEnvStatus = 'succeeded';
-          else if (envStatus.includes('fail') || envStatus.includes('rejected')) normalizedEnvStatus = 'failed';
-          else if (envStatus.includes('progress') || envStatus.includes('queued') || envStatus.includes('scheduled')) normalizedEnvStatus = 'inProgress';
-          else if (envStatus.includes('cancel')) normalizedEnvStatus = 'canceled';
+
+          // Check Azure DevOps integer enums and string statuses:
+          // 4 = Succeeded, 32 = PartiallySucceeded, 2 = InProgress, 16 = Rejected/Failed, 8 = Canceled, 1 = NotStarted
+          if (
+            rawStatus === 4 ||
+            rawStatus === 32 ||
+            statusStr === '4' ||
+            statusStr === '32' ||
+            statusStr.includes('success') ||
+            statusStr.includes('completed') ||
+            statusStr.includes('partially')
+          ) {
+            normalizedEnvStatus = 'succeeded';
+          } else if (
+            rawStatus === 16 ||
+            statusStr === '16' ||
+            statusStr.includes('fail') ||
+            statusStr.includes('reject')
+          ) {
+            normalizedEnvStatus = 'failed';
+          } else if (
+            rawStatus === 2 ||
+            statusStr === '2' ||
+            statusStr.includes('progress') ||
+            statusStr.includes('queued') ||
+            statusStr.includes('scheduled') ||
+            statusStr.includes('pending')
+          ) {
+            normalizedEnvStatus = 'inProgress';
+          } else if (
+            rawStatus === 8 ||
+            statusStr === '8' ||
+            statusStr.includes('cancel') ||
+            statusStr.includes('skip')
+          ) {
+            normalizedEnvStatus = 'canceled';
+          } else {
+            normalizedEnvStatus = 'notStarted';
+          }
+
+          let displayStatus = 'Not Started';
+          if (normalizedEnvStatus === 'succeeded') displayStatus = 'Succeeded';
+          else if (normalizedEnvStatus === 'failed') displayStatus = 'Failed';
+          else if (normalizedEnvStatus === 'inProgress') displayStatus = 'In Progress';
+          else if (normalizedEnvStatus === 'canceled') displayStatus = 'Canceled';
 
           return {
             id: env.id,
             name: env.name || 'Environment',
             status: normalizedEnvStatus,
-            rawStatus: env.status || 'Not Started'
+            rawStatus: displayStatus
           };
         });
+
+        // Cross-reference with allDeployments for the latest deployment status
+        environments.forEach(env => {
+          const matchingDep = allDeployments.find(d => {
+            return (
+              d.release?.id === releaseId &&
+              (d.releaseEnvironment?.id === env.id || d.releaseEnvironment?.name === env.name)
+            );
+          });
+
+          if (matchingDep) {
+            const depStatus = String(matchingDep.deploymentStatus || '').toLowerCase();
+            if (depStatus.includes('success') || depStatus.includes('completed')) {
+              env.status = 'succeeded';
+              env.rawStatus = 'Succeeded';
+            } else if (depStatus.includes('fail') || depStatus.includes('reject')) {
+              env.status = 'failed';
+              env.rawStatus = 'Failed';
+            } else if (depStatus.includes('inprog') || depStatus.includes('queued')) {
+              env.status = 'inProgress';
+              env.rawStatus = 'In Progress';
+            } else if (depStatus.includes('cancel')) {
+              env.status = 'canceled';
+              env.rawStatus = 'Canceled';
+            }
+          }
+        });
+
       } else if (b.id) {
         // If no classic release is linked, check if this is a Multi-Stage YAML Pipeline with deployment stages
         try {
@@ -211,16 +281,22 @@ window.PipelineModule = {
               environments = candidateStages.map(s => {
                 let normStatus = 'notStarted';
                 const sResult = (s.result || s.state || '').toLowerCase();
-                if (sResult.includes('success')) normStatus = 'succeeded';
-                else if (sResult.includes('fail')) normStatus = 'failed';
+                if (sResult.includes('success') || sResult.includes('completed')) normStatus = 'succeeded';
+                else if (sResult.includes('fail') || sResult.includes('rejected')) normStatus = 'failed';
                 else if (sResult.includes('inprog') || sResult.includes('running')) normStatus = 'inProgress';
                 else if (sResult.includes('cancel') || sResult.includes('skipped')) normStatus = 'canceled';
+
+                let displayStatus = 'Not Started';
+                if (normStatus === 'succeeded') displayStatus = 'Succeeded';
+                else if (normStatus === 'failed') displayStatus = 'Failed';
+                else if (normStatus === 'inProgress') displayStatus = 'In Progress';
+                else if (normStatus === 'canceled') displayStatus = 'Canceled';
 
                 return {
                   id: s.id,
                   name: s.name,
                   status: normStatus,
-                  rawStatus: s.result || s.state || 'Pending'
+                  rawStatus: displayStatus
                 };
               });
             }
@@ -247,26 +323,37 @@ window.PipelineModule = {
         overallStatusLabel = 'Canceled';
       } else if (buildResult === 'succeeded' || buildResult === 'partiallySucceeded') {
         if (environments.length > 0) {
-          const hasFailure = environments.some(e => e.status === 'failed');
-          const hasInProgress = environments.some(e => e.status === 'inProgress');
-          const allSucceeded = environments.every(e => e.status === 'succeeded');
+          const succeededEnvs = environments.filter(e => e.status === 'succeeded');
+          const failedEnvs = environments.filter(e => e.status === 'failed');
+          const inProgressEnvs = environments.filter(e => e.status === 'inProgress');
+          const notStartedEnvs = environments.filter(e => e.status === 'notStarted');
 
-          if (hasFailure) {
+          if (failedEnvs.length > 0) {
             overallCicdState = 'deploy_failed';
-            overallStatusLabel = 'Deploy Failed';
+            overallStatusLabel = `Deploy Failed (${failedEnvs[0].name})`;
             cicdCounts.deploy_failed++;
-          } else if (hasInProgress) {
+          } else if (inProgressEnvs.length > 0) {
             overallCicdState = 'in_progress';
-            overallStatusLabel = 'Deploying...';
+            overallStatusLabel = `Deploying (${inProgressEnvs[0].name})...`;
             cicdCounts.in_progress++;
-          } else if (allSucceeded) {
+          } else if (succeededEnvs.length > 0) {
+            // If deployed environment(s) succeeded!
             overallCicdState = 'deployed';
-            overallStatusLabel = 'Build & Deployed';
+            if (notStartedEnvs.length > 0) {
+              overallStatusLabel = `Deployed (${succeededEnvs.map(e => e.name).join(', ')})`;
+            } else {
+              overallStatusLabel = 'Build & Deployed';
+            }
             cicdCounts.deployed++;
-          } else {
+          } else if (notStartedEnvs.length > 0) {
+            // Only if NO deployment has run yet (all environments not started / pending manual trigger)
             overallCicdState = 'deploy_pending';
             overallStatusLabel = 'Deploy Pending';
             cicdCounts.deploy_pending++;
+          } else {
+            overallCicdState = 'deployed';
+            overallStatusLabel = 'Build & Deployed';
+            cicdCounts.deployed++;
           }
         } else {
           overallCicdState = 'build_only';
@@ -321,7 +408,6 @@ window.PipelineModule = {
     // 5. Update KPI cards
     const buildsPassed = processedRuns.filter(r => r.buildResult === 'succeeded').length;
     const fullyDeployed = processedRuns.filter(r => r.overallCicdState === 'deployed').length;
-    const deployIssues = processedRuns.filter(r => r.overallCicdState === 'deploy_failed' || r.overallCicdState === 'deploy_pending').length;
 
     window.HubApp.setKpis(
       project,
@@ -391,6 +477,9 @@ window.PipelineModule = {
       } else if (env.status === 'inProgress') {
         badgeClass = 'badge-inprogress';
         icon = '↻';
+      } else if (env.status === 'notStarted') {
+        badgeClass = 'badge-canceled';
+        icon = '⏳';
       }
 
       return `<span class="badge ${badgeClass}" style="font-size:11px; padding:2px 7px; margin-right:3px;" title="${env.name}: ${env.rawStatus}">${env.name}: ${icon}</span>`;
@@ -409,7 +498,7 @@ window.PipelineModule = {
       return `
         <span class="badge badge-succeeded" style="font-weight:700;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-          Build & Deployed
+          ${label || 'Build & Deployed'}
         </span>
       `;
     }
@@ -417,7 +506,7 @@ window.PipelineModule = {
       return `
         <span class="badge badge-failed" style="font-weight:700;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
-          Deploy Failed
+          ${label || 'Deploy Failed'}
         </span>
       `;
     }
@@ -425,7 +514,7 @@ window.PipelineModule = {
       return `
         <span class="badge badge-warning" style="font-weight:700;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
-          Deploy Pending
+          ${label || 'Deploy Pending'}
         </span>
       `;
     }
@@ -441,7 +530,7 @@ window.PipelineModule = {
       return `
         <span class="badge badge-inprogress" style="font-weight:700;">
           <svg class="spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle></svg>
-          In Progress
+          ${label || 'In Progress'}
         </span>
       `;
     }
