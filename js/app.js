@@ -492,9 +492,15 @@ window.HubApp = {
   async execPipelineFetch() {
     try {
       this.showDashboard('pipelines');
-      this.setStatus('Fetching pipeline runs & build telemetry...', 'info');
-      await window.PipelineModule.fetch(this.getOrg(), document.getElementById('projectSelect').value, this.getPat(), document.getElementById('pipelineRunsTop').value);
-      this.setStatus('Pipeline metrics loaded.', 'success');
+      this.setStatus('Fetching pipeline runs & linked release deployments...', 'info');
+      await window.PipelineModule.fetch(
+        this.getOrg(),
+        document.getElementById('projectSelect').value,
+        this.getPat(),
+        document.getElementById('pipelineRunsTop').value,
+        document.getElementById('pipelineDeploymentFilter')?.value || 'all'
+      );
+      this.setStatus('Pipeline build & release deployment metrics loaded.', 'success');
     } catch (e) { this.setStatus(e.message, 'error'); }
   },
 

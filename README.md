@@ -15,7 +15,7 @@ An authentic **Microsoft Azure Portal-themed** single-page intelligence platform
 - 🏛️ **Executive Presentation & Azure Dark Themes**: 1-click switcher between **Executive Bright Mode** (high-contrast for stakeholder presentations) and **Azure Portal Dark Canvas Mode**.
 - 🛡️ **Project Security Groups & Permissions Graph**: Audit all project security groups, inherited rights, descriptors, and member identities.
 - 🌿 **Branch Policies & Health Matrix**: Verify branch protection policies (minimum reviewer counts, build validations, comment resolution, merge strategies) and flag stale branches (>90 days).
-- 📊 **CI/CD Pipeline & Build Telemetry**: Monitor build statuses with official Azure status indicators (Emerald Succeeded, Crimson Failed, Pulsing Blue In-Progress).
+- 📊 **Unified Build & Release Pipeline Delivery**: Monitor every build along with its linked **Release Pipeline deployments** (Dev, QA, Staging, Production). Instantly determine whether both the build and release environments have succeeded, are in progress, or require action.
 - 🗂️ **Interactive Azure Blades**: Click any pipeline run, branch policy, commit, work item, agent pool, or service connection to slide in a deep telemetry blade from the right with visual stage topology graphs, capability matrices, and diagnostic logs.
 - 📋 **Active Work Items & Backlog**: Query work items with integrated WIQL engine and type distribution charts.
 - ⚙️ **Project Agent Pools & Queues**: Inspect project-wise task agent queues, Azure-hosted runners vs self-hosted agents, real-time online/offline statuses, running jobs, version details, and system capability matrices.

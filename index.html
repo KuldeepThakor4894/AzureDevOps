@@ -333,21 +333,31 @@
             </button>
           </div>
 
-          <!-- 5D: Pipelines -->
+          <!-- 5D: Pipelines & Releases -->
           <div id="substepPipelines" class="substep-row hidden">
-            <div class="form-group flex-2">
-              <label for="pipelineRunsTop">TOP RUNS TO SCAN</label>
+            <div class="form-group flex-1">
+              <label for="pipelineRunsTop">TOP RUNS</label>
               <select id="pipelineRunsTop">
                 <option value="25">Latest 25 Runs</option>
                 <option value="50" selected>Latest 50 Runs</option>
                 <option value="100">Latest 100 Runs</option>
               </select>
             </div>
+            <div class="form-group flex-1">
+              <label for="pipelineDeploymentFilter">DEPLOYMENT FILTER</label>
+              <select id="pipelineDeploymentFilter">
+                <option value="all" selected>All Build & Deployments</option>
+                <option value="deployed">Build & Deployed (Passed)</option>
+                <option value="deploy_failed">Deployment Failed</option>
+                <option value="deploy_pending">Deploy Pending / Not Started</option>
+                <option value="build_failed">Build Failed</option>
+              </select>
+            </div>
             <button type="button" id="btnFetchPipelines" class="btn-primary">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polygon points="5 3 19 12 5 21 5 3"></polygon>
               </svg>
-              Fetch Pipeline Runs
+              Fetch Build & Release Runs
             </button>
           </div>
 
@@ -736,20 +746,20 @@
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polygon points="5 3 19 12 5 21 5 3"></polygon>
                   </svg>
-                  Pipeline & CI/CD Build Runs
+                  Pipeline Builds & Release Deployment Matrix
                 </h3>
-                <span class="subtext">Click any build run to slide in the Azure Stage Flow & Diagnostic Telemetry Blade</span>
+                <span class="subtext">Click any run to inspect end-to-end Build & Release stage flow, environment gates, and logs</span>
               </div>
             </div>
             <div class="table-responsive">
               <table>
                 <thead>
                   <tr>
-                    <th>PIPELINE NAME</th>
-                    <th>BUILD #</th>
-                    <th>BRANCH</th>
-                    <th>TRIGGERED BY</th>
-                    <th>RESULT</th>
+                    <th>PIPELINE / BUILD</th>
+                    <th>BRANCH & TRIGGER</th>
+                    <th>BUILD STATUS</th>
+                    <th>LINKED RELEASE & ENV</th>
+                    <th>CI/CD STATE</th>
                     <th>FINISH TIME</th>
                   </tr>
                 </thead>
