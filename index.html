@@ -263,6 +263,8 @@
               <option value="user_activity">User Activity & Commits</option>
               <option value="pipelines">Pipelines & CI/CD Builds</option>
               <option value="work_items">Work Items & Backlog</option>
+              <option value="agent_pools">Agent Pools & Queues</option>
+              <option value="service_connections">Service Connections & Endpoints</option>
             </select>
           </div>
         </div>
@@ -364,6 +366,53 @@
                 <polyline points="10 9 9 9 8 9"></polyline>
               </svg>
               Query Work Items
+            </button>
+          </div>
+
+          <!-- 5F: Agent Pools -->
+          <div id="substepAgentPools" class="substep-row hidden">
+            <div class="form-group flex-2">
+              <label for="agentPoolTypeSelect">5. POOL TYPE / SCOPE</label>
+              <select id="agentPoolTypeSelect">
+                <option value="all" selected>All Agent Pools & Queues</option>
+                <option value="hosted">Azure-Hosted (Microsoft-Managed)</option>
+                <option value="selfhosted">Self-Hosted / Private Compute</option>
+              </select>
+            </div>
+            <button type="button" id="btnFetchAgentPools" class="btn-primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+              Scan Project Agent Pools
+            </button>
+          </div>
+
+          <!-- 5G: Service Connections -->
+          <div id="substepServiceConnections" class="substep-row hidden">
+            <div class="form-group flex-1">
+              <label for="scTypeSelect">5. CONNECTION TYPE</label>
+              <select id="scTypeSelect">
+                <option value="all" selected>All Connection Types</option>
+                <option value="azurerm">Azure Resource Manager (ARM)</option>
+                <option value="github">GitHub / Git Repositories</option>
+                <option value="docker">Docker & Container Registry</option>
+                <option value="kubernetes">Kubernetes (K8s)</option>
+                <option value="other">Other 3rd Party Endpoints</option>
+              </select>
+            </div>
+            <div class="form-group flex-2">
+              <label for="targetScQuery">SEARCH NAME / CREATOR</label>
+              <input type="text" id="targetScQuery" placeholder="e.g. Prod-Subscription or GitHub or leave blank">
+            </div>
+            <button type="button" id="btnFetchServiceConnections" class="btn-primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+              </svg>
+              Scan Service Connections
             </button>
           </div>
 
@@ -749,6 +798,80 @@
           </div>
         </section>
 
+        <!-- VIEW 6: Agent Pools -->
+        <section id="view-agentpools" class="data-view hidden">
+          <div class="data-card">
+            <div class="data-card-header">
+              <div>
+                <h3>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                    <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                    <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                    <line x1="6" y1="18" x2="6.01" y2="18"></line>
+                  </svg>
+                  Project Agent Pools & Queues
+                </h3>
+                <span class="subtext">Click any agent pool to slide in the Azure Fleet Telemetry Blade & capability inspector</span>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>POOL / QUEUE NAME</th>
+                    <th>POOL TYPE</th>
+                    <th>AGENTS CAPACITY</th>
+                    <th>HEALTH / STATUS</th>
+                    <th>PROVISIONING</th>
+                    <th>POOL ID</th>
+                  </tr>
+                </thead>
+                <tbody id="agentPoolsTableBody"></tbody>
+              </table>
+            </div>
+            <div id="seeMoreAgentPoolsContainer" class="pagination-footer hidden">
+              <button type="button" id="btnMoreAgentPools" class="btn-secondary">See More (<span id="agentPoolsRemainingCount">0</span> remaining)</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW 7: Service Connections -->
+        <section id="view-serviceconnections" class="data-view hidden">
+          <div class="data-card">
+            <div class="data-card-header">
+              <div>
+                <h3>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                  </svg>
+                  Service Connections & Cloud Endpoints
+                </h3>
+                <span class="subtext">Click any service connection to inspect identity federation, auth model & endpoint scopes</span>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>CONNECTION NAME</th>
+                    <th>SERVICE TYPE</th>
+                    <th>AUTH SCHEME</th>
+                    <th>TARGET SCOPE / URL</th>
+                    <th>CREATED BY</th>
+                    <th>STATUS / HEALTH</th>
+                  </tr>
+                </thead>
+                <tbody id="serviceConnectionsTableBody"></tbody>
+              </table>
+            </div>
+            <div id="seeMoreServiceConnectionsContainer" class="pagination-footer hidden">
+              <button type="button" id="btnMoreServiceConnections" class="btn-secondary">See More (<span id="serviceConnectionsRemainingCount">0</span> remaining)</button>
+            </div>
+          </div>
+        </section>
+
       </main>
     </div>
 
@@ -841,6 +964,8 @@
   <script src="js/activity.js?v=13.0"></script>
   <script src="js/pipelines.js?v=13.0"></script>
   <script src="js/workitems.js?v=13.0"></script>
+  <script src="js/agentpools.js?v=13.0"></script>
+  <script src="js/serviceconnections.js?v=13.0"></script>
   <script src="js/app.js?v=13.0"></script>
 </body>
 </html>

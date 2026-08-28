@@ -231,6 +231,8 @@ window.HubApp = {
     document.getElementById('btnFetchActivity').addEventListener('click', () => self.execActivityFetch());
     document.getElementById('btnFetchPipelines').addEventListener('click', () => self.execPipelineFetch());
     document.getElementById('btnFetchWorkItems').addEventListener('click', () => self.execWorkItemsFetch());
+    document.getElementById('btnFetchAgentPools').addEventListener('click', () => self.execAgentPoolsFetch());
+    document.getElementById('btnFetchServiceConnections').addEventListener('click', () => self.execServiceConnectionsFetch());
 
     // Pagination Listeners
     document.getElementById('btnMoreRepos')?.addEventListener('click', () => window.RepoModule.renderBranches(true));
@@ -239,6 +241,8 @@ window.HubApp = {
     document.getElementById('btnMoreCommits')?.addEventListener('click', () => window.ActivityModule.renderCommits(true));
     document.getElementById('btnMorePipelines')?.addEventListener('click', () => window.PipelineModule.render(true));
     document.getElementById('btnMoreWorkItems')?.addEventListener('click', () => window.WorkItemModule.render(true));
+    document.getElementById('btnMoreAgentPools')?.addEventListener('click', () => window.AgentPoolModule.render(true));
+    document.getElementById('btnMoreServiceConnections')?.addEventListener('click', () => window.ServiceConnectionModule.render(true));
 
     // Chart Switchers
     document.querySelectorAll('.btn-chart').forEach(btn => {
@@ -409,7 +413,7 @@ window.HubApp = {
     }
 
     step5.classList.remove('hidden');
-    ['substepRepo', 'substepAccess', 'substepActivity', 'substepPipelines', 'substepWorkItems'].forEach(id => {
+    ['substepRepo', 'substepAccess', 'substepActivity', 'substepPipelines', 'substepWorkItems', 'substepAgentPools', 'substepServiceConnections'].forEach(id => {
       document.getElementById(id).classList.add('hidden');
     });
 
@@ -440,12 +444,16 @@ window.HubApp = {
       document.getElementById('substepPipelines').classList.remove('hidden');
     } else if (cat === 'work_items') {
       document.getElementById('substepWorkItems').classList.remove('hidden');
+    } else if (cat === 'agent_pools') {
+      document.getElementById('substepAgentPools').classList.remove('hidden');
+    } else if (cat === 'service_connections') {
+      document.getElementById('substepServiceConnections').classList.remove('hidden');
     }
   },
 
   showDashboard(viewId) {
     document.getElementById('mainDashboard').classList.remove('hidden');
-    ['view-repositories', 'view-access', 'view-activity', 'view-pipelines', 'view-workitems'].forEach(id => {
+    ['view-repositories', 'view-access', 'view-activity', 'view-pipelines', 'view-workitems', 'view-agentpools', 'view-serviceconnections'].forEach(id => {
       document.getElementById(id).classList.toggle('hidden', id !== `view-${viewId}`);
     });
   },
@@ -496,6 +504,35 @@ window.HubApp = {
       this.setStatus('Querying work items with WIQL engine...', 'info');
       await window.WorkItemModule.fetch(this.getOrg(), document.getElementById('projectSelect').value, this.getPat(), document.getElementById('targetWorkItemUser').value.trim());
       this.setStatus('Work items & backlog status loaded.', 'success');
+    } catch (e) { this.setStatus(e.message, 'error'); }
+  },
+
+  async execAgentPoolsFetch() {
+    try {
+      this.showDashboard('agentpools');
+      this.setStatus('Scanning agent pools & queues for project...', 'info');
+      await window.AgentPoolModule.fetch(
+        this.getOrg(),
+        document.getElementById('projectSelect').value,
+        this.getPat(),
+        document.getElementById('agentPoolTypeSelect').value
+      );
+      this.setStatus('Agent pools & infrastructure telemetry loaded.', 'success');
+    } catch (e) { this.setStatus(e.message, 'error'); }
+  },
+
+  async execServiceConnectionsFetch() {
+    try {
+      this.showDashboard('serviceconnections');
+      this.setStatus('Scanning service connections & endpoints for project...', 'info');
+      await window.ServiceConnectionModule.fetch(
+        this.getOrg(),
+        document.getElementById('projectSelect').value,
+        this.getPat(),
+        document.getElementById('scTypeSelect').value,
+        document.getElementById('targetScQuery').value.trim()
+      );
+      this.setStatus('Service connections & cloud integrations loaded.', 'success');
     } catch (e) { this.setStatus(e.message, 'error'); }
   },
 
