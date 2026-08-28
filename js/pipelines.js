@@ -15,8 +15,28 @@ window.PipelineModule = {
     let allBuilds = [];
     let allReleases = [];
     let allDeployments = [];
+    const releaseDetailCache = {};
 
     window.HubApp.setStatus(`Fetching builds and matching release pipelines for "${project}"...`, 'info');
+
+    // Helper: Fetch Full Detailed Release with Environment Deployment States
+    const getFullRelease = async (releaseId) => {
+      if (!releaseId) return null;
+      if (releaseDetailCache[releaseId]) return releaseDetailCache[releaseId];
+
+      try {
+        const resUrl = `https://vsrm.dev.azure.com/${org}/${encodeURIComponent(project)}/_apis/release/releases/${releaseId}?api-version=7.1-preview.8`;
+        const res = await fetch(resUrl, { headers: { 'Authorization': auth, 'Accept': 'application/json' } });
+        if (res.ok) {
+          const data = await res.json();
+          releaseDetailCache[releaseId] = data;
+          return data;
+        }
+      } catch (err) {
+        console.warn(`Could not fetch details for release ${releaseId}:`, err);
+      }
+      return null;
+    };
 
     // 1. Fetch Build Runs
     try {
@@ -69,7 +89,7 @@ window.PipelineModule = {
       }
 
       try {
-        const deployUrl = `https://vsrm.dev.azure.com/${org}/${encodeURIComponent(project)}/_apis/release/deployments?api-version=7.1-preview.1&$top=100`;
+        const deployUrl = `https://vsrm.dev.azure.com/${org}/${encodeURIComponent(project)}/_apis/release/deployments?api-version=7.1-preview.1&$top=200`;
         const dRes = await fetch(deployUrl, { headers: { 'Authorization': auth, 'Accept': 'application/json' } });
         if (dRes.ok) {
           const dData = await dRes.json();
@@ -173,9 +193,18 @@ window.PipelineModule = {
         releaseDefName = linkedRelease.releaseDefinition?.name || 'Release Pipeline';
         releaseUrl = `https://dev.azure.com/${org}/${encodeURIComponent(project)}/_releaseProgress?_a=release-pipeline-progress&releaseId=${linkedRelease.id}`;
 
-        environments = (linkedRelease.environments || []).map(env => {
+        // Fetch detailed release to get live, non-truncated environment statuses and step execution results
+        const fullRelease = (await getFullRelease(releaseId)) || linkedRelease;
+        const rawEnvironments = fullRelease.environments || linkedRelease.environments || [];
+
+        environments = rawEnvironments.map(env => {
           const rawStatus = env.status;
           const statusStr = String(rawStatus || '').toLowerCase();
+          const deploySteps = env.deploySteps || [];
+          const lastStep = deploySteps.length > 0 ? deploySteps[deploySteps.length - 1] : null;
+          const stepStatus = String(lastStep?.status || '').toLowerCase();
+          const stepOpStatus = String(lastStep?.operationStatus || '').toLowerCase();
+
           let normalizedEnvStatus = 'notStarted';
 
           // Check Azure DevOps integer enums and string statuses:
@@ -187,14 +216,20 @@ window.PipelineModule = {
             statusStr === '32' ||
             statusStr.includes('success') ||
             statusStr.includes('completed') ||
-            statusStr.includes('partially')
+            statusStr.includes('partially') ||
+            stepStatus.includes('success') ||
+            stepStatus.includes('completed') ||
+            stepOpStatus.includes('phasesucceeded')
           ) {
             normalizedEnvStatus = 'succeeded';
           } else if (
             rawStatus === 16 ||
             statusStr === '16' ||
             statusStr.includes('fail') ||
-            statusStr.includes('reject')
+            statusStr.includes('reject') ||
+            stepStatus.includes('fail') ||
+            stepStatus.includes('reject') ||
+            stepOpStatus.includes('phasefailed')
           ) {
             normalizedEnvStatus = 'failed';
           } else if (
@@ -203,18 +238,36 @@ window.PipelineModule = {
             statusStr.includes('progress') ||
             statusStr.includes('queued') ||
             statusStr.includes('scheduled') ||
-            statusStr.includes('pending')
+            statusStr.includes('pending') ||
+            stepStatus.includes('progress') ||
+            stepStatus.includes('queued')
           ) {
             normalizedEnvStatus = 'inProgress';
           } else if (
             rawStatus === 8 ||
             statusStr === '8' ||
             statusStr.includes('cancel') ||
-            statusStr.includes('skip')
+            statusStr.includes('skip') ||
+            stepStatus.includes('cancel')
           ) {
             normalizedEnvStatus = 'canceled';
           } else {
-            normalizedEnvStatus = 'notStarted';
+            // Check deployments list fallback
+            const matchingDep = allDeployments.find(d => {
+              return (
+                String(d.release?.id) === String(releaseId) &&
+                (String(d.releaseEnvironment?.id) === String(env.id) ||
+                 (d.releaseEnvironment?.name || '').toLowerCase() === (env.name || '').toLowerCase())
+              );
+            });
+
+            if (matchingDep) {
+              const depStatus = String(matchingDep.deploymentStatus || '').toLowerCase();
+              if (depStatus.includes('success') || depStatus.includes('completed')) normalizedEnvStatus = 'succeeded';
+              else if (depStatus.includes('fail') || depStatus.includes('reject')) normalizedEnvStatus = 'failed';
+              else if (depStatus.includes('inprog') || depStatus.includes('queued')) normalizedEnvStatus = 'inProgress';
+              else if (depStatus.includes('cancel')) normalizedEnvStatus = 'canceled';
+            }
           }
 
           let displayStatus = 'Not Started';
@@ -229,33 +282,6 @@ window.PipelineModule = {
             status: normalizedEnvStatus,
             rawStatus: displayStatus
           };
-        });
-
-        // Cross-reference with allDeployments for the latest deployment status
-        environments.forEach(env => {
-          const matchingDep = allDeployments.find(d => {
-            return (
-              d.release?.id === releaseId &&
-              (d.releaseEnvironment?.id === env.id || d.releaseEnvironment?.name === env.name)
-            );
-          });
-
-          if (matchingDep) {
-            const depStatus = String(matchingDep.deploymentStatus || '').toLowerCase();
-            if (depStatus.includes('success') || depStatus.includes('completed')) {
-              env.status = 'succeeded';
-              env.rawStatus = 'Succeeded';
-            } else if (depStatus.includes('fail') || depStatus.includes('reject')) {
-              env.status = 'failed';
-              env.rawStatus = 'Failed';
-            } else if (depStatus.includes('inprog') || depStatus.includes('queued')) {
-              env.status = 'inProgress';
-              env.rawStatus = 'In Progress';
-            } else if (depStatus.includes('cancel')) {
-              env.status = 'canceled';
-              env.rawStatus = 'Canceled';
-            }
-          }
         });
 
       } else if (b.id) {
@@ -337,7 +363,7 @@ window.PipelineModule = {
             overallStatusLabel = `Deploying (${inProgressEnvs[0].name})...`;
             cicdCounts.in_progress++;
           } else if (succeededEnvs.length > 0) {
-            // If deployed environment(s) succeeded!
+            // When deployed environment(s) succeeded!
             overallCicdState = 'deployed';
             if (notStartedEnvs.length > 0) {
               overallStatusLabel = `Deployed (${succeededEnvs.map(e => e.name).join(', ')})`;
