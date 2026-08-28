@@ -16,7 +16,7 @@ window.PipelineModule = {
     let allReleases = [];
     let allDeployments = [];
 
-    window.HubApp.setStatus(`Fetching builds and linked release pipelines for "${project}"...`, 'info');
+    window.HubApp.setStatus(`Fetching builds and matching release pipelines for "${project}"...`, 'info');
 
     // 1. Fetch Build Runs
     try {
@@ -61,6 +61,8 @@ window.PipelineModule = {
         if (res.ok) {
           const rData = await res.json();
           allReleases = rData.value || [];
+          // Sort releases descending by ID so latest release is checked first
+          allReleases.sort((a, b) => (b.id || 0) - (a.id || 0));
         }
       } catch (relErr) {
         console.warn('Release query notice (vsrm host):', relErr);
@@ -90,7 +92,7 @@ window.PipelineModule = {
       build_only: 0
     };
 
-    const processedRuns = allBuilds.map((b, idx) => {
+    const processedRuns = await Promise.all(allBuilds.map(async (b, idx) => {
       let rawResult = (b.result || b.status || 'unknown').toLowerCase();
       let buildResult = 'unknown';
 
@@ -117,23 +119,48 @@ window.PipelineModule = {
       // Format branch name
       let branchName = (b.sourceBranch || '-').replace(/^refs\/heads\//, '').replace(/^refs\/pull\//, 'PR #');
 
-      // Find Linked Release Records
+      // STRICT Pipeline Definition and Build ID matching
       const buildIdStr = String(b.id);
-      const buildNumStr = String(b.buildNumber || '');
+      const buildNumStr = String(b.buildNumber || '').trim();
+      const buildDefId = b.definition?.id ? String(b.definition.id) : null;
+      const buildDefName = (b.definition?.name || b.name || '').trim().toLowerCase();
 
       let linkedRelease = allReleases.find(r => {
         return (r.artifacts || []).some(a => {
           const defRef = a.definitionReference || {};
-          const artifactBuildId = defRef.version?.id || defRef.buildId?.id || '';
-          const artifactBuildNum = defRef.version?.name || '';
-          return (
-            (artifactBuildId && String(artifactBuildId) === buildIdStr) ||
-            (artifactBuildNum && artifactBuildNum === buildNumStr)
-          );
+          
+          // 1. Pipeline Definition Verification:
+          // The artifact definition ID / name MUST match the build's definition ID / name
+          const artDefId = defRef.definition?.id || a.sourceId;
+          const artDefName = (defRef.definition?.name || a.alias || '').trim().toLowerCase().replace(/^_/, '');
+
+          let defMatch = false;
+          if (buildDefId && artDefId && String(artDefId) === buildDefId) {
+            defMatch = true;
+          } else if (artDefName && buildDefName && (artDefName === buildDefName || artDefName.includes(buildDefName) || buildDefName.includes(artDefName))) {
+            defMatch = true;
+          }
+
+          // If the pipeline definition does not match, NEVER link this release
+          if (!defMatch) {
+            return false;
+          }
+
+          // 2. Exact Build ID or Build Number Verification
+          const artBuildId = defRef.version?.id || defRef.buildId?.id;
+          if (artBuildId && String(artBuildId) === buildIdStr) {
+            return true;
+          }
+
+          const artBuildNum = (defRef.version?.name || '').trim();
+          if (artBuildNum && buildNumStr && artBuildNum === buildNumStr) {
+            return true;
+          }
+
+          return false;
         });
       });
 
-      // If not directly found in artifacts, check recent deployments with matching release
       let environments = [];
       let releaseName = '';
       let releaseDefName = '';
@@ -161,6 +188,46 @@ window.PipelineModule = {
             rawStatus: env.status || 'Not Started'
           };
         });
+      } else if (b.id) {
+        // If no classic release is linked, check if this is a Multi-Stage YAML Pipeline with deployment stages
+        try {
+          const timelineUrl = `${encodeURIComponent(project)}/_apis/build/builds/${b.id}/timeline?api-version=6.0`;
+          const tData = await window.HubApp.fetchAdo(org, timelineUrl, auth);
+          const records = tData.records || [];
+          const stages = records.filter(r => r.type === 'Stage');
+
+          if (stages.length > 1) {
+            const deployStages = stages.filter(s => {
+              const sName = (s.name || '').toLowerCase();
+              return sName.includes('deploy') || sName.includes('release') || sName.includes('prod') || sName.includes('dev') || sName.includes('qa') || sName.includes('staging') || sName.includes('uat');
+            });
+
+            const candidateStages = deployStages.length ? deployStages : stages.slice(1);
+            if (candidateStages.length > 0) {
+              releaseName = `${b.definition?.name || 'Pipeline'} Stages`;
+              releaseDefName = 'YAML Multi-Stage Deployment';
+              releaseUrl = b._links?.web?.href || `https://dev.azure.com/${org}/${encodeURIComponent(project)}/_build/results?buildId=${b.id}`;
+
+              environments = candidateStages.map(s => {
+                let normStatus = 'notStarted';
+                const sResult = (s.result || s.state || '').toLowerCase();
+                if (sResult.includes('success')) normStatus = 'succeeded';
+                else if (sResult.includes('fail')) normStatus = 'failed';
+                else if (sResult.includes('inprog') || sResult.includes('running')) normStatus = 'inProgress';
+                else if (sResult.includes('cancel') || sResult.includes('skipped')) normStatus = 'canceled';
+
+                return {
+                  id: s.id,
+                  name: s.name,
+                  status: normStatus,
+                  rawStatus: s.result || s.state || 'Pending'
+                };
+              });
+            }
+          }
+        } catch (tErr) {
+          // ignore if no timeline available
+        }
       }
 
       // Determine Overall Unified CI/CD Status
@@ -234,7 +301,7 @@ window.PipelineModule = {
         overallCicdState: overallCicdState,
         overallStatusLabel: overallStatusLabel
       };
-    });
+    }));
 
     // 4. Apply Deployment Filter
     let filtered = processedRuns;
@@ -540,7 +607,6 @@ window.PipelineModule = {
         `,
 
         stages: () => {
-          // Construct topology nodes
           return `
             <div class="blade-section">
               <div class="blade-section-title">
