@@ -164,7 +164,7 @@ window.DashboardModule = {
 
     // 2. Fetch Real Work Items via WIQL
     try {
-      const wiqlUrl = `https://dev.azure.com/${org}/${encodeURIComponent(cleanProject)}/_apis/wit/wiql?api-version=6.0&$top=200`;
+      const wiqlUrl = `https://dev.azure.com/${org}/${encodeURIComponent(cleanProject)}/_apis/wit/wiql?api-version=6.0&$top=500`;
       let qRes = await fetch(wiqlUrl, {
         method: 'POST',
         headers: { 'Authorization': auth, 'Accept': 'application/json', 'Content-Type': 'application/json' },
@@ -187,7 +187,7 @@ window.DashboardModule = {
         if (ids.length > 0) {
           // Fetch work item details in chunks of 50
           const chunkSize = 50;
-          for (let i = 0; i < ids.length && i < 150; i += chunkSize) {
+          for (let i = 0; i < ids.length && i < 300; i += chunkSize) {
             const chunkIds = ids.slice(i, i + chunkSize);
             const detailsData = await window.HubApp.fetchAdo(
               org,
@@ -708,7 +708,6 @@ window.DashboardModule = {
       matrixBodyContainer.innerHTML = rowsHtml;
       return;
     }
-
     // 3. Clean Empty State when no deployments or builds exist
     if (stageHeaderContainer) stageHeaderContainer.innerHTML = '';
     matrixBodyContainer.innerHTML = `
@@ -721,10 +720,63 @@ window.DashboardModule = {
   async fetchProjectTeamMembers(org, cleanProject, auth, workItems = [], builds = []) {
     const membersMap = {};
     const teamsList = [];
+    const discoveredGroups = [];
 
-    // 1. Fetch real project teams via Azure DevOps REST API
+    const addMember = (name, email, imageUrl, isAdmin, teamOrRole) => {
+      const cleanName = (name || '').trim();
+      const cleanEmail = (email || '').trim();
+      if (!cleanName && !cleanEmail) return;
+
+      if (cleanEmail === 'service-principal@azure.net' || cleanName.toLowerCase().startsWith('microsoft.visualstudio.services')) {
+        return;
+      }
+
+      // Determine lookup key
+      let key = cleanEmail && cleanEmail.includes('@') ? cleanEmail.toLowerCase() : '';
+      if (!key) {
+        key = cleanName.toLowerCase();
+      }
+
+      // Check if already in map by email or name
+      const existingKey = membersMap[key] ? key : Object.keys(membersMap).find(k => {
+        const m = membersMap[k];
+        return (cleanEmail && m.email && m.email.toLowerCase() === cleanEmail.toLowerCase()) ||
+               (cleanName && m.name && m.name.toLowerCase() === cleanName.toLowerCase());
+      });
+
+      if (existingKey) {
+        const existing = membersMap[existingKey];
+        if (cleanName && (!existing.name || existing.name === existing.email)) {
+          existing.name = cleanName;
+        }
+        if (cleanEmail && !existing.email) {
+          existing.email = cleanEmail;
+        }
+        if (imageUrl && !existing.imageUrl) {
+          existing.imageUrl = imageUrl;
+        }
+        if (isAdmin) {
+          existing.isAdmin = true;
+        }
+        if (teamOrRole && !existing.teams.includes(teamOrRole)) {
+          existing.teams.push(teamOrRole);
+        }
+      } else {
+        membersMap[key] = {
+          id: key,
+          name: cleanName || cleanEmail,
+          email: cleanEmail,
+          imageUrl: imageUrl || '',
+          isAdmin: !!isAdmin,
+          teams: teamOrRole ? [teamOrRole] : ['Project Member'],
+          deliverables: 0
+        };
+      }
+    };
+
+    // 1. Discover ALL Project Teams and fetch all members with pagination
     try {
-      const teamsUrl = `https://dev.azure.com/${org}/_apis/projects/${encodeURIComponent(cleanProject)}/teams?$top=100&api-version=6.0`;
+      const teamsUrl = `https://dev.azure.com/${org}/_apis/projects/${encodeURIComponent(cleanProject)}/teams?$mine=false&$top=500&api-version=6.0`;
       const tRes = await fetch(teamsUrl, {
         headers: { 'Authorization': auth, 'Accept': 'application/json' }
       });
@@ -733,49 +785,39 @@ window.DashboardModule = {
         const teams = tData.value || [];
         teamsList.push(...teams);
 
-        // Fetch members for all discovered teams in parallel
         await Promise.all(teams.map(async (team) => {
           try {
             const teamIdOrName = team.id || team.name;
-            const mUrl = `https://dev.azure.com/${org}/_apis/projects/${encodeURIComponent(cleanProject)}/teams/${encodeURIComponent(teamIdOrName)}/members?api-version=6.0`;
-            const mRes = await fetch(mUrl, {
-              headers: { 'Authorization': auth, 'Accept': 'application/json' }
-            });
-            if (mRes.ok) {
+            let skip = 0;
+            const top = 500;
+            let hasMore = true;
+
+            while (hasMore && skip < 5000) {
+              const mUrl = `https://dev.azure.com/${org}/_apis/projects/${encodeURIComponent(cleanProject)}/teams/${encodeURIComponent(teamIdOrName)}/members?$top=${top}&$skip=${skip}&api-version=6.0`;
+              const mRes = await fetch(mUrl, {
+                headers: { 'Authorization': auth, 'Accept': 'application/json' }
+              });
+              if (!mRes.ok) break;
+
               const mData = await mRes.json();
               const mems = mData.value || [];
               mems.forEach(m => {
                 const identity = m.identity || m;
-                const id = identity.id || identity.uniqueName || identity.displayName;
-                const name = identity.displayName || identity.name || 'Member';
+                const name = identity.displayName || identity.name || '';
                 const email = identity.uniqueName || identity.mailAddress || '';
                 const imageUrl = identity.imageUrl || '';
                 const isAdmin = !!m.isTeamAdmin;
-
-                const key = (email || name || id).toLowerCase();
-                if (!membersMap[key]) {
-                  membersMap[key] = {
-                    id,
-                    name,
-                    email,
-                    imageUrl,
-                    isAdmin,
-                    teams: [team.name],
-                    deliverables: 0
-                  };
-                } else {
-                  if (!membersMap[key].teams.includes(team.name)) {
-                    membersMap[key].teams.push(team.name);
-                  }
-                  if (isAdmin) membersMap[key].isAdmin = true;
-                  if (!membersMap[key].imageUrl && imageUrl) {
-                    membersMap[key].imageUrl = imageUrl;
-                  }
-                }
+                addMember(name, email, imageUrl, isAdmin, team.name);
               });
+
+              if (mems.length < top) {
+                hasMore = false;
+              } else {
+                skip += top;
+              }
             }
           } catch (mErr) {
-            console.warn(`Team "${team.name}" members query notice:`, mErr);
+            console.warn(`Team "${team.name}" query notice:`, mErr);
           }
         }));
       }
@@ -783,77 +825,189 @@ window.DashboardModule = {
       console.warn('Project teams discovery notice:', teamsErr);
     }
 
-    // 2. Correlate with work items to get deliverables and include any external assignees
+    // 2. Query Project Scope Descriptor & Graph APIs (All project users & security groups)
+    try {
+      const projMetaUrl = `https://dev.azure.com/${org}/_apis/projects/${encodeURIComponent(cleanProject)}?api-version=7.1-preview.1`;
+      const pRes = await fetch(projMetaUrl, { headers: { 'Authorization': auth, 'Accept': 'application/json' } });
+      if (pRes.ok) {
+        const pData = await pRes.json();
+        const projectId = pData.id;
+
+        let scopeDescriptor = '';
+        try {
+          const descUrl = `https://vssps.dev.azure.com/${org}/_apis/graph/descriptors/${projectId}?api-version=7.1-preview.1`;
+          const dRes = await fetch(descUrl, { headers: { 'Authorization': auth, 'Accept': 'application/json' } });
+          if (dRes.ok) {
+            const dData = await dRes.json();
+            scopeDescriptor = dData.value || '';
+          }
+        } catch (descErr) {
+          console.warn('Scope descriptor query notice:', descErr);
+        }
+
+        if (scopeDescriptor) {
+          // 2A: Query all Graph Users directly within this Project Scope
+          try {
+            let contToken = '';
+            let safetyCount = 0;
+            do {
+              safetyCount++;
+              const tokenParam = contToken ? `&continuationToken=${encodeURIComponent(contToken)}` : '';
+              const gUsersUrl = `https://vssps.dev.azure.com/${org}/_apis/graph/users?scopeDescriptor=${encodeURIComponent(scopeDescriptor)}${tokenParam}&api-version=7.1-preview.1`;
+              const guRes = await fetch(gUsersUrl, { headers: { 'Authorization': auth, 'Accept': 'application/json' } });
+              if (guRes.ok) {
+                const guData = await guRes.json();
+                (guData.value || []).forEach(u => {
+                  const name = u.displayName || u.principalName;
+                  const email = u.principalName || u.mailAddress || '';
+                  const avatar = u._links?.avatar?.href || '';
+                  addMember(name, email, avatar, false, 'Project Member');
+                });
+                contToken = guRes.headers.get('x-ms-continuationtoken') || guData.continuationToken || '';
+              } else {
+                break;
+              }
+            } while (contToken && safetyCount < 20);
+          } catch (guErr) {
+            console.warn('Graph users scope query notice:', guErr);
+          }
+
+          // 2B: Query Project Security Groups (Contributors, Project Administrators, Readers)
+          try {
+            let gContToken = '';
+            const groups = [];
+            let gSafety = 0;
+            do {
+              gSafety++;
+              const tokenParam = gContToken ? `&continuationToken=${encodeURIComponent(gContToken)}` : '';
+              const grpUrl = `https://vssps.dev.azure.com/${org}/_apis/graph/groups?scopeDescriptor=${encodeURIComponent(scopeDescriptor)}${tokenParam}&api-version=7.1-preview.1`;
+              const grpRes = await fetch(grpUrl, { headers: { 'Authorization': auth, 'Accept': 'application/json' } });
+              if (grpRes.ok) {
+                const grpData = await grpRes.json();
+                groups.push(...(grpData.value || []));
+                gContToken = grpRes.headers.get('x-ms-continuationtoken') || grpData.continuationToken || '';
+              } else {
+                break;
+              }
+            } while (gContToken && gSafety < 20);
+
+            discoveredGroups.push(...groups);
+
+            await Promise.all(groups.map(async (grp) => {
+              const groupName = grp.displayName || grp.name || '';
+              const isGrpAdmin = groupName.toLowerCase().includes('admin');
+              try {
+                const memsUrl = `https://vssps.dev.azure.com/${org}/_apis/graph/memberships/${grp.descriptor}?direction=down&api-version=7.1-preview.1`;
+                const memsRes = await fetch(memsUrl, { headers: { 'Authorization': auth, 'Accept': 'application/json' } });
+                if (memsRes.ok) {
+                  const memsData = await memsRes.json();
+                  const memberDescriptors = (memsData.value || []).map(m => m.memberDescriptor);
+
+                  await Promise.all(memberDescriptors.map(async (mDesc) => {
+                    try {
+                      const uUrl = `https://vssps.dev.azure.com/${org}/_apis/graph/users/${mDesc}?api-version=7.1-preview.1`;
+                      const uRes = await fetch(uUrl, { headers: { 'Authorization': auth, 'Accept': 'application/json' } });
+                      if (uRes.ok) {
+                        const uData = await uRes.json();
+                        addMember(uData.displayName, uData.principalName || uData.mailAddress, uData._links?.avatar?.href || '', isGrpAdmin, groupName);
+                      }
+                    } catch (ue) {}
+                  }));
+                }
+              } catch (me) {}
+            }));
+          } catch (gErr) {
+            console.warn('Graph groups query notice:', gErr);
+          }
+        }
+      }
+    } catch (pErr) {
+      console.warn('Project graph metadata notice:', pErr);
+    }
+
+    // 3. Sync with AccessModule cached items if available
+    try {
+      if (window.AccessModule && Array.isArray(window.AccessModule.items) && window.AccessModule.items.length > 0) {
+        window.AccessModule.items.forEach(row => {
+          if (row.ProjectName === cleanProject && row.UserDisplayName && !row.UserDisplayName.includes('(No Direct Members)')) {
+            const isAdmin = (row.GroupRole || '').toLowerCase().includes('admin') || (row.GroupName || '').toLowerCase().includes('admin');
+            const email = (row.MailAddress && row.MailAddress !== '-') ? row.MailAddress : (row.UserPrincipal !== '-' ? row.UserPrincipal : '');
+            addMember(row.UserDisplayName, email, '', isAdmin, row.GroupName || 'Contributor');
+          }
+        });
+      }
+    } catch (accErr) {
+      console.warn('AccessModule sync notice:', accErr);
+    }
+
+    // 4. Correlate with work items to get deliverables and include assignees/creators
     workItems.forEach(w => {
       const f = w.fields || {};
       const assigned = f['System.AssignedTo'];
       if (assigned) {
         const name = assigned.displayName || assigned.name;
         const email = assigned.uniqueName || assigned.mailAddress || '';
-        const key = (email || name).toLowerCase();
-        if (key) {
-          if (membersMap[key]) {
-            membersMap[key].deliverables = (membersMap[key].deliverables || 0) + 1;
-            if (!membersMap[key].imageUrl && assigned.imageUrl) {
-              membersMap[key].imageUrl = assigned.imageUrl;
-            }
-          } else {
-            membersMap[key] = {
-              id: assigned.id || key,
-              name: name || 'Contributor',
-              email: email,
-              imageUrl: assigned.imageUrl || '',
-              isAdmin: false,
-              teams: ['Backlog Contributor'],
-              deliverables: 1
-            };
-          }
+        addMember(name, email, assigned.imageUrl || '', false, 'Work Items Assignee');
+
+        const matchKey = (email && email.includes('@')) ? email.toLowerCase() : (name || '').toLowerCase();
+        const existing = membersMap[matchKey] || Object.values(membersMap).find(m =>
+          (email && m.email && m.email.toLowerCase() === email.toLowerCase()) ||
+          (name && m.name && m.name.toLowerCase() === name.toLowerCase())
+        );
+        if (existing) {
+          existing.deliverables = (existing.deliverables || 0) + 1;
         }
       }
 
       const creator = f['System.CreatedBy'];
-      if (creator && !assigned) {
+      if (creator) {
         const name = creator.displayName || creator.name;
         const email = creator.uniqueName || creator.mailAddress || '';
-        const key = (email || name).toLowerCase();
-        if (key && !membersMap[key]) {
-          membersMap[key] = {
-            id: creator.id || key,
-            name: name || 'Creator',
-            email: email,
-            imageUrl: creator.imageUrl || '',
-            isAdmin: false,
-            teams: ['Backlog Contributor'],
-            deliverables: 0
-          };
-        }
+        addMember(name, email, creator.imageUrl || '', false, 'Backlog Contributor');
+      }
+
+      const changedBy = f['System.ChangedBy'];
+      if (changedBy) {
+        const name = changedBy.displayName || changedBy.name;
+        const email = changedBy.uniqueName || changedBy.mailAddress || '';
+        addMember(name, email, changedBy.imageUrl || '', false, 'Backlog Contributor');
       }
     });
 
-    // 3. Correlate with builds to include pipeline authors
+    // 5. Correlate with builds to include pipeline authors
     builds.forEach(b => {
       const req = b.requestedFor || b.requestedBy;
       if (req && req.displayName) {
-        const key = (req.uniqueName || req.displayName).toLowerCase();
-        if (key && membersMap[key]) {
-          if (!membersMap[key].imageUrl && req.imageUrl) {
-            membersMap[key].imageUrl = req.imageUrl;
-          }
-        } else if (key) {
-          membersMap[key] = {
-            id: req.id || key,
-            name: req.displayName,
-            email: req.uniqueName || '',
-            imageUrl: req.imageUrl || '',
-            isAdmin: false,
-            teams: ['CI/CD Contributor'],
-            deliverables: 0
-          };
-        }
+        addMember(req.displayName, req.uniqueName || '', req.imageUrl || '', false, 'CI/CD Contributor');
       }
     });
 
+    // 6. Correlate with Git repository commits
+    try {
+      const repos = (window.HubApp && Array.isArray(window.HubApp.cachedRepos)) ? window.HubApp.cachedRepos.slice(0, 5) : [];
+      if (repos.length > 0) {
+        await Promise.all(repos.map(async (repo) => {
+          try {
+            const commitsUrl = `https://dev.azure.com/${org}/${encodeURIComponent(cleanProject)}/_apis/git/repositories/${encodeURIComponent(repo.id || repo.name)}/commits?$top=50&api-version=6.0`;
+            const cRes = await fetch(commitsUrl, { headers: { 'Authorization': auth, 'Accept': 'application/json' } });
+            if (cRes.ok) {
+              const cData = await cRes.json();
+              (cData.value || []).forEach(c => {
+                const author = c.author || c.committer;
+                if (author && author.name) {
+                  addMember(author.name, author.email || '', '', false, 'Git Committer');
+                }
+              });
+            }
+          } catch (ce) {}
+        }));
+      }
+    } catch (repoErr) {
+      console.warn('Git commits scan notice:', repoErr);
+    }
+
     this.allTeams = teamsList;
+    this.allGroups = discoveredGroups;
     this.allTeamMembers = Object.values(membersMap).sort((a, b) => {
       if (a.isAdmin !== b.isAdmin) return a.isAdmin ? -1 : 1;
       if (b.deliverables !== a.deliverables) return b.deliverables - a.deliverables;
@@ -891,18 +1045,35 @@ window.DashboardModule = {
       return;
     }
 
-    if (badgeEl) badgeEl.textContent = `${members.length}`;
-    if (subtitleEl) subtitleEl.textContent = `${this.currentProject} team members & contributors`;
+    if (badgeEl) badgeEl.textContent = `${this.allTeamMembers.length || members.length}`;
+    if (subtitleEl) subtitleEl.textContent = `${this.currentProject} team members & contributors (${this.allTeamMembers.length || members.length} total)`;
     if (controlsEl) controlsEl.classList.remove('hidden');
 
-    // Populate team filter dropdown if there are multiple teams
+    // Populate team filter dropdown with all discovered teams and groups
     if (teamSelectEl) {
-      if (this.allTeams.length > 1) {
+      const options = [{ value: 'all', label: `All Members (${this.allTeamMembers.length || members.length})` }];
+      
+      this.allTeams.forEach(t => {
+        options.push({ value: t.name, label: `Team: ${t.name}` });
+      });
+
+      const uniqueRoles = new Set();
+      this.allTeamMembers.forEach(m => {
+        (m.teams || []).forEach(t => {
+          if (!this.allTeams.some(team => team.name === t)) {
+            uniqueRoles.add(t);
+          }
+        });
+      });
+      uniqueRoles.forEach(r => {
+        options.push({ value: r, label: `${r}` });
+      });
+
+      if (options.length > 1) {
         teamSelectEl.classList.remove('hidden');
         const prevVal = teamSelectEl.value || 'all';
-        teamSelectEl.innerHTML = `<option value="all">All Teams (${this.allTeams.length})</option>` +
-          this.allTeams.map(t => `<option value="${this.escapeHtml(t.name)}">${this.escapeHtml(t.name)}</option>`).join('');
-        teamSelectEl.value = prevVal;
+        teamSelectEl.innerHTML = options.map(o => `<option value="${this.escapeHtml(o.value)}">${this.escapeHtml(o.label)}</option>`).join('');
+        teamSelectEl.value = options.some(o => o.value === prevVal) ? prevVal : 'all';
       } else {
         teamSelectEl.classList.add('hidden');
       }
@@ -930,7 +1101,7 @@ window.DashboardModule = {
       const initials = parts.length > 1 ? (parts[0][0] + parts[1][0]).toUpperCase() : (parts[0].substring(0, 2)).toUpperCase();
       const bg = colors[i % colors.length];
 
-      const primaryTeam = m.teams && m.teams.length > 0 ? m.teams[0] : 'Team Member';
+      const primaryTeam = m.teams && m.teams.length > 0 ? m.teams[0] : 'Project Member';
       const allTeamsStr = (m.teams || []).join(', ');
 
       const avatarHtml = m.imageUrl
@@ -938,18 +1109,18 @@ window.DashboardModule = {
         : `<div class="az-member-avatar-fallback" style="background:${bg};">${initials}</div>`;
 
       const adminPill = m.isAdmin
-        ? `<span class="az-member-pill admin-pill" title="Team Administrator">Admin</span>`
+        ? `<span class="az-member-pill admin-pill" title="Administrator">Admin</span>`
         : '';
 
       const deliverablesPill = m.deliverables > 0
         ? `<span class="az-member-pill stat-pill" title="${m.deliverables} work items assigned">${m.deliverables} item${m.deliverables > 1 ? 's' : ''}</span>`
         : '';
 
-      const teamPill = `<span class="az-member-pill team-pill" title="Teams: ${this.escapeHtml(allTeamsStr)}">${this.escapeHtml(primaryTeam)}</span>`;
+      const teamPill = `<span class="az-member-pill team-pill" title="Roles: ${this.escapeHtml(allTeamsStr)}">${this.escapeHtml(primaryTeam)}</span>`;
 
       const mailAction = m.email
-        ? `<a href="mailto:${this.escapeHtml(m.email)}" class="az-member-action-btn" title="Email ${this.escapeHtml(m.name)} (${this.escapeHtml(m.email)})">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        ? `<a href="mailto:${this.escapeHtml(m.email)}" class="az-member-action-btn" title="Send email to ${this.escapeHtml(m.name)}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
               <polyline points="22,6 12,13 2,6"></polyline>
             </svg>
@@ -957,22 +1128,24 @@ window.DashboardModule = {
         : '';
 
       return `
-        <div class="az-member-card" data-name="${this.escapeHtml(m.name.toLowerCase())}" data-email="${this.escapeHtml((m.email || '').toLowerCase())}" data-team="${this.escapeHtml(allTeamsStr.toLowerCase())}">
+        <div class="az-member-card" data-teams="${this.escapeHtml(allTeamsStr)}" data-admin="${m.isAdmin}">
           <div class="az-member-avatar-wrap">
             ${avatarHtml}
           </div>
           <div class="az-member-info">
-            <div class="az-member-name" title="${this.escapeHtml(m.name)}">${this.escapeHtml(m.name)}</div>
-            <div class="az-member-email" title="${this.escapeHtml(m.email || 'No email')}">${this.escapeHtml(m.email || 'No email registered')}</div>
-            <div class="az-member-meta-row">
-              ${teamPill}
+            <div class="az-member-name-row">
+              <span class="az-member-name" title="${this.escapeHtml(m.name)}">${this.escapeHtml(m.name)}</span>
               ${adminPill}
               ${deliverablesPill}
             </div>
+            <div class="az-member-email" title="${this.escapeHtml(m.email || 'No email registered')}">
+              ${this.escapeHtml(m.email || 'Direct Member')}
+            </div>
+            <div class="az-member-meta-row">
+              ${teamPill}
+            </div>
           </div>
-          <div class="az-member-actions">
-            ${mailAction}
-          </div>
+          ${mailAction}
         </div>
       `;
     }).join('');
@@ -987,20 +1160,22 @@ window.DashboardModule = {
     const searchInput = document.getElementById('azTeamMemberSearch');
     const teamSelect = document.getElementById('azTeamFilterSelect');
 
-    const filterList = () => {
-      const q = (searchInput?.value || '').toLowerCase().trim();
-      const selectedTeam = (teamSelect?.value || 'all').toLowerCase();
-
+    const applyFilter = () => {
+      const query = (searchInput?.value || '').toLowerCase().trim();
+      const teamVal = (teamSelect?.value || 'all').toLowerCase();
       const cards = document.querySelectorAll('#azTeamMembersList .az-member-card');
       let visibleCount = 0;
 
       cards.forEach(card => {
-        const name = card.dataset.name || '';
-        const email = card.dataset.email || '';
-        const team = card.dataset.team || '';
+        const text = (card.innerText || '').toLowerCase();
+        const cardTeams = (card.dataset.teams || '').toLowerCase();
+        const isAdmin = card.dataset.admin === 'true';
 
-        const matchesQuery = !q || name.includes(q) || email.includes(q);
-        const matchesTeam = selectedTeam === 'all' || team.includes(selectedTeam);
+        const matchesQuery = !query || text.includes(query);
+        let matchesTeam = (teamVal === 'all') || cardTeams.includes(teamVal);
+        if (teamVal === 'admin' || teamVal.includes('admin')) {
+          matchesTeam = isAdmin || cardTeams.includes('admin');
+        }
 
         if (matchesQuery && matchesTeam) {
           card.style.display = 'flex';
@@ -1012,7 +1187,7 @@ window.DashboardModule = {
 
       const badgeEl = document.getElementById('azTeamTotalBadge');
       if (badgeEl) {
-        if (q || selectedTeam !== 'all') {
+        if (query || teamVal !== 'all') {
           badgeEl.textContent = `${visibleCount}/${this.allTeamMembers.length}`;
         } else {
           badgeEl.textContent = `${this.allTeamMembers.length}`;
@@ -1020,8 +1195,8 @@ window.DashboardModule = {
       }
     };
 
-    searchInput?.addEventListener('input', filterList);
-    teamSelect?.addEventListener('change', filterList);
+    searchInput?.addEventListener('input', applyFilter);
+    teamSelect?.addEventListener('change', applyFilter);
 
     document.getElementById('btnViewProjectAccessLink')?.addEventListener('click', () => {
       if (window.HubApp) {
