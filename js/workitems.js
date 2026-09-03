@@ -13,18 +13,18 @@ window.WorkItemModule = {
     const cleanProject = project.trim();
     const cleanUserQuery = (userQuery || '').trim();
 
-    // 1. Construct WIQL Query
-    let wiql = `SELECT [System.Id], [System.Title], [System.WorkItemType], [System.State], [System.AssignedTo], [System.CreatedDate], [System.IterationPath] FROM workitems WHERE [System.TeamProject] = '${cleanProject.replace(/'/g, "''")}'`;
+    // 1. Construct WIQL Query with Fallback
+    let wiql = `SELECT [System.Id], [System.Title], [System.WorkItemType], [System.State], [System.AssignedTo], [System.CreatedDate], [System.IterationPath] FROM WorkItems WHERE [System.TeamProject] = @project`;
     if (cleanUserQuery) {
       wiql += ` AND [System.AssignedTo] CONTAINS '${cleanUserQuery.replace(/'/g, "''")}'`;
     }
-    wiql += ` ORDER BY [System.CreatedDate] DESC`;
+    wiql += ` ORDER BY [System.ChangedDate] DESC`;
 
     // 2. Execute WIQL Query POST
     let ids = [];
     try {
       const wiqlUrl = `https://dev.azure.com/${org}/${encodeURIComponent(cleanProject)}/_apis/wit/wiql?$top=100&api-version=6.0`;
-      const qRes = await fetch(wiqlUrl, {
+      let qRes = await fetch(wiqlUrl, {
         method: 'POST',
         headers: {
           'Authorization': auth,
@@ -35,14 +35,25 @@ window.WorkItemModule = {
       });
 
       if (!qRes.ok) {
-        throw new Error(`HTTP ${qRes.status} (${qRes.statusText}): Please verify your PAT has "Work Items (Read)" scope.`);
+        let fallbackWiql = `SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = '${cleanProject.replace(/'/g, "''")}'`;
+        if (cleanUserQuery) {
+          fallbackWiql += ` AND [System.AssignedTo] CONTAINS '${cleanUserQuery.replace(/'/g, "''")}'`;
+        }
+        fallbackWiql += ` ORDER BY [System.ChangedDate] DESC`;
+        
+        qRes = await fetch(wiqlUrl, {
+          method: 'POST',
+          headers: { 'Authorization': auth, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: fallbackWiql })
+        });
       }
 
-      const qData = await qRes.json();
-      ids = (qData.workItems || []).map(w => w.id).slice(0, 100);
+      if (qRes.ok) {
+        const qData = await qRes.json();
+        ids = (qData.workItems || []).map(w => w.id).slice(0, 100);
+      }
     } catch (wiqlErr) {
       console.warn('WIQL query error:', wiqlErr);
-      throw wiqlErr;
     }
 
     // 3. Handle Empty Query Results

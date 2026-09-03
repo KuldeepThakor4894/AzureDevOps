@@ -11,6 +11,7 @@ window.PipelineModule = {
     this.currentProject = project;
     const auth = 'Basic ' + btoa(':' + pat);
     const topLimit = parseInt(topRuns, 10) || 50;
+    this.pageSize = topLimit;
     const deployFilter = (deploymentFilter || 'all').toLowerCase();
     let allBuilds = [];
     let allReleases = [];
@@ -186,6 +187,7 @@ window.PipelineModule = {
       let releaseDefName = '';
       let releaseUrl = '';
       let releaseId = null;
+      let latestDeployTimeRaw = null;
 
       if (linkedRelease) {
         releaseName = linkedRelease.name;
@@ -193,33 +195,106 @@ window.PipelineModule = {
         releaseDefName = linkedRelease.releaseDefinition?.name || 'Release Pipeline';
         releaseUrl = `https://dev.azure.com/${org}/${encodeURIComponent(project)}/_releaseProgress?_a=release-pipeline-progress&releaseId=${linkedRelease.id}`;
 
+        if (linkedRelease.modifiedOn) latestDeployTimeRaw = linkedRelease.modifiedOn;
+        if (linkedRelease.createdOn && !latestDeployTimeRaw) latestDeployTimeRaw = linkedRelease.createdOn;
+
         // Fetch detailed release to get live, non-truncated environment statuses and step execution results
         const fullRelease = (await getFullRelease(releaseId)) || linkedRelease;
         const rawEnvironments = fullRelease.environments || linkedRelease.environments || [];
 
         environments = rawEnvironments.map(env => {
+          if (env.modifiedOn) {
+            if (!latestDeployTimeRaw || new Date(env.modifiedOn) > new Date(latestDeployTimeRaw)) {
+              latestDeployTimeRaw = env.modifiedOn;
+            }
+          }
+          if (env.deploySteps && env.deploySteps.length > 0) {
+            env.deploySteps.forEach(step => {
+              const sDate = step.lastModifiedOn || step.modifiedOn || step.queuedOn;
+              if (sDate && (!latestDeployTimeRaw || new Date(sDate) > new Date(latestDeployTimeRaw))) {
+                latestDeployTimeRaw = sDate;
+              }
+            });
+          }
+
           const rawStatus = env.status;
           const statusStr = String(rawStatus || '').toLowerCase();
           const deploySteps = env.deploySteps || [];
           const lastStep = deploySteps.length > 0 ? deploySteps[deploySteps.length - 1] : null;
-          const stepStatus = String(lastStep?.status || '').toLowerCase();
-          const stepOpStatus = String(lastStep?.operationStatus || '').toLowerCase();
 
           let normalizedEnvStatus = 'notStarted';
 
+          // Comprehensive check across env status, deploySteps, tasks, operationStatus, and allDeployments
+          const hasSucceededStep = deploySteps.some(step => {
+            const sStatus = String(step.status || '').toLowerCase();
+            const dStatus = String(step.deploymentStatus || '').toLowerCase();
+            const oStatus = String(step.operationStatus || '').toLowerCase();
+            return (
+              step.status === 4 ||
+              step.status === 8 ||
+              step.deploymentStatus === 4 ||
+              step.deploymentStatus === 8 ||
+              sStatus.includes('success') ||
+              sStatus.includes('completed') ||
+              sStatus.includes('partially') ||
+              dStatus.includes('success') ||
+              dStatus.includes('completed') ||
+              dStatus.includes('partially') ||
+              oStatus.includes('phasesucceeded') ||
+              oStatus.includes('approved') ||
+              (step.tasks && step.tasks.length > 0 && step.tasks.some(t => {
+                const ts = String(t.status || '').toLowerCase();
+                return ts.includes('success') || ts.includes('complete');
+              }))
+            );
+          });
+
+          const hasFailedStep = deploySteps.some(step => {
+            const sStatus = String(step.status || '').toLowerCase();
+            const dStatus = String(step.deploymentStatus || '').toLowerCase();
+            const oStatus = String(step.operationStatus || '').toLowerCase();
+            return (
+              step.status === 16 ||
+              step.status === 32 ||
+              step.deploymentStatus === 16 ||
+              step.deploymentStatus === 32 ||
+              sStatus.includes('fail') ||
+              sStatus.includes('reject') ||
+              dStatus.includes('fail') ||
+              dStatus.includes('reject') ||
+              oStatus.includes('phasefailed')
+            );
+          });
+
+          const hasInProgressStep = deploySteps.some(step => {
+            const sStatus = String(step.status || '').toLowerCase();
+            const dStatus = String(step.deploymentStatus || '').toLowerCase();
+            const oStatus = String(step.operationStatus || '').toLowerCase();
+            return (
+              step.status === 2 ||
+              step.deploymentStatus === 2 ||
+              sStatus.includes('progress') ||
+              sStatus.includes('queued') ||
+              sStatus.includes('running') ||
+              dStatus.includes('progress') ||
+              dStatus.includes('queued') ||
+              oStatus.includes('phaseinprogress')
+            );
+          });
+
           // Check Azure DevOps integer enums and string statuses:
-          // 4 = Succeeded, 32 = PartiallySucceeded, 2 = InProgress, 16 = Rejected/Failed, 8 = Canceled, 1 = NotStarted
+          // 4 = Succeeded, 32 = PartiallySucceeded, 128 = PartiallySucceeded, 2 = InProgress, 16 = Rejected/Failed, 8 = Canceled, 1 = NotStarted
           if (
             rawStatus === 4 ||
             rawStatus === 32 ||
+            rawStatus === 128 ||
             statusStr === '4' ||
             statusStr === '32' ||
+            statusStr === '128' ||
             statusStr.includes('success') ||
             statusStr.includes('completed') ||
             statusStr.includes('partially') ||
-            stepStatus.includes('success') ||
-            stepStatus.includes('completed') ||
-            stepOpStatus.includes('phasesucceeded')
+            hasSucceededStep
           ) {
             normalizedEnvStatus = 'succeeded';
           } else if (
@@ -227,9 +302,7 @@ window.PipelineModule = {
             statusStr === '16' ||
             statusStr.includes('fail') ||
             statusStr.includes('reject') ||
-            stepStatus.includes('fail') ||
-            stepStatus.includes('reject') ||
-            stepOpStatus.includes('phasefailed')
+            hasFailedStep
           ) {
             normalizedEnvStatus = 'failed';
           } else if (
@@ -238,17 +311,14 @@ window.PipelineModule = {
             statusStr.includes('progress') ||
             statusStr.includes('queued') ||
             statusStr.includes('scheduled') ||
-            statusStr.includes('pending') ||
-            stepStatus.includes('progress') ||
-            stepStatus.includes('queued')
+            hasInProgressStep
           ) {
             normalizedEnvStatus = 'inProgress';
           } else if (
             rawStatus === 8 ||
             statusStr === '8' ||
             statusStr.includes('cancel') ||
-            statusStr.includes('skip') ||
-            stepStatus.includes('cancel')
+            statusStr.includes('skip')
           ) {
             normalizedEnvStatus = 'canceled';
           } else {
@@ -262,10 +332,11 @@ window.PipelineModule = {
             });
 
             if (matchingDep) {
-              const depStatus = String(matchingDep.deploymentStatus || '').toLowerCase();
-              if (depStatus.includes('success') || depStatus.includes('completed')) normalizedEnvStatus = 'succeeded';
-              else if (depStatus.includes('fail') || depStatus.includes('reject')) normalizedEnvStatus = 'failed';
-              else if (depStatus.includes('inprog') || depStatus.includes('queued')) normalizedEnvStatus = 'inProgress';
+              const depStatus = String(matchingDep.deploymentStatus || matchingDep.status || '').toLowerCase();
+              const opStatus = String(matchingDep.operationStatus || '').toLowerCase();
+              if (depStatus.includes('success') || depStatus.includes('completed') || opStatus.includes('phasesucceeded') || opStatus.includes('approved')) normalizedEnvStatus = 'succeeded';
+              else if (depStatus.includes('fail') || depStatus.includes('reject') || opStatus.includes('phasefailed')) normalizedEnvStatus = 'failed';
+              else if (depStatus.includes('inprog') || depStatus.includes('queued') || opStatus.includes('phaseinprogress')) normalizedEnvStatus = 'inProgress';
               else if (depStatus.includes('cancel')) normalizedEnvStatus = 'canceled';
             }
           }
@@ -333,8 +404,8 @@ window.PipelineModule = {
       }
 
       // Determine Overall Unified CI/CD Status
-      let overallCicdState = 'build_only';
-      let overallStatusLabel = 'Build Passed (CI Only)';
+      let overallCicdState = 'deployed';
+      let overallStatusLabel = 'Deployment Completed';
 
       if (buildResult === 'failed') {
         overallCicdState = 'build_failed';
@@ -352,7 +423,6 @@ window.PipelineModule = {
           const succeededEnvs = environments.filter(e => e.status === 'succeeded');
           const failedEnvs = environments.filter(e => e.status === 'failed');
           const inProgressEnvs = environments.filter(e => e.status === 'inProgress');
-          const notStartedEnvs = environments.filter(e => e.status === 'notStarted');
 
           if (failedEnvs.length > 0) {
             overallCicdState = 'deploy_failed';
@@ -362,30 +432,34 @@ window.PipelineModule = {
             overallCicdState = 'in_progress';
             overallStatusLabel = `Deploying (${inProgressEnvs[0].name})...`;
             cicdCounts.in_progress++;
-          } else if (succeededEnvs.length > 0) {
-            // When deployed environment(s) succeeded!
-            overallCicdState = 'deployed';
-            if (notStartedEnvs.length > 0) {
-              overallStatusLabel = `Deployed (${succeededEnvs.map(e => e.name).join(', ')})`;
-            } else {
-              overallStatusLabel = 'Build & Deployed';
-            }
-            cicdCounts.deployed++;
-          } else if (notStartedEnvs.length > 0) {
-            // Only if NO deployment has run yet (all environments not started / pending manual trigger)
-            overallCicdState = 'deploy_pending';
-            overallStatusLabel = 'Deploy Pending';
-            cicdCounts.deploy_pending++;
           } else {
+            // For every completed work: Deployment Completed in Green
             overallCicdState = 'deployed';
-            overallStatusLabel = 'Build & Deployed';
+            overallStatusLabel = 'Deployment Completed';
             cicdCounts.deployed++;
           }
         } else {
-          overallCicdState = 'build_only';
-          overallStatusLabel = 'Build Passed (No Release)';
-          cicdCounts.build_only++;
+          overallCicdState = 'deployed';
+          overallStatusLabel = 'Deployment Completed';
+          cicdCounts.deployed++;
         }
+      }
+
+      const buildFinishTime = b.finishTime ? new Date(b.finishTime).toLocaleString() : (b.startTime ? 'Building since ' + new Date(b.startTime).toLocaleTimeString() : 'Pending Queue');
+      
+      let deployFinishTime = '-';
+      if (linkedRelease) {
+        if (latestDeployTimeRaw && (overallCicdState === 'deployed' || overallCicdState === 'deploy_failed')) {
+          deployFinishTime = new Date(latestDeployTimeRaw).toLocaleString();
+        } else if (overallCicdState === 'in_progress') {
+          deployFinishTime = 'Deploying...';
+        } else if (overallCicdState === 'deployed') {
+          deployFinishTime = b.finishTime ? new Date(b.finishTime).toLocaleString() : '-';
+        }
+      } else if (overallCicdState === 'deployed') {
+        deployFinishTime = b.finishTime ? new Date(b.finishTime).toLocaleString() : '-';
+      } else if (overallCicdState === 'in_progress') {
+        deployFinishTime = 'In Progress...';
       }
 
       return {
@@ -400,7 +474,9 @@ window.PipelineModule = {
         rawBuildResult: b.result || b.status || 'N/A',
         agentPool: b.queue?.pool?.name || b.queue?.name || 'Azure Pipelines (Hosted Runners)',
         startTime: b.startTime ? new Date(b.startTime).toLocaleString() : 'N/A',
-        finishTime: b.finishTime ? new Date(b.finishTime).toLocaleString() : (b.startTime ? 'Running since ' + new Date(b.startTime).toLocaleTimeString() : 'Pending Queue'),
+        finishTime: buildFinishTime,
+        buildFinishTime: buildFinishTime,
+        deployFinishTime: deployFinishTime,
         sourceVersion: b.sourceVersion ? b.sourceVersion.substring(0, 8) : 'HEAD',
         url: b._links?.web?.href || `https://dev.azure.com/${org}/${encodeURIComponent(project)}/_build/results?buildId=${b.id}`,
         rawObject: b,
@@ -422,8 +498,8 @@ window.PipelineModule = {
       filtered = processedRuns.filter(r => r.overallCicdState === 'deployed');
     } else if (deployFilter === 'deploy_failed') {
       filtered = processedRuns.filter(r => r.overallCicdState === 'deploy_failed');
-    } else if (deployFilter === 'deploy_pending') {
-      filtered = processedRuns.filter(r => r.overallCicdState === 'deploy_pending');
+    } else if (deployFilter === 'in_progress') {
+      filtered = processedRuns.filter(r => r.overallCicdState === 'in_progress');
     } else if (deployFilter === 'build_failed') {
       filtered = processedRuns.filter(r => r.overallCicdState === 'build_failed');
     }
@@ -441,18 +517,17 @@ window.PipelineModule = {
       processedRuns.length,
       'Builds Passed',
       buildsPassed,
-      'Fully Deployed',
+      'Deployment Completed',
       fullyDeployed
     );
 
     this.render(false);
 
     // 6. Render Chart with Unified CI/CD Breakdown
-    const chartLabels = ['Build & Deployed', 'Build Passed (No Release)', 'Deploy Pending', 'Deploy Failed', 'Build Failed'];
+    const chartLabels = ['Deployment Completed', 'In Progress', 'Deploy Failed', 'Build Failed'];
     const chartVals = [
       cicdCounts.deployed,
-      cicdCounts.build_only,
-      cicdCounts.deploy_pending,
+      cicdCounts.in_progress,
       cicdCounts.deploy_failed,
       cicdCounts.build_failed
     ];
@@ -461,24 +536,27 @@ window.PipelineModule = {
   },
 
   getBuildBadge(result) {
-    if (result === 'succeeded') {
+    const res = (result || '').toLowerCase();
+    if (res === 'succeeded' || res === 'success') {
       return `
         <span class="badge badge-succeeded">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
           Build Passed
         </span>
       `;
-    } else if (result === 'failed') {
+    } else if (res === 'failed' || res === 'failure') {
       return `
         <span class="badge badge-failed">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           Build Failed
         </span>
       `;
-    } else if (result === 'inProgress') {
+    } else if (res.includes('progress') || res.includes('build') || res === 'inprogress' || res === 'notstarted' || res === 'running') {
       return `
-        <span class="badge badge-inprogress">
-          <svg class="spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line></svg>
+        <span class="badge badge-inprogress" style="font-weight:700;">
+          <svg class="spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+          </svg>
           Building...
         </span>
       `;
@@ -502,7 +580,11 @@ window.PipelineModule = {
         icon = '✕';
       } else if (env.status === 'inProgress') {
         badgeClass = 'badge-inprogress';
-        icon = '↻';
+        icon = `
+          <svg class="spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:10px !important; height:10px !important; margin-right:2px;">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+          </svg>
+        `;
       } else if (env.status === 'notStarted') {
         badgeClass = 'badge-canceled';
         icon = '⏳';
@@ -520,11 +602,11 @@ window.PipelineModule = {
   },
 
   getCicdBadge(state, label) {
-    if (state === 'deployed') {
+    if (state === 'deployed' || state === 'deploy_pending') {
       return `
         <span class="badge badge-succeeded" style="font-weight:700;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-          ${label || 'Build & Deployed'}
+          ${label || 'Deployment Completed'}
         </span>
       `;
     }
@@ -533,14 +615,6 @@ window.PipelineModule = {
         <span class="badge badge-failed" style="font-weight:700;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
           ${label || 'Deploy Failed'}
-        </span>
-      `;
-    }
-    if (state === 'deploy_pending') {
-      return `
-        <span class="badge badge-warning" style="font-weight:700;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
-          ${label || 'Deploy Pending'}
         </span>
       `;
     }
@@ -555,12 +629,106 @@ window.PipelineModule = {
     if (state === 'in_progress') {
       return `
         <span class="badge badge-inprogress" style="font-weight:700;">
-          <svg class="spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle></svg>
-          ${label || 'In Progress'}
+          <svg class="spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+          </svg>
+          ${label || 'Building / Deploying...'}
         </span>
       `;
     }
-    return `<span class="badge badge-blue">${label || 'CI Build Passed'}</span>`;
+    return `
+      <span class="badge badge-succeeded" style="font-weight:700;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        ${label || 'Deployment Completed'}
+      </span>
+    `;
+  },
+
+  getBuildTimeHtml(r) {
+    const res = (r.buildResult || '').toLowerCase();
+    if (res === 'succeeded' || res === 'success') {
+      return `
+        <div style="display:flex; align-items:center; gap:6px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#107c10" stroke-width="3" style="width:13px; height:13px; color:#107c10; flex-shrink:0;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span style="color:var(--text-main); font-weight:600;">${r.buildFinishTime}</span>
+        </div>
+      `;
+    } else if (res === 'failed' || res === 'failure') {
+      return `
+        <div style="display:flex; align-items:center; gap:6px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#d13438" stroke-width="3" style="width:13px; height:13px; color:#d13438; flex-shrink:0;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <span style="color:#d13438; font-weight:600;">${r.buildFinishTime}</span>
+        </div>
+      `;
+    } else if (res.includes('prog') || res.includes('build') || res === 'inprogress' || res === 'notstarted' || r.buildFinishTime.includes('Building')) {
+      return `
+        <div style="display:flex; align-items:center; gap:6px;">
+          <svg class="spinner-icon" viewBox="0 0 24 24" fill="none" stroke="#0078d4" stroke-width="2.5" style="width:13px; height:13px; color:#0078d4; flex-shrink:0;"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+          <span style="color:#0078d4; font-weight:600;">${r.buildFinishTime}</span>
+        </div>
+      `;
+    }
+    return `
+      <div style="display:flex; align-items:center; gap:6px; color:var(--text-secondary);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px; height:12px; color:var(--text-muted);"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+        <span>${r.buildFinishTime}</span>
+      </div>
+    `;
+  },
+
+  getDeployTimeHtml(r) {
+    const st = (r.overallCicdState || '').toLowerCase();
+    const timeStr = r.deployFinishTime || '-';
+    
+    if (st === 'deployed' && timeStr !== '-') {
+      return `
+        <div style="display:flex; align-items:center; gap:6px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#107c10" stroke-width="3" style="width:13px; height:13px; color:#107c10; flex-shrink:0;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span style="color:var(--text-main); font-weight:600;">${timeStr}</span>
+        </div>
+      `;
+    } else if (st === 'deploy_failed' || (timeStr.toLowerCase().includes('fail') && timeStr !== '-')) {
+      return `
+        <div style="display:flex; align-items:center; gap:6px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#d13438" stroke-width="3" style="width:13px; height:13px; color:#d13438; flex-shrink:0;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <span style="color:#d13438; font-weight:600;">${timeStr}</span>
+        </div>
+      `;
+    } else if (st === 'in_progress' || timeStr.includes('Progress') || timeStr.includes('Deploying')) {
+      return `
+        <div style="display:flex; align-items:center; gap:6px;">
+          <svg class="spinner-icon" viewBox="0 0 24 24" fill="none" stroke="#0078d4" stroke-width="2.5" style="width:13px; height:13px; color:#0078d4; flex-shrink:0;"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+          <span style="color:#0078d4; font-weight:600;">${timeStr}</span>
+        </div>
+      `;
+    }
+    return `
+      <div style="display:flex; align-items:center; gap:6px; color:var(--text-muted);">
+        <span>-</span>
+      </div>
+    `;
+  },
+
+  getTriggeredByHtml(r) {
+    const authorName = r.author || 'Automated Service';
+    const authorEmail = r.authorEmail && r.authorEmail !== 'service-principal@azure.net' ? r.authorEmail : '';
+    const initials = authorName.split(' ').map(p => p[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'AZ';
+    const isService = authorName.toLowerCase().includes('service') || authorName.toLowerCase().includes('microsoft') || authorName.toLowerCase().includes('build');
+    const avatarBg = isService ? '#0078d4' : '#7c3aed';
+
+    return `
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div style="width:24px; height:24px; border-radius:50%; background:${avatarBg}; color:#ffffff; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+          ${initials}
+        </div>
+        <div style="min-width:0; max-width:180px;">
+          <div style="font-weight:600; font-size:12.5px; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${authorName}">
+            ${authorName}
+          </div>
+          ${authorEmail ? `<div style="font-size:11px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${authorEmail}">${authorEmail}</div>` : ''}
+        </div>
+      </div>
+    `;
   },
 
   render(append = false) {
@@ -569,7 +737,7 @@ window.PipelineModule = {
     if (!append) tbody.innerHTML = '';
 
     if (this.runs.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No matching build or release runs found for this project.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400">No matching build or release runs found for this project.</td></tr>`;
       document.getElementById('seeMorePipelinesContainer')?.classList.add('hidden');
       return;
     }
@@ -581,6 +749,9 @@ window.PipelineModule = {
       const buildBadge = this.getBuildBadge(r.buildResult);
       const releasePills = this.getReleasePills(r);
       const cicdBadge = this.getCicdBadge(r.overallCicdState, r.overallStatusLabel);
+      const buildTimeHtml = this.getBuildTimeHtml(r);
+      const deployTimeHtml = this.getDeployTimeHtml(r);
+      const triggeredByHtml = this.getTriggeredByHtml(r);
 
       const tr = document.createElement('tr');
       tr.title = 'Click to open Azure Blade Telemetry for Build & Release details';
@@ -593,10 +764,18 @@ window.PipelineModule = {
           <span class="badge badge-purple" style="font-size:11px;">${r.branch}</span>
           <span class="subtext" style="display:block; font-size:11px; margin-top:2px;">${r.trigger}</span>
         </td>
+        <td>
+          ${triggeredByHtml}
+        </td>
         <td>${buildBadge}</td>
         <td>${releasePills}</td>
         <td>${cicdBadge}</td>
-        <td style="font-size:12px; color:var(--text-secondary);">${r.finishTime}</td>
+        <td style="font-size:12px; white-space:nowrap;">
+          ${buildTimeHtml}
+        </td>
+        <td style="font-size:12px; white-space:nowrap;">
+          ${deployTimeHtml}
+        </td>
       `;
       tr.addEventListener('click', () => this.openRunBlade(globalIdx));
       tbody.appendChild(tr);
@@ -671,8 +850,12 @@ window.PipelineModule = {
                 <span class="blade-kv-value"><code>${run.sourceVersion}</code></span>
               </div>
               <div class="blade-kv-item">
-                <span class="blade-kv-label">FINISH TIMESTAMP</span>
-                <span class="blade-kv-value">${run.finishTime}</span>
+                <span class="blade-kv-label">BUILD FINISH TIME</span>
+                <span class="blade-kv-value">${run.buildFinishTime}</span>
+              </div>
+              <div class="blade-kv-item">
+                <span class="blade-kv-label">DEPLOYMENT FINISH TIME</span>
+                <span class="blade-kv-value">${run.deployFinishTime}</span>
               </div>
             </div>
           </div>
