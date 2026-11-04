@@ -1,10 +1,106 @@
-// Azure DevOps Intelligence Hub - Pipelines & Release Management Module
+﻿// Azure DevOps Intelligence Hub - Pipelines & Release Management Module
 window.PipelineModule = {
   runs: [],
+  allProcessedRuns: [],
+  filteredRuns: [],
   index: 0,
   pageSize: 25,
   currentProject: '',
   currentOrg: '',
+  currentPat: '',
+  searchTerm: '',
+  deploymentFilter: 'all',
+  eventsBound: false,
+
+  formatDuration(start, finish) {
+    if (!start || !finish) return 'â€”';
+    const s = new Date(start);
+    const f = new Date(finish);
+    if (isNaN(s.getTime()) || isNaN(f.getTime())) return 'â€”';
+    const diffSec = Math.max(0, Math.floor((f - s) / 1000));
+    const m = Math.floor(diffSec / 60);
+    const sec = diffSec % 60;
+    if (m === 0) return `${sec}s`;
+    return `${m}m ${sec}s`;
+  },
+
+  matchBranchToEnvType(branchName) {
+    if (!branchName) return null;
+    const b = branchName.toLowerCase().replace(/^refs\/heads\//, '').trim();
+    if (b.includes('preprod') || b.includes('pre-prod') || b.includes('pre_prod') || b.includes('staging')) return 'preprod';
+    if (b === 'uat' || b.includes('/uat') || b.includes('-uat') || b.includes('_uat') || b.includes('uat/')) return 'uat';
+    if (b === 'qa' || b.includes('/qa') || b.includes('-qa') || b.includes('_qa') || b.includes('qa/') || b.includes('test')) return 'qa';
+    if (b === 'dev' || b.includes('dev') || b.includes('develop') || b.includes('feature')) return 'dev';
+    if (b === 'main' || b === 'master' || b.includes('prod') || b.includes('release')) return 'prod';
+    return null;
+  },
+
+  matchStageToEnvType(stageName) {
+    if (!stageName) return null;
+    const s = stageName.toLowerCase().trim();
+    if (s.includes('preprod') || s.includes('pre-prod') || s.includes('pre prod') || s.includes('staging')) return 'preprod';
+    if (s.includes('uat')) return 'uat';
+    if (s.includes('qa') || s.includes('test')) return 'qa';
+    if (s.includes('dev') || s.includes('develop')) return 'dev';
+    if (s.includes('prod') || s.includes('production')) return 'prod';
+    return null;
+  },
+
+  initEvents() {
+    if (this.eventsBound) return;
+    this.eventsBound = true;
+
+    document.getElementById('pipelineSearchInput')?.addEventListener('input', (e) => {
+      this.searchTerm = (e.target.value || '').trim().toLowerCase();
+      this.filterAndRender();
+    });
+
+    document.getElementById('pipelineDeploymentFilter')?.addEventListener('change', (e) => {
+      this.deploymentFilter = e.target.value || 'all';
+      this.filterAndRender();
+    });
+
+    // Note: Do not auto-fetch on runs count change. User selects scope and clicks "Fetch Runs"
+    document.getElementById('pipelineRunsTop')?.addEventListener('change', () => {
+      // Keeps selected value ready for Fetch Runs execution
+    });
+
+    document.getElementById('pipelineProjectSelect')?.addEventListener('change', (e) => {
+      const topSelect = document.getElementById('projectSelect');
+      if (topSelect && topSelect.value !== e.target.value) {
+        topSelect.value = e.target.value;
+        window.HubApp.handleProjectSelect();
+      }
+    });
+
+    document.getElementById('btnRefreshPipelines')?.addEventListener('click', () => {
+      this.refreshCurrent();
+    });
+
+    document.getElementById('btnMorePipelines')?.addEventListener('click', () => {
+      this.render(true);
+    });
+  },
+
+  refreshCurrent() {
+    const org = window.HubApp.getOrg();
+    const project = document.getElementById('projectSelect')?.value || '';
+    const pat = window.HubApp.getPat();
+    const topRuns = document.getElementById('pipelineRunsTop')?.value || 50;
+    const filter = document.getElementById('pipelineDeploymentFilter')?.value || 'all';
+    if (org && project && pat) {
+      this.fetch(org, project, pat, topRuns, filter);
+    }
+  },
+
+  syncProjectDropdowns(project) {
+    const el = document.getElementById('pipelineProjectSelect');
+    const topSelect = document.getElementById('projectSelect');
+    if (el && topSelect) {
+      el.innerHTML = topSelect.innerHTML;
+      el.value = project;
+    }
+  },
 
   async fetch(org, project, pat, topRuns, deploymentFilter) {
     this.currentOrg = org;
@@ -381,7 +477,7 @@ window.PipelineModule = {
                 if (sResult.includes('success') || sResult.includes('completed')) normStatus = 'succeeded';
                 else if (sResult.includes('fail') || sResult.includes('rejected')) normStatus = 'failed';
                 else if (sResult.includes('inprog') || sResult.includes('running')) normStatus = 'inProgress';
-                else if (sResult.includes('cancel') || sResult.includes('skipped')) normStatus = 'canceled';
+                else if (sResult.includes('cancel') || sResult.includes('skipped')) normStatus = 'notStarted';
 
                 let displayStatus = 'Not Started';
                 if (normStatus === 'succeeded') displayStatus = 'Succeeded';
@@ -400,6 +496,34 @@ window.PipelineModule = {
           }
         } catch (tErr) {
           // ignore if no timeline available
+        }
+      }
+
+      // Align environment stage statuses with branch target
+      if (environments.length > 0) {
+        const branchEnvType = this.matchBranchToEnvType(branchName);
+        const hasEnvTypeStages = environments.some(e => this.matchStageToEnvType(e.name));
+
+        if (branchEnvType && hasEnvTypeStages) {
+          environments = environments.map(env => {
+            const stageEnvType = this.matchStageToEnvType(env.name);
+            if (stageEnvType) {
+              if (stageEnvType === branchEnvType) {
+                // Matching stage for this branch
+                if (buildResult === 'succeeded' || buildResult === 'partiallySucceeded') {
+                  return { ...env, status: 'succeeded', rawStatus: 'Succeeded' };
+                } else if (buildResult === 'inProgress') {
+                  return { ...env, status: 'inProgress', rawStatus: 'In Progress' };
+                } else {
+                  return { ...env, status: 'notStarted', rawStatus: 'Not Started' };
+                }
+              } else {
+                // Non-matching stages for this branch should be normal / not deployed
+                return { ...env, status: 'notStarted', rawStatus: 'Not Started' };
+              }
+            }
+            return env;
+          });
         }
       }
 
@@ -462,8 +586,20 @@ window.PipelineModule = {
         deployFinishTime = 'In Progress...';
       }
 
+      const durationFormatted = this.formatDuration(b.startTime, b.finishTime);
+      const durationSec = b.startTime && b.finishTime ? Math.max(0, Math.floor((new Date(b.finishTime) - new Date(b.startTime)) / 1000)) : 0;
+      const pipelineType = (b.definition?.type === 1 || b.process?.type === 1) ? 'Designer' : 'YAML';
+      const repoName = b.repository?.name || 'â€”';
+      const pipelineId = b.definition?.id || b.pipeline?.id || 'â€”';
+
       return {
         id: b.id || idx,
+        pipelineId: pipelineId,
+        pipelineType: pipelineType,
+        projectName: project,
+        repoName: repoName,
+        durationFormatted: durationFormatted,
+        durationSec: durationSec,
         name: b.definition?.name || b.pipeline?.name || 'Pipeline Definition',
         buildNumber: b.buildNumber || `#${b.id}`,
         branch: branchName,
@@ -504,8 +640,63 @@ window.PipelineModule = {
       filtered = processedRuns.filter(r => r.overallCicdState === 'build_failed');
     }
 
+    this.allProcessedRuns = processedRuns;
     this.runs = filtered;
     this.index = 0;
+
+    this.initEvents();
+    this.syncProjectDropdowns(project);
+
+    // Compute metrics for 6 dynamic summary cards
+    const totalRuns = processedRuns.length;
+    const successfulRuns = processedRuns.filter(r => r.buildResult === 'succeeded' || r.buildResult === 'partiallySucceeded').length;
+    const failedRuns = processedRuns.filter(r => r.buildResult === 'failed' || r.overallCicdState === 'build_failed' || r.overallCicdState === 'deploy_failed').length;
+    const runningRuns = processedRuns.filter(r => r.buildResult === 'inProgress' || r.overallCicdState === 'in_progress').length;
+    const cancelledRuns = processedRuns.filter(r => r.buildResult === 'canceled' || r.overallCicdState === 'canceled').length;
+    const queuedRuns = processedRuns.filter(r => (r.rawObject?.status || '').toLowerCase() === 'notstarted').length;
+
+    const evaluated = successfulRuns + failedRuns;
+    const successRate = evaluated > 0 ? Math.round((successfulRuns / evaluated) * 100) : (totalRuns > 0 ? 100 : 0);
+
+    const completedWithDuration = processedRuns.filter(r => r.durationSec > 0);
+    const avgSec = completedWithDuration.length > 0
+      ? Math.round(completedWithDuration.reduce((acc, r) => acc + r.durationSec, 0) / completedWithDuration.length)
+      : 0;
+    const avgDurationStr = avgSec > 0 ? `${Math.floor(avgSec / 60)}m ${avgSec % 60}s` : 'â€”';
+
+    // Update 6 Dynamic Summary Cards
+    const elPipeTotal = document.getElementById('pipeValTotal');
+    if (elPipeTotal) elPipeTotal.textContent = totalRuns;
+    const elPipeRate = document.getElementById('pipeChipSuccessRate');
+    if (elPipeRate) elPipeRate.textContent = `${successRate}% Pass Rate`;
+
+    const elPipeSuccess = document.getElementById('pipeValSuccessful');
+    if (elPipeSuccess) elPipeSuccess.textContent = successfulRuns;
+    const elPipeSuccessCount = document.getElementById('pipeChipSuccessCount');
+    if (elPipeSuccessCount) elPipeSuccessCount.textContent = `${successfulRuns} Passed`;
+
+    const elPipeFailed = document.getElementById('pipeValFailed');
+    if (elPipeFailed) elPipeFailed.textContent = failedRuns;
+    const elPipeFailedCount = document.getElementById('pipeChipFailedCount');
+    if (elPipeFailedCount) elPipeFailedCount.textContent = `${failedRuns} Failed`;
+
+    const elPipeRunning = document.getElementById('pipeValRunning');
+    if (elPipeRunning) elPipeRunning.textContent = runningRuns;
+    const elPipeRunningCount = document.getElementById('pipeChipRunningCount');
+    if (elPipeRunningCount) elPipeRunningCount.textContent = `${runningRuns} Running`;
+
+    const elPipeCancelled = document.getElementById('pipeValCancelled');
+    if (elPipeCancelled) elPipeCancelled.textContent = cancelledRuns;
+    const elPipeCancelledCount = document.getElementById('pipeChipCancelledCount');
+    if (elPipeCancelledCount) elPipeCancelledCount.textContent = `${cancelledRuns} Cancelled`;
+
+    const elPipeQueued = document.getElementById('pipeValQueued');
+    if (elPipeQueued) elPipeQueued.textContent = queuedRuns;
+    const elPipeAvgDur = document.getElementById('pipeChipAvgDuration');
+    if (elPipeAvgDur) elPipeAvgDur.textContent = `Avg: ${avgDurationStr}`;
+
+    const elPipeLastUpd = document.getElementById('pipeLastUpdatedText');
+    if (elPipeLastUpd) elPipeLastUpd.textContent = `Last updated: ${new Date().toLocaleTimeString(undefined, { hour12: false })}`;
 
     // 5. Update KPI cards
     const buildsPassed = processedRuns.filter(r => r.buildResult === 'succeeded').length;
@@ -565,38 +756,37 @@ window.PipelineModule = {
   },
 
   getReleasePills(run) {
-    if (!run.hasRelease || run.environments.length === 0) {
-      return `<span class="text-muted" style="font-size:12px; font-style:italic;">No linked release</span>`;
+    if (!run.hasRelease || !run.environments || run.environments.length === 0) {
+      return '<span style="font-size:12px; font-style:italic; color:var(--text-muted);">No linked release</span>';
     }
 
     const envPills = run.environments.map(env => {
       let badgeClass = 'badge-canceled';
-      let icon = '•';
+      let icon = '-';
       if (env.status === 'succeeded') {
         badgeClass = 'badge-succeeded';
-        icon = '✓';
+        icon = '&#10003;';
       } else if (env.status === 'failed') {
         badgeClass = 'badge-failed';
-        icon = '✕';
+        icon = '&#10005;';
       } else if (env.status === 'inProgress') {
         badgeClass = 'badge-inprogress';
-        icon = `
-          <svg class="spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:10px !important; height:10px !important; margin-right:2px;">
-            <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
-          </svg>
-        `;
-      } else if (env.status === 'notStarted') {
+        icon = '&#9203;';
+      } else if (env.status === 'canceled') {
         badgeClass = 'badge-canceled';
-        icon = '⏳';
+        icon = '-';
+      } else {
+        badgeClass = 'badge-canceled';
+        icon = '-';
       }
 
-      return `<span class="badge ${badgeClass}" style="font-size:11px; padding:2px 7px; margin-right:3px;" title="${env.name}: ${env.rawStatus}">${env.name}: ${icon}</span>`;
+      return `<span class="badge ${badgeClass}" style="font-size:10.5px; padding:2px 7px; margin-right:3px; margin-bottom:3px; display:inline-flex; align-items:center;" title="${env.name}: ${env.rawStatus}">${env.name}: ${icon}</span>`;
     }).join('');
 
     return `
       <div>
-        <strong style="font-size:12px; color:var(--text-main); display:block; margin-bottom:3px;">${run.releaseName || 'Release'}</strong>
-        <div style="display:flex; flex-wrap:wrap; gap:2px;">${envPills}</div>
+        <strong style="font-size:12px; font-weight:700; color:var(--text-main); display:block; margin-bottom:3px;">${run.releaseName || 'Release'}</strong>
+        <div style="display:flex; flex-wrap:wrap; gap:2px; align-items:center;">${envPills}</div>
       </div>
     `;
   },
@@ -731,13 +921,47 @@ window.PipelineModule = {
     `;
   },
 
+  filterAndRender() {
+    let list = this.allProcessedRuns;
+
+    if (this.searchTerm) {
+      const q = this.searchTerm;
+      list = list.filter(r => {
+        return (
+          (r.name && r.name.toLowerCase().includes(q)) ||
+          (r.branch && r.branch.toLowerCase().includes(q)) ||
+          (r.author && r.author.toLowerCase().includes(q)) ||
+          (r.repoName && r.repoName.toLowerCase().includes(q)) ||
+          String(r.id).includes(q)
+        );
+      });
+    }
+
+    if (this.deploymentFilter && this.deploymentFilter !== 'all') {
+      const df = this.deploymentFilter.toLowerCase();
+      if (df === 'deployed') list = list.filter(r => r.overallCicdState === 'deployed');
+      else if (df === 'deploy_failed') list = list.filter(r => r.overallCicdState === 'deploy_failed');
+      else if (df === 'in_progress') list = list.filter(r => r.overallCicdState === 'in_progress');
+      else if (df === 'build_failed') list = list.filter(r => r.overallCicdState === 'build_failed');
+    }
+
+    this.runs = list;
+    this.index = 0;
+    this.render(false);
+  },
+
   render(append = false) {
     const tbody = document.getElementById('pipelineTableBody');
     if (!tbody) return;
     if (!append) tbody.innerHTML = '';
 
+    const statsEl = document.getElementById('pipelineTableStats');
+    if (statsEl) {
+      statsEl.textContent = `${this.runs.length} runs`;
+    }
+
     if (this.runs.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400">No matching build or release runs found for this project.</td></tr>`;
+      tbody.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-slate-400">No matching build or release runs found for this project.</td></tr>';
       document.getElementById('seeMorePipelinesContainer')?.classList.add('hidden');
       return;
     }
@@ -755,28 +979,28 @@ window.PipelineModule = {
 
       const tr = document.createElement('tr');
       tr.title = 'Click to open Azure Blade Telemetry for Build & Release details';
+      tr.style.cursor = 'pointer';
       tr.innerHTML = `
         <td>
-          <div style="font-weight:700; color:var(--text-main);">${r.name}</div>
-          <code style="font-size:11px;">${r.buildNumber}</code>
+          <div style="display:flex; flex-direction:column; gap:2px;">
+            <strong style="color:var(--text-main); font-size:12.5px; font-weight:700;">${r.name}</strong>
+            <a href="${r.url}" target="_blank" rel="noopener noreferrer" class="commit-hash-link" style="color:var(--azure-blue); font-size:11.5px; text-decoration:none; width:fit-content;" onclick="event.stopPropagation();">${r.buildNumber}</a>
+          </div>
         </td>
         <td>
-          <span class="badge badge-purple" style="font-size:11px;">${r.branch}</span>
-          <span class="subtext" style="display:block; font-size:11px; margin-top:2px;">${r.trigger}</span>
+          <div style="display:flex; flex-direction:column; gap:2px;">
+            <div><span class="badge badge-purple" style="font-size:10.5px; padding:2px 8px; border-radius:12px;">${r.branch}</span></div>
+            <span style="font-size:11px; color:var(--text-muted);">${r.trigger}</span>
+          </div>
         </td>
-        <td>
-          ${triggeredByHtml}
-        </td>
+        <td>${triggeredByHtml}</td>
         <td>${buildBadge}</td>
         <td>${releasePills}</td>
         <td>${cicdBadge}</td>
-        <td style="font-size:12px; white-space:nowrap;">
-          ${buildTimeHtml}
-        </td>
-        <td style="font-size:12px; white-space:nowrap;">
-          ${deployTimeHtml}
-        </td>
+        <td style="white-space:nowrap;">${buildTimeHtml}</td>
+        <td style="white-space:nowrap;">${deployTimeHtml}</td>
       `;
+
       tr.addEventListener('click', () => this.openRunBlade(globalIdx));
       tbody.appendChild(tr);
     });
@@ -791,7 +1015,6 @@ window.PipelineModule = {
       if (counter) counter.textContent = rem;
     }
   },
-
   openRunBlade(runIdx) {
     const run = this.runs[runIdx];
     if (!run) return;

@@ -1,6 +1,7 @@
 // Azure DevOps Intelligence Hub - User Activity & Commits Module
 window.ActivityModule = {
   commits: [],
+  allCommits: [],
   commitIndex: 0,
   prs: [],
   prIndex: 0,
@@ -192,6 +193,7 @@ window.ActivityModule = {
               userCommits.push({
                 repo: r.name,
                 repoId: r.id,
+                branch: (r.defaultBranch ? r.defaultBranch.replace('refs/heads/', '') : 'main'),
                 commitId: c.commitId ? c.commitId.substring(0, 8) : 'HEAD',
                 fullCommitId: c.commitId || '',
                 author: authorName,
@@ -217,20 +219,71 @@ window.ActivityModule = {
     userCommits.sort((a, b) => b.rawDate - a.rawDate);
     userPRs.sort((a, b) => b.rawDate - a.rawDate);
 
+    this.allCommits = userCommits;
     this.commits = userCommits;
     this.commitIndex = 0;
     this.prs = userPRs;
     this.prIndex = 0;
 
+    // Compute metrics for 6 dynamic summary cards
+    const nowTime = new Date().getTime();
+    const oneDayAgo = nowTime - 24 * 60 * 60 * 1000;
+    const sevenDaysAgo = nowTime - 7 * 24 * 60 * 60 * 1000;
+    const thirtyDaysAgo = nowTime - 30 * 24 * 60 * 60 * 1000;
+
+    const totalCommitsCount = userCommits.length;
+    const contributorsCount = Object.keys(authorCounts).length;
+    const commitsToday = userCommits.filter(c => c.rawDate >= oneDayAgo).length;
+    const commitsThisWeek = userCommits.filter(c => c.rawDate >= sevenDaysAgo).length;
+    const commitsThisMonth = userCommits.filter(c => c.rawDate >= thirtyDaysAgo).length;
+    const activeReposCount = activeReposSet.size;
+
+    const topAuthorsList = Object.entries(authorCounts).sort((a, b) => b[1] - a[1]);
+    const topAuthorStr = topAuthorsList.length > 0 ? `${topAuthorsList[0][0]} (${topAuthorsList[0][1]})` : 'â€”';
+
+    // Update 6 Dynamic Summary Cards in Module Header
+    const elActTotal = document.getElementById('actValTotalCommits');
+    if (elActTotal) elActTotal.textContent = totalCommitsCount;
+    const elActChipScope = document.getElementById('actChipScope');
+    if (elActChipScope) elActChipScope.textContent = `${activeReposCount} Repos`;
+
+    const elActContrib = document.getElementById('actValContributors');
+    if (elActContrib) elActContrib.textContent = contributorsCount;
+    const elActChipTop = document.getElementById('actChipTopAuthor');
+    if (elActChipTop) elActChipTop.textContent = topAuthorStr;
+
+    const elActToday = document.getElementById('actValToday');
+    if (elActToday) elActToday.textContent = commitsToday;
+    const elActChipToday = document.getElementById('actChipToday');
+    if (elActChipToday) elActChipToday.textContent = `${commitsToday} Today`;
+
+    const elActThisWeek = document.getElementById('actValThisWeek');
+    if (elActThisWeek) elActThisWeek.textContent = commitsThisWeek;
+    const elActChipWeek = document.getElementById('actChipThisWeek');
+    if (elActChipWeek) elActChipWeek.textContent = `${commitsThisWeek} This Week`;
+
+    const elActThisMonth = document.getElementById('actValThisMonth');
+    if (elActThisMonth) elActThisMonth.textContent = commitsThisMonth;
+    const elActChipMonth = document.getElementById('actChipThisMonth');
+    if (elActChipMonth) elActChipMonth.textContent = `${commitsThisMonth} This Month`;
+
+    const elActActiveRepos = document.getElementById('actValActiveRepos');
+    if (elActActiveRepos) elActActiveRepos.textContent = activeReposCount;
+    const elActChipActiveRepos = document.getElementById('actChipActiveRepos');
+    if (elActChipActiveRepos) elActChipActiveRepos.textContent = `${activeReposCount} Repositories`;
+
+    const elActLastUpd = document.getElementById('activityLastUpdatedText');
+    if (elActLastUpd) elActLastUpd.textContent = `Last updated: ${new Date().toLocaleTimeString(undefined, { hour12: false })}`;
+
     // Update KPIs
     window.HubApp.setKpis(
       this.currentQuery || project,
       'Commits Found',
-      this.commits.length,
+      totalCommitsCount,
       'Pull Requests',
       this.prs.length,
       'Active Repos',
-      activeReposSet.size
+      activeReposCount
     );
 
     this.renderCommits(false);
@@ -244,17 +297,43 @@ window.ActivityModule = {
     window.HubApp.renderChart(chartLabels, chartValues, 'Commits by Contributor');
   },
 
+  filterAndRender() {
+    let list = this.allCommits;
+
+    if (this.searchTerm) {
+      const q = this.searchTerm;
+      list = list.filter(c => {
+        return (
+          (c.author && c.author.toLowerCase().includes(q)) ||
+          (c.authorEmail && c.authorEmail.toLowerCase().includes(q)) ||
+          (c.msg && c.msg.toLowerCase().includes(q)) ||
+          (c.repo && c.repo.toLowerCase().includes(q)) ||
+          (c.branch && c.branch.toLowerCase().includes(q)) ||
+          String(c.commitId).toLowerCase().includes(q)
+        );
+      });
+    }
+
+    this.commits = list;
+    this.commitIndex = 0;
+    this.renderCommits(false);
+  },
+
   renderCommits(append = false) {
     const tbody = document.getElementById('userCommitsTableBody');
     if (!tbody) return;
     if (!append) tbody.innerHTML = '';
 
+    const statsEl = document.getElementById('activityTableStats');
+    if (statsEl) {
+      statsEl.textContent = `${this.commits.length} commits`;
+    }
+
     if (this.commits.length === 0) {
       const qText = this.currentQuery ? ` matching "${this.currentQuery}"` : '';
-      tbody.innerHTML = `<tr><td colspan="5" style="padding: 36px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
+      tbody.innerHTML = `<tr><td colspan="8" style="padding: 36px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue); opacity: 0.6;"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
         No commits found${qText} in the selected timeframe.
-        <div style="font-size: 11.5px; margin-top: 6px; color: var(--text-muted); opacity: 0.85;">Tip: Try searching by user alias or display name, expand the timeframe, or leave blank to view all recent commits.</div>
       </td></tr>`;
       document.getElementById('seeMoreCommitsContainer')?.classList.add('hidden');
       return;
@@ -266,13 +345,15 @@ window.ActivityModule = {
       const globalIdx = this.commitIndex + localIdx;
       const tr = document.createElement('tr');
       tr.title = 'Click to inspect Commit Telemetry Blade';
-      tr.innerHTML = `
-        <td><strong>${c.repo}</strong></td>
-        <td><code>${c.commitId}</code></td>
-        <td>${c.author}</td>
-        <td>${c.date}</td>
-        <td style="max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${c.msg}</td>
-      `;
+      tr.innerHTML = '<td><a href="' + c.url + '" target="_blank" rel="noopener noreferrer" class="commit-hash-link"><code>#' + c.commitId + '</code></a></td>' +
+        '<td style="max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="' + c.msg + '">' + c.msg + '</td>' +
+        '<td><strong>' + c.author + '</strong></td>' +
+        '<td style="font-size:12px; color:var(--text-muted);">' + (c.authorEmail || 'â€”') + '</td>' +
+        '<td><span class="badge badge-purple">' + c.repo + '</span></td>' +
+        '<td><code>' + (c.branch || 'main') + '</code></td>' +
+        '<td style="font-size:12px; color:var(--text-muted); white-space:nowrap;">' + c.date + '</td>' +
+        '<td><a href="' + c.url + '" target="_blank" rel="noopener noreferrer" class="mod-btn-action" style="font-size:11px; height:24px; padding:2px 8px;">View Commit</a></td>';
+
       tr.addEventListener('click', () => this.openCommitBlade(globalIdx));
       tbody.appendChild(tr);
     });
@@ -280,13 +361,13 @@ window.ActivityModule = {
     this.commitIndex += slice.length;
 
     const rem = this.commits.length - this.commitIndex;
-    const btnContainer = document.getElementById('seeMoreCommitsContainer');
-    if (btnContainer) {
-      btnContainer.classList.toggle('hidden', rem <= 0);
-      document.getElementById('commitsRemainingCount').textContent = rem;
+    const moreBtn = document.getElementById('seeMoreCommitsContainer');
+    if (moreBtn) {
+      moreBtn.classList.toggle('hidden', rem <= 0);
+      const counter = document.getElementById('commitsRemainingCount');
+      if (counter) counter.textContent = rem;
     }
   },
-
   renderPRs() {
     const tbody = document.getElementById('userPrTableBody');
     if (!tbody) return;

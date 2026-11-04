@@ -210,14 +210,14 @@ window.HubApp = {
       subtitle: 'Review branch protection rules, required reviewers, and automated build gates',
       cardTitle: 'Policy Enforcement Rules',
       path: '/dev.azure.com/policies',
-      substepId: 'substepRepo'
+      substepId: 'substepPolicies'
     },
     prs: {
       title: 'Pull Requests Matrix',
       subtitle: 'Monitor active, completed, and abandoned pull requests across all repositories',
       cardTitle: 'Pull Requests',
       path: '/dev.azure.com/pullrequests',
-      substepId: 'substepRepo'
+      substepId: 'substepPrs'
     },
     pipelines: {
       title: 'Pipeline Builds & Release Deployment Matrix',
@@ -353,26 +353,78 @@ window.HubApp = {
         const view = e.currentTarget.dataset.view;
         if (view) {
           self.switchView(view);
-          if (view === 'dashboard') {
-            self.execDashboardFetch();
-          }
         }
       });
     });
 
     // Step 5 Execution Buttons & Enter Key Support
-    document.getElementById('btnInspectRepo')?.addEventListener('click', () => self.execRepoInspect());
+    document.getElementById('btnInspectRepo')?.addEventListener('click', () => self.execRepoInspect('repositories'));
+    document.getElementById('btnInspectPolicies')?.addEventListener('click', () => self.execRepoInspect('policies'));
+    document.getElementById('btnInspectPrs')?.addEventListener('click', () => self.execRepoInspect('prs'));
     document.getElementById('btnFetchAccess')?.addEventListener('click', () => self.execAccessFetch());
     document.getElementById('targetAccessUserQuery')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') self.execAccessFetch(); });
     document.getElementById('btnFetchActivity')?.addEventListener('click', () => self.execActivityFetch());
     document.getElementById('targetUserQuery')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') self.execActivityFetch(); });
-    document.getElementById('userTimeframeDays')?.addEventListener('change', () => self.execActivityFetch());
     document.getElementById('btnFetchPipelines')?.addEventListener('click', () => self.execPipelineFetch());
     document.getElementById('btnFetchWorkItems')?.addEventListener('click', () => self.execWorkItemsFetch());
     document.getElementById('targetWorkItemUser')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') self.execWorkItemsFetch(); });
     document.getElementById('btnFetchAgentPools')?.addEventListener('click', () => self.execAgentPoolsFetch());
     document.getElementById('btnFetchServiceConnections')?.addEventListener('click', () => self.execServiceConnectionsFetch());
     document.getElementById('targetScQuery')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') self.execServiceConnectionsFetch(); });
+
+    // Module Header Refresh Buttons
+    document.getElementById('btnRefreshRepos')?.addEventListener('click', () => self.execRepoInspect('repositories'));
+    document.getElementById('btnRefreshPolicies')?.addEventListener('click', () => self.execRepoInspect('policies'));
+    document.getElementById('btnRefreshPrs')?.addEventListener('click', () => self.execRepoInspect('prs'));
+    document.getElementById('btnRefreshPipelines')?.addEventListener('click', () => self.execPipelineFetch());
+    document.getElementById('btnRefreshAgentPools')?.addEventListener('click', () => self.execAgentPoolsFetch());
+    document.getElementById('btnRefreshServiceConnections')?.addEventListener('click', () => self.execServiceConnectionsFetch());
+    document.getElementById('btnRefreshAccess')?.addEventListener('click', () => self.execAccessFetch());
+    document.getElementById('btnRefreshActivity')?.addEventListener('click', () => self.execActivityFetch());
+    document.getElementById('btnRefreshWorkItems')?.addEventListener('click', () => self.execWorkItemsFetch());
+
+    // Module Header Project Dropdowns
+    [
+      'repoModProjectSelect',
+      'policyProjectSelect',
+      'prProjectSelect',
+      'accessProjectSelect',
+      'activityProjectSelect',
+      'pipelineProjectSelect',
+      'wiProjectSelect',
+      'agentPoolProjectSelect',
+      'scProjectSelect'
+    ].forEach(id => {
+      document.getElementById(id)?.addEventListener('change', (e) => {
+        const topSelect = document.getElementById('projectSelect');
+        if (topSelect && topSelect.value !== e.target.value) {
+          topSelect.value = e.target.value;
+          self.handleProjectSelect();
+        }
+      });
+    });
+
+    // Module Filters & Instant Search
+    document.getElementById('agentPoolSearchInput')?.addEventListener('input', (e) => {
+      window.AgentPoolModule?.filterAndRender(e.target.value);
+    });
+
+    document.getElementById('scSearchInput')?.addEventListener('input', (e) => {
+      window.ServiceConnectionModule?.filterAndRender(e.target.value);
+    });
+    document.getElementById('targetScQuery')?.addEventListener('input', (e) => {
+      window.ServiceConnectionModule?.filterAndRender(e.target.value);
+    });
+
+    document.getElementById('accessRoleFilter')?.addEventListener('change', (e) => {
+      window.AccessModule?.filterByRole(e.target.value);
+    });
+    document.getElementById('accessSearchInput')?.addEventListener('input', (e) => {
+      window.AccessModule?.filterBySearch(e.target.value);
+    });
+    document.getElementById('activitySearchInput')?.addEventListener('input', (e) => {
+      window.ActivityModule?.filterAndRender(e.target.value);
+    });
 
     // Pagination / "See More" Buttons
     document.getElementById('btnMoreRepos')?.addEventListener('click', () => window.RepoModule?.renderBranches(true));
@@ -414,27 +466,21 @@ window.HubApp = {
     // Query Tiles Quick Navigation
     document.getElementById('tileActiveTasks')?.addEventListener('click', () => {
       self.switchView('workitems');
-      self.triggerActiveInspect();
     });
     document.getElementById('tileReadyTesting')?.addEventListener('click', () => {
       self.switchView('workitems');
-      self.triggerActiveInspect();
     });
     document.getElementById('tileCompletedStories')?.addEventListener('click', () => {
       self.switchView('pipelines');
-      self.triggerActiveInspect();
     });
     document.getElementById('tileOpenStories')?.addEventListener('click', () => {
       self.switchView('workitems');
-      self.triggerActiveInspect();
     });
     document.getElementById('tileActiveBugs')?.addEventListener('click', () => {
       self.switchView('workitems');
-      self.triggerActiveInspect();
     });
     document.getElementById('tileSprintCapacity')?.addEventListener('click', () => {
       self.switchView('pipelines');
-      self.triggerActiveInspect();
     });
 
     // Feedback Modal Handlers
@@ -1225,6 +1271,7 @@ window.HubApp = {
           select.innerHTML = '<option value="">-- No Authorized Projects --</option>';
           select.disabled = true;
         }
+        this.syncAllProjectDropdowns();
       }
 
       this.populateDashboardProjectMenu();
@@ -1271,6 +1318,30 @@ window.HubApp = {
     }
   },
 
+  syncAllProjectDropdowns(project) {
+    const topSelect = document.getElementById('projectSelect');
+    if (!topSelect) return;
+    const currentVal = project !== undefined ? project : topSelect.value;
+    const moduleSelectIds = [
+      'repoModProjectSelect',
+      'policyProjectSelect',
+      'prProjectSelect',
+      'accessProjectSelect',
+      'activityProjectSelect',
+      'pipelineProjectSelect',
+      'wiProjectSelect',
+      'agentPoolProjectSelect',
+      'scProjectSelect'
+    ];
+    moduleSelectIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.innerHTML = topSelect.innerHTML;
+        el.value = currentVal;
+      }
+    });
+  },
+
   async handleProjectSelect() {
     const project = document.getElementById('projectSelect')?.value || '';
     
@@ -1292,6 +1363,7 @@ window.HubApp = {
     const teamNameEl = document.getElementById('azDashTeamName');
     if (teamNameEl) teamNameEl.textContent = project ? `${project} Team` : 'Select a Project';
 
+    this.syncAllProjectDropdowns(project);
     this.populateDashboardProjectMenu();
 
     if (!project) {
@@ -1309,12 +1381,16 @@ window.HubApp = {
       this.cachedRepos = data.value || [];
       this.cachedRepos.sort((a, b) => a.name.localeCompare(b.name));
 
-      const repoDropdown = document.getElementById('repoSelect');
-      if (repoDropdown) {
-        repoDropdown.innerHTML = '<option value="">-- Choose Repository --</option>' +
-          '<option value="-- All Repositories --">-- All Repositories --</option>' +
-          this.cachedRepos.map(r => `<option value="${r.name}">${r.name}</option>`).join('');
-      }
+      const repoOptions = '<option value="">-- Choose Repository --</option>' +
+        '<option value="-- All Repositories --">-- All Repositories --</option>' +
+        this.cachedRepos.map(r => `<option value="${r.name}">${r.name}</option>`).join('');
+      ['repoSelect', 'repoModRepoSelect', 'policyRepoFilterSelect', 'policyRepoSelect', 'prRepoFilterSelect', 'prRepoSelect'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.innerHTML = repoOptions;
+          el.value = '';
+        }
+      });
     } catch (err) {
       console.warn('Repository caching notice:', err);
     }
@@ -1322,18 +1398,59 @@ window.HubApp = {
     // Reset data tables to placeholder prompts for the newly selected project
     this.resetTablePlaceholders();
 
-    // Auto-inspect or refresh currently selected view (dashboard only)
-    this.switchView(this.currentView, true);
+    // Switch view without force reloading other modules
+    this.switchView(this.currentView, false);
+
+    // If currently on Dashboard view, immediately load the dashboard overview for the selected project
+    if (this.currentView === 'dashboard') {
+      await this.execDashboardFetch();
+    }
+  },
+
+  handleProjectChange(project) {
+    const topSelect = document.getElementById('projectSelect');
+    if (topSelect && project) {
+      topSelect.value = project;
+    }
+    this.handleProjectSelect();
   },
 
   resetTablePlaceholders() {
-    const repoDropdown = document.getElementById('repoSelect');
-    if (repoDropdown) repoDropdown.value = '';
+    ['repoSelect', 'repoModRepoSelect', 'policyRepoFilterSelect', 'policyRepoSelect', 'prRepoFilterSelect', 'prRepoSelect'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
 
     // Reset KPI summary cards to placeholder
-    ['kpi-1-val', 'kpi-2-val', 'kpi-3-val', 'kpi-4-val', 'kpi-5-val'].forEach(id => {
+    const allCardValueIds = [
+      'kpi-1-val', 'kpi-2-val', 'kpi-3-val', 'kpi-4-val', 'kpi-5-val',
+      'repoValTotalRepos', 'repoValTotalBranches', 'repoValActiveBranches', 'repoValProtectedBranches', 'repoValDefaultBranch',
+      'polValTotal', 'polValActive', 'polValInactive', 'polValProtected', 'polValUnprotected',
+      'policyValTotal', 'policyValActive', 'policyValInactive', 'policyValProtectedBranches', 'policyValUnprotectedBranches',
+      'prValTotal', 'prValActive', 'prValCompleted', 'prValAbandoned', 'prValDraft',
+      'pipeValTotal', 'pipeValSucceeded', 'pipeValFailed', 'pipeValRunning', 'pipeValCanceled', 'pipeValQueued',
+      'poolValTotalPools', 'poolValTotalAgents', 'poolValOnline', 'poolValOffline', 'poolValBusy', 'poolValIdle',
+      'poolValOnlineAgents', 'poolValOfflineAgents', 'poolValBusyAgents', 'poolValIdleAgents',
+      'scValTotal', 'scValActive', 'scValDisabled', 'scValExpired', 'scValAttention',
+      'accValTotalGroups', 'accValTotalUsers', 'accValAdmins', 'accValContrib', 'accValReaders', 'accValReview',
+      'accessValTotalGroups', 'accessValTotalUsers', 'accessValAdmins', 'accessValContributors', 'accessValReaders', 'accessValReview',
+      'actValTotalCommits', 'actValContributors', 'actValToday', 'actValThisWeek', 'actValThisMonth', 'actValActiveRepos',
+      'wiValTotal', 'wiValNew', 'wiValActive', 'wiValResolved', 'wiValClosed', 'wiValBlocked'
+    ];
+    allCardValueIds.forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.textContent = '-';
+      if (el) el.textContent = '—';
+    });
+
+    // Reset chip pills
+    const allChipIds = [
+      'repoChipActiveRepos', 'repoChipScopeBranch', 'repoChipActiveCount', 'repoChipStaleCount', 'repoChipProtectedCount', 'repoChipUnprotectedCount',
+      'policyChipScope', 'policyChipBlocking', 'policyChipInactive', 'policyChipProtectedRatio', 'policyChipUnprotectedRatio',
+      'prChipTotalScope', 'prChipActive', 'prChipCompleted', 'prChipAbandoned', 'prChipDraft'
+    ];
+    allChipIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = '—';
     });
 
     if (window.RepoModule) {
@@ -1353,7 +1470,7 @@ window.HubApp = {
 
     setHtml('branchesTableBody', `
       <tr>
-        <td colspan="7" style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
+        <td colspan="8" style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue);"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           Select a repository scope and click <strong>"Inspect Repositories"</strong> button above to load branch details.
         </td>
@@ -1362,7 +1479,7 @@ window.HubApp = {
 
     setHtml('policyTableBody', `
       <tr>
-        <td colspan="6" style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
+        <td colspan="10" style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue);"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
           Select a repository scope and click <strong>"Inspect Policies"</strong> button above to load branch policies.
         </td>
@@ -1371,7 +1488,7 @@ window.HubApp = {
 
     setHtml('repoPrsTableBody', `
       <tr>
-        <td colspan="6" style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
+        <td colspan="11" style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue);"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M13 6h3a2 2 0 0 1 2 2v7"></path><line x1="6" y1="9" x2="6" y2="21"></line></svg>
           Select a repository scope and click <strong>"Inspect PRs"</strong> button above to load pull requests.
         </td>
@@ -1380,7 +1497,7 @@ window.HubApp = {
 
     setHtml('accessTableBody', `
       <tr>
-        <td colspan="5" style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
+        <td colspan="8" style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue);"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
           Specify a user query (or leave blank for all) and click <strong>"Scan Members"</strong> button above to load permissions.
         </td>
@@ -1389,7 +1506,7 @@ window.HubApp = {
 
     setHtml('userCommitsTableBody', `
       <tr>
-        <td colspan="5" style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
+        <td colspan="8" style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue);"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
           Enter a user email and timeframe, then click <strong>"Search Activity"</strong> button above to load commit history.
         </td>
@@ -1415,7 +1532,7 @@ window.HubApp = {
 
     setHtml('workItemsTableBody', `
       <tr>
-        <td colspan="6" style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
+        <td colspan="11" style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue);"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
           Specify an assigned user (or leave blank for all) and click <strong>"Query Work Items"</strong> button above to load backlog items.
         </td>
@@ -1431,9 +1548,18 @@ window.HubApp = {
       </tr>
     `);
 
+    setHtml('agentsDetailTableBody', `
+      <tr>
+        <td colspan="8" style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue);"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+          Click any Agent Pool row above to load its individual agents & status.
+        </td>
+      </tr>
+    `);
+
     setHtml('serviceConnectionsTableBody', `
       <tr>
-        <td colspan="6" style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
+        <td colspan="9" style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue);"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
           Select a service type and click <strong>"Scan Endpoints"</strong> button above to load service connections.
         </td>
@@ -1504,21 +1630,9 @@ window.HubApp = {
     if (filterContainer) {
       if (config.substepId) {
         filterContainer.classList.remove('hidden');
-        ['substepRepo', 'substepAccess', 'substepActivity', 'substepPipelines', 'substepWorkItems', 'substepAgentPools', 'substepServiceConnections'].forEach(id => {
+        ['substepRepo', 'substepPolicies', 'substepPrs', 'substepAccess', 'substepActivity', 'substepPipelines', 'substepWorkItems', 'substepAgentPools', 'substepServiceConnections'].forEach(id => {
           document.getElementById(id)?.classList.toggle('hidden', id !== config.substepId);
         });
-
-        // Contextual action button label for shared repo substep
-        const btnRepoText = document.getElementById('btnInspectRepoText');
-        if (btnRepoText) {
-          if (viewKey === 'policies') {
-            btnRepoText.textContent = 'Inspect Policies';
-          } else if (viewKey === 'prs') {
-            btnRepoText.textContent = 'Inspect PRs';
-          } else {
-            btnRepoText.textContent = 'Inspect Repositories';
-          }
-        }
       } else {
         filterContainer.classList.add('hidden');
       }
@@ -1549,8 +1663,15 @@ window.HubApp = {
       }
     }
 
-    // Trigger auto-fetch ONLY when on dashboard overview
-    if (project && forceReload && this.currentView === 'dashboard') {
+    // Auto-load dashboard overview whenever switching to dashboard view if project is selected
+    if (viewKey === 'dashboard' && project) {
+      if (!window.DashboardModule || window.DashboardModule.currentProject !== project) {
+        this.execDashboardFetch();
+      }
+    }
+
+    // Trigger auto-fetch if project is selected and forceReload is true
+    if (project && forceReload) {
       this.triggerActiveInspect();
     }
   },
@@ -1577,9 +1698,13 @@ window.HubApp = {
         this.execOverallWorkFetch();
         break;
       case 'repositories':
+        this.execRepoInspect('repositories');
+        break;
       case 'policies':
+        this.execRepoInspect('policies');
+        break;
       case 'prs':
-        this.execRepoInspect();
+        this.execRepoInspect('prs');
         break;
       case 'access':
         this.execAccessFetch();
@@ -1605,27 +1730,64 @@ window.HubApp = {
     }
   },
 
-  async execRepoInspect() {
+  async execRepoInspect(targetView = null) {
     const project = this.validateProjectSelection();
     if (!project) return;
 
-    const repoInput = document.getElementById('repoSelect')?.value;
-    if (!repoInput) {
-      return this.showModal('Please select a Repository from the Repository Scope dropdown before inspecting.');
-    }
+    const view = targetView || this.currentView || 'repositories';
 
-    try {
-      this.setStatus('Inspecting repository branches and branch policies...', 'info');
-      await window.RepoModule.inspect(
-        this.getOrg(),
-        project,
-        this.getPat(),
-        repoInput,
-        this.cachedRepos,
-        this.currentView
-      );
-      this.setStatus('Repository matrix & branch policies loaded.', 'success');
-    } catch (e) { this.setStatus(e.message, 'error'); }
+    if (view === 'policies') {
+      const repoInput = document.getElementById('policyRepoFilterSelect')?.value || document.getElementById('policyRepoSelect')?.value || '';
+      if (!repoInput) {
+        this.showModal('Please select a Repository Scope (e.g. "-- All Repositories --" or a specific repository) before inspecting Branch Policies.');
+        return;
+      }
+      try {
+        this.setStatus(`Inspecting branch policies for ${repoInput}...`, 'info');
+        await window.RepoModule.inspectPolicies(
+          this.getOrg(),
+          project,
+          this.getPat(),
+          repoInput,
+          this.cachedRepos
+        );
+        this.setStatus(`Branch policies loaded successfully for ${repoInput}.`, 'success');
+      } catch (e) { this.setStatus(e.message, 'error'); }
+    } else if (view === 'prs') {
+      const repoInput = document.getElementById('prRepoFilterSelect')?.value || document.getElementById('prRepoSelect')?.value || '';
+      if (!repoInput) {
+        this.showModal('Please select a Repository Scope (e.g. "-- All Repositories --" or a specific repository) before inspecting Pull Requests.');
+        return;
+      }
+      try {
+        this.setStatus(`Inspecting pull requests for ${repoInput}...`, 'info');
+        await window.RepoModule.inspectPrs(
+          this.getOrg(),
+          project,
+          this.getPat(),
+          repoInput,
+          this.cachedRepos
+        );
+        this.setStatus(`Pull requests loaded successfully for ${repoInput}.`, 'success');
+      } catch (e) { this.setStatus(e.message, 'error'); }
+    } else {
+      const repoInput = document.getElementById('repoSelect')?.value || document.getElementById('repoModRepoSelect')?.value || '';
+      if (!repoInput) {
+        this.showModal('Please select a Repository Scope (e.g. "-- All Repositories --" or a specific repository) before inspecting Repositories.');
+        return;
+      }
+      try {
+        this.setStatus(`Inspecting repository branches for ${repoInput}...`, 'info');
+        await window.RepoModule.inspectRepositories(
+          this.getOrg(),
+          project,
+          this.getPat(),
+          repoInput,
+          this.cachedRepos
+        );
+        this.setStatus(`Repository matrix loaded successfully for ${repoInput}.`, 'success');
+      } catch (e) { this.setStatus(e.message, 'error'); }
+    }
   },
 
   async execAccessFetch() {
@@ -1637,7 +1799,7 @@ window.HubApp = {
         this.getOrg(),
         project,
         this.getPat(),
-        document.getElementById('targetAccessUserQuery')?.value.trim() || ''
+        document.getElementById('accessSearchInput')?.value.trim() || document.getElementById('targetAccessUserQuery')?.value.trim() || ''
       );
       this.setStatus('Security groups & permissions loaded successfully.', 'success');
     } catch (e) { this.setStatus(e.message, 'error'); }
@@ -1657,7 +1819,7 @@ window.HubApp = {
         this.getOrg(),
         project,
         this.getPat(),
-        document.getElementById('targetUserQuery')?.value.trim() || '',
+        document.getElementById('activitySearchInput')?.value.trim() || document.getElementById('targetUserQuery')?.value.trim() || '',
         parseInt(document.getElementById('userTimeframeDays')?.value || '90', 10),
         this.cachedRepos
       );
@@ -1721,7 +1883,7 @@ window.HubApp = {
         project,
         this.getPat(),
         document.getElementById('scTypeSelect')?.value || 'all',
-        document.getElementById('targetScQuery')?.value.trim() || ''
+        document.getElementById('scSearchInput')?.value.trim() || document.getElementById('targetScQuery')?.value.trim() || ''
       );
       this.setStatus('Service connections & cloud integrations loaded.', 'success');
     } catch (e) { this.setStatus(e.message, 'error'); }

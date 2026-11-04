@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Microsoft Azure DevOps - Intelligence Hub & Executive Insights</title>
-  <link rel="stylesheet" href="css/styles.css?v=16.0">
+  <link rel="stylesheet" href="css/styles.css?v=18.3">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 
@@ -28,8 +28,10 @@
       <!-- Brand Mark & Logo -->
       <a href="javascript:void(0)" class="portal-brand" id="btnLogoHome">
         <div class="brand-icon-box">
-          <img src="assets/icons/hub_title.png" alt="Azure DevOps Intelligence Hub" class="brand-logo-img hub-title-img-light" />
-          <img src="assets/icons/hub_title_dark.png" alt="Azure DevOps Intelligence Hub" class="brand-logo-img hub-title-img-dark" />
+          <img src="assets/icons/hub_title.png" alt="Azure DevOps Intelligence Hub"
+            class="brand-logo-img hub-title-img-light" />
+          <img src="assets/icons/hub_title_dark.png" alt="Azure DevOps Intelligence Hub"
+            class="brand-logo-img hub-title-img-dark" />
         </div>
         <span class="portal-title">Azure DevOps <span class="sub-brand">Intelligence Hub</span></span>
       </a>
@@ -256,8 +258,10 @@
         <div class="welcome-card">
           <div class="header-brand-hero">
             <h1 class="sr-only">Azure DevOps Intelligence Hub</h1>
-            <img src="assets/icons/hub_title.png" alt="Azure DevOps Intelligence Hub" class="hub-hero-title-img hub-title-img-light" />
-            <img src="assets/icons/hub_title_dark.png" alt="Azure DevOps Intelligence Hub" class="hub-hero-title-img hub-title-img-dark" />
+            <img src="assets/icons/hub_title.png" alt="Azure DevOps Intelligence Hub"
+              class="hub-hero-title-img hub-title-img-light" />
+            <img src="assets/icons/hub_title_dark.png" alt="Azure DevOps Intelligence Hub"
+              class="hub-hero-title-img hub-title-img-dark" />
             <p>Unified Enterprise Repository Matrix, Branch Policy Compliance, CI/CD Telemetry & Security Analysis</p>
           </div>
 
@@ -494,6 +498,43 @@
               </div>
             </div>
 
+            <!-- 5A-Policies: Branch Policies -->
+            <div id="substepPolicies" class="filter-group-row hidden">
+              <label for="policyRepoFilterSelect" class="filter-label">REPOSITORY SCOPE:</label>
+              <div class="filter-input-group">
+                <select id="policyRepoFilterSelect" class="portal-select">
+                  <option value="">-- Choose Repository --</option>
+                  <option value="-- All Repositories --">-- All Repositories --</option>
+                </select>
+                <button type="button" id="btnInspectPolicies" class="btn-portal-primary">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                  </svg>
+                  <span id="btnInspectPoliciesText">Inspect Policies</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 5A-PRs: Pull Requests -->
+            <div id="substepPrs" class="filter-group-row hidden">
+              <label for="prRepoFilterSelect" class="filter-label">REPOSITORY SCOPE:</label>
+              <div class="filter-input-group">
+                <select id="prRepoFilterSelect" class="portal-select">
+                  <option value="">-- Choose Repository --</option>
+                  <option value="-- All Repositories --">-- All Repositories --</option>
+                </select>
+                <button type="button" id="btnInspectPrs" class="btn-portal-primary">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="18" cy="18" r="3"></circle>
+                    <circle cx="6" cy="6" r="3"></circle>
+                    <path d="M13 6h3a2 2 0 0 1 2 2v7"></path>
+                    <line x1="6" y1="9" x2="6" y2="21"></line>
+                  </svg>
+                  <span id="btnInspectPrsText">Inspect PRs</span>
+                </button>
+              </div>
+            </div>
+
             <!-- 5B: User Access -->
             <div id="substepAccess" class="filter-group-row hidden">
               <label for="targetAccessUserQuery" class="filter-label">USER / EMAIL / NAME:</label>
@@ -514,7 +555,8 @@
             <div id="substepActivity" class="filter-group-row hidden">
               <label for="targetUserQuery" class="filter-label">USER EMAIL / ID:</label>
               <div class="filter-input-group">
-                <input type="text" id="targetUserQuery" class="portal-text-input" placeholder="e.g. user@domain.com, name or alias (blank for all)">
+                <input type="text" id="targetUserQuery" class="portal-text-input"
+                  placeholder="e.g. user@domain.com, name or alias (blank for all)">
                 <select id="userTimeframeDays" class="portal-select">
                   <option value="30">Last 30 Days</option>
                   <option value="90" selected>Last 90 Days</option>
@@ -638,11 +680,12 @@
             <!-- OVERVIEW: Azure DevOps Style Widget Dashboard -->
             <div id="view-dashboard" class="data-view">
               <div class="az-dashboard-wrapper">
-                
+
                 <!-- 1. Top Dashboard Header Toolbar -->
                 <div class="az-dashboard-header-bar">
                   <div class="az-dash-title-group" style="position:relative; z-index:105;">
-                    <div class="az-dash-team-picker" id="azDashTeamPicker" role="button" tabindex="0" title="Click to select Azure DevOps Project">
+                    <div class="az-dash-team-picker" id="azDashTeamPicker" role="button" tabindex="0"
+                      title="Click to select Azure DevOps Project">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="3" y="3" width="7" height="7"></rect>
                         <rect x="14" y="3" width="7" height="7"></rect>
@@ -650,16 +693,24 @@
                         <rect x="3" y="14" width="7" height="7"></rect>
                       </svg>
                       <span id="azDashTeamName">Select a Project</span>
-                      <svg style="width:14px; height:14px; transition:transform 0.2s ease;" id="azDashTeamChevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                      <svg style="width:14px; height:14px; transition:transform 0.2s ease;" id="azDashTeamChevron"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                      </svg>
                     </div>
                     <span class="az-dash-fav-star" title="Favorite Dashboard">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <polygon
+                          points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                        </polygon>
+                      </svg>
                     </span>
 
                     <!-- Project Selector Popover Dropdown Menu -->
                     <div class="az-dash-project-menu hidden" id="azDashProjectMenu">
                       <div class="az-dash-project-menu-header">
-                        <input type="text" id="azDashProjectSearch" class="az-dash-project-search" placeholder="Search projects..." />
+                        <input type="text" id="azDashProjectSearch" class="az-dash-project-search"
+                          placeholder="Search projects..." />
                       </div>
                       <div class="az-dash-project-list" id="azDashProjectList">
                         <div class="az-dash-project-empty">No projects available. Connect workspace first.</div>
@@ -676,14 +727,25 @@
                     </select>
 
                     <!-- Last Updated Indicator -->
-                    <span class="az-last-updated-text" id="dashLastUpdatedText" title="Time of last data refresh">Last updated: —</span>
+                    <span class="az-last-updated-text" id="dashLastUpdatedText" title="Time of last data refresh">Last
+                      updated: —</span>
 
                     <button type="button" class="az-btn-action" id="btnRefreshDashboard">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                      </svg>
                       <span>Refresh</span>
                     </button>
                     <button type="button" class="az-btn-icon-only" title="Full Screen" id="btnDashFullscreen">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <polyline points="9 21 3 21 3 15"></polyline>
+                        <line x1="21" y1="3" x2="14" y2="10"></line>
+                        <line x1="3" y1="21" x2="10" y2="14"></line>
+                      </svg>
                     </button>
                   </div>
                 </div>
@@ -701,137 +763,218 @@
                   </div>
                   <div class="az-banner-text">
                     <strong>No Azure DevOps Project Selected:</strong>
-                    Click <a href="javascript:void(0)" id="btnBannerSelectProject" style="color:var(--azure-blue); font-weight:700; text-decoration:underline;">Select a Project</a> above or choose a project from the top bar dropdown to load live sprint metrics, work items, deployments, and team members.
+                    Click <a href="javascript:void(0)" id="btnBannerSelectProject"
+                      style="color:var(--azure-blue); font-weight:700; text-decoration:underline;">Select a Project</a>
+                    above or choose a project from the top bar dropdown to load live sprint metrics, work items,
+                    deployments, and team members.
                   </div>
                 </div>
 
                 <!-- Loading State Overlay -->
                 <div class="az-dash-loading-overlay hidden" id="azDashLoadingOverlay">
                   <div class="az-dash-spinner"></div>
-                  <div style="font-size:12px; font-weight:600; color:var(--text-main); margin-top:8px;">Aggregating project telemetry &amp; live metrics...</div>
+                  <div style="font-size:12px; font-weight:600; color:var(--text-main); margin-top:8px;">Aggregating
+                    project telemetry &amp; live metrics...</div>
                 </div>
 
-                <!-- 2. Overview KPI Summary Cards (4 Cards Grid) -->
-                <div class="az-kpi-summary-grid">
-                  
-                  <!-- Card 1: Work Items Summary -->
-                  <div class="az-kpi-overview-card kpi-border-blue az-kpi-clickable" id="kpiCardWorkItems" role="button" tabindex="0" title="Click to view all Work Items &amp; Backlog">
-                    <div class="az-kpi-header">
-                      <div class="az-kpi-title-wrap">
-                        <span class="az-kpi-icon icon-blue">
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                            <line x1="9" y1="9" x2="15" y2="9"></line>
-                            <line x1="9" y1="13" x2="15" y2="13"></line>
-                            <line x1="9" y1="17" x2="11" y2="17"></line>
+                <!-- 2. Dynamic Overall Azure DevOps Project Summary Cards (8 Cards Grid) -->
+                <div class="module-summary-grid grid-8" id="dashSummaryGrid">
+
+                  <!-- Card 1: Total Projects -->
+                  <div class="module-summary-card accent-blue az-kpi-clickable" id="dashCardProjects" role="button"
+                    tabindex="0" title="Click to view organization projects">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-blue">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
                           </svg>
                         </span>
-                        <span class="az-kpi-title">Work Items</span>
+                        <span class="mod-card-label">Total Projects</span>
                       </div>
-                      <span class="az-kpi-badge badge-active" id="dashKpiTotalScopeBadge">0 items</span>
+                      <span class="mod-card-badge badge-blue" id="dashBadgeProjects">Accessible</span>
                     </div>
-                    <div class="az-kpi-body">
-                      <div class="az-kpi-main-val" id="dashKpiActiveWorkItems">—</div>
-                      <div class="az-kpi-subtext">Active items in development</div>
-                    </div>
-                    <div class="az-kpi-footer">
-                      <div class="az-kpi-pill-group">
-                        <span class="az-kpi-chip chip-red" title="High Priority / Active Bugs"><span id="dashKpiBugsCount">0</span> High-Pri Bugs</span>
-                        <span class="az-kpi-chip chip-green" title="Closed / Completed"><span id="dashKpiClosedCount">0</span> Resolved</span>
-                      </div>
-                      <div class="az-kpi-progress-bar">
-                        <div class="az-kpi-progress-fill fill-blue" id="dashKpiWorkItemsProgress" style="width:0%;"></div>
+                    <div class="mod-card-val" id="dashValTotalProjects">—</div>
+                    <div class="mod-card-sub">Accessible DevOps projects</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-blue" id="dashChipOrgScope">Organization Scope</span>
                       </div>
                     </div>
                   </div>
 
-                  <!-- Card 2: Pipeline Success/Failure Summary -->
-                  <div class="az-kpi-overview-card kpi-border-green az-kpi-clickable" id="kpiCardPipelines" role="button" tabindex="0" title="Click to view all Pipeline Runs">
-                    <div class="az-kpi-header">
-                      <div class="az-kpi-title-wrap">
-                        <span class="az-kpi-icon icon-green">
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <!-- Card 2: Total Repositories -->
+                  <div class="module-summary-card accent-purple az-kpi-clickable" id="dashCardRepos" role="button"
+                    tabindex="0" title="Click to view Repositories &amp; Branches">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-purple">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="6" y1="3" x2="6" y2="15"></line>
+                            <circle cx="18" cy="6" r="3"></circle>
+                            <circle cx="6" cy="18" r="3"></circle>
+                            <path d="M18 9a9 9 0 0 1-9 9"></path>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Total Repos</span>
+                      </div>
+                      <span class="mod-card-badge badge-purple" id="dashBadgeRepos">Git</span>
+                    </div>
+                    <div class="mod-card-val" id="dashValTotalRepos">—</div>
+                    <div class="mod-card-sub">Git repositories in project</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-purple" id="dashChipActiveRepos">0 Repos</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 3: Total Pipelines -->
+                  <div class="module-summary-card accent-teal az-kpi-clickable" id="dashCardPipelines" role="button"
+                    tabindex="0" title="Click to view Pipelines">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-teal">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polygon points="5 3 19 12 5 21 5 3"></polygon>
                           </svg>
                         </span>
-                        <span class="az-kpi-title">Pipelines Health</span>
+                        <span class="mod-card-label">Total Pipelines</span>
                       </div>
-                      <span class="az-kpi-badge badge-rate" id="dashKpiPipelineRateBadge">0% Pass</span>
+                      <span class="mod-card-badge badge-blue" id="dashBadgePipelines">Definitions</span>
                     </div>
-                    <div class="az-kpi-body">
-                      <div class="az-kpi-main-val" id="dashKpiPipelinePassRate">—</div>
-                      <div class="az-kpi-subtext"><span id="dashKpiPipelineTotalRuns">0</span> total runs executed</div>
-                    </div>
-                    <div class="az-kpi-footer">
-                      <div class="az-kpi-pill-group">
-                        <span class="az-kpi-chip chip-green"><span id="dashKpiPipelinePassed">0</span> Passed</span>
-                        <span class="az-kpi-chip chip-red"><span id="dashKpiPipelineFailed">0</span> Failed</span>
-                        <span class="az-kpi-chip chip-blue"><span id="dashKpiPipelineRunning">0</span> Active</span>
-                      </div>
-                      <div class="az-kpi-progress-bar">
-                        <div class="az-kpi-progress-fill fill-green" id="dashKpiPipelineProgress" style="width:0%;"></div>
+                    <div class="mod-card-val" id="dashValTotalPipelines">—</div>
+                    <div class="mod-card-sub">Build &amp; release definitions</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-green" id="dashChipPipeHealth">0% Health</span>
                       </div>
                     </div>
                   </div>
 
-                  <!-- Card 3: Repository & Pull Request Pulse -->
-                  <div class="az-kpi-overview-card kpi-border-purple az-kpi-clickable" id="kpiCardReposPrs" role="button" tabindex="0" title="Click to view Repositories &amp; Pull Requests">
-                    <div class="az-kpi-header">
-                      <div class="az-kpi-title-wrap">
-                        <span class="az-kpi-icon icon-purple">
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="18" cy="18" r="3"></circle>
-                            <circle cx="6" cy="6" r="3"></circle>
-                            <path d="M13 6h3a2 2 0 0 1 2 2v7"></path>
-                            <line x1="6" y1="9" x2="6" y2="21"></line>
+                  <!-- Card 4: Total Builds -->
+                  <div class="module-summary-card accent-blue az-kpi-clickable" id="dashCardBuilds" role="button"
+                    tabindex="0" title="Click to view Build Runs">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-blue">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
                           </svg>
                         </span>
-                        <span class="az-kpi-title">Repos &amp; Pull Requests</span>
+                        <span class="mod-card-label">Total Builds</span>
                       </div>
-                      <span class="az-kpi-badge badge-purple" id="dashKpiReposCountBadge">0 Repos</span>
+                      <span class="mod-card-badge badge-blue">Executions</span>
                     </div>
-                    <div class="az-kpi-body">
-                      <div class="az-kpi-main-val" id="dashKpiOpenPrsCount">—</div>
-                      <div class="az-kpi-subtext">Open PRs awaiting review</div>
-                    </div>
-                    <div class="az-kpi-footer">
-                      <div class="az-kpi-pill-group">
-                        <span class="az-kpi-chip chip-purple"><span id="dashKpiActiveReposCount">0</span> Repositories</span>
-                        <span class="az-kpi-chip chip-blue"><span id="dashKpiActiveBranchesCount">0</span> Active PRs</span>
-                      </div>
-                      <div class="az-kpi-progress-bar">
-                        <div class="az-kpi-progress-fill fill-purple" id="dashKpiPrProgress" style="width:0%;"></div>
+                    <div class="mod-card-val" id="dashValTotalBuilds">—</div>
+                    <div class="mod-card-sub">Executed pipeline runs</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-green" id="dashChipBuildsPassed">0 Passed</span>
+                        <span class="mod-chip chip-red" id="dashChipBuildsFailed">0 Failed</span>
                       </div>
                     </div>
                   </div>
 
-                  <!-- Card 4: Infrastructure Overview -->
-                  <div class="az-kpi-overview-card kpi-border-cyan az-kpi-clickable" id="kpiCardInfrastructure" role="button" tabindex="0" title="Click to view Agent Pools &amp; Infrastructure">
-                    <div class="az-kpi-header">
-                      <div class="az-kpi-title-wrap">
-                        <span class="az-kpi-icon icon-cyan">
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <!-- Card 5: Total Agent Pools -->
+                  <div class="module-summary-card accent-orange az-kpi-clickable" id="dashCardAgentPools" role="button"
+                    tabindex="0" title="Click to view Agent Pools">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-orange">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
                             <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
-                            <line x1="6" y1="6" x2="6.01" y2="6"></line>
-                            <line x1="6" y1="18" x2="6.01" y2="18"></line>
                           </svg>
                         </span>
-                        <span class="az-kpi-title">Infrastructure</span>
+                        <span class="mod-card-label">Agent Pools</span>
                       </div>
-                      <span class="az-kpi-badge badge-cyan" id="dashKpiInfraStatusBadge">Operational</span>
+                      <span class="mod-card-badge badge-orange">Queues</span>
                     </div>
-                    <div class="az-kpi-body">
-                      <div class="az-kpi-main-val" id="dashKpiOnlinePoolsCount">—</div>
-                      <div class="az-kpi-subtext">Online agent pools / queues</div>
-                    </div>
-                    <div class="az-kpi-footer">
-                      <div class="az-kpi-pill-group">
-                        <span class="az-kpi-chip chip-cyan"><span id="dashKpiEndpointsCount">0</span> Service Connections</span>
-                        <span class="az-kpi-chip chip-green"><span class="pulse-dot-sm pulse-green"></span> Live</span>
+                    <div class="mod-card-val" id="dashValTotalAgentPools">—</div>
+                    <div class="mod-card-sub">Task queues &amp; pools</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-orange" id="dashChipPoolsOnline">Active Pools</span>
                       </div>
-                      <div class="az-kpi-progress-bar">
-                        <div class="az-kpi-progress-fill fill-cyan" style="width:100%;"></div>
+                    </div>
+                  </div>
+
+                  <!-- Card 6: Total Agents -->
+                  <div class="module-summary-card accent-green az-kpi-clickable" id="dashCardAgents" role="button"
+                    tabindex="0" title="Click to view Agents">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-green">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                            <circle cx="9" cy="9" r="2"></circle>
+                            <path d="M15 15h.01"></path>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Total Agents</span>
+                      </div>
+                      <span class="mod-card-badge badge-green" id="dashBadgeAgents">Runners</span>
+                    </div>
+                    <div class="mod-card-val" id="dashValTotalAgents">—</div>
+                    <div class="mod-card-sub">Provisioned compute agents</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-green" id="dashChipAgentsOnline">0 Online</span>
+                        <span class="mod-chip chip-red" id="dashChipAgentsOffline">0 Offline</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 7: Total Service Connections -->
+                  <div class="module-summary-card accent-cyan az-kpi-clickable" id="dashCardConnections" role="button"
+                    tabindex="0" title="Click to view Service Connections">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-cyan">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Service Endpoints</span>
+                      </div>
+                      <span class="mod-card-badge badge-blue">Cloud</span>
+                    </div>
+                    <div class="mod-card-val" id="dashValTotalServiceConnections">—</div>
+                    <div class="mod-card-sub">Connected service endpoints</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-green" id="dashChipConnectionsActive">0 Active</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 8: Total Work Items -->
+                  <div class="module-summary-card accent-blue az-kpi-clickable" id="dashCardWorkItems" role="button"
+                    tabindex="0" title="Click to view Work Items &amp; Backlog">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-blue">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="9" y1="9" x2="15" y2="9"></line>
+                            <line x1="9" y1="13" x2="15" y2="13"></line>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Total Work Items</span>
+                      </div>
+                      <span class="mod-card-badge badge-active" id="dashBadgeWorkItems">Backlog</span>
+                    </div>
+                    <div class="mod-card-val" id="dashValTotalWorkItems">—</div>
+                    <div class="mod-card-sub">Project backlog work items</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-blue" id="dashChipActiveWorkItems">0 Active</span>
+                        <span class="mod-chip chip-red" id="dashChipBugsCount">0 Bugs</span>
                       </div>
                     </div>
                   </div>
@@ -840,13 +983,14 @@
 
                 <!-- 3. Visual Charts Grid (Pipeline Health & Work Item Distribution) -->
                 <div class="az-widget-grid" style="margin-top:16px;">
-                  
+
                   <!-- Visual 1: Pipeline Health Chart (Col 6) -->
                   <div class="az-widget-card az-widget-col-6" id="widgetPipelineHealth">
                     <div class="az-widget-header">
                       <div>
                         <div class="az-widget-title">
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:5px; vertical-align:text-bottom;">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" style="margin-right:5px; vertical-align:text-bottom;">
                             <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
                           </svg>
                           <span>Pipeline Build &amp; Release Health</span>
@@ -883,7 +1027,8 @@
                     <div class="az-widget-header">
                       <div>
                         <div class="az-widget-title">
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:5px; vertical-align:text-bottom;">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" style="margin-right:5px; vertical-align:text-bottom;">
                             <line x1="18" y1="20" x2="18" y2="10"></line>
                             <line x1="12" y1="20" x2="12" y2="4"></line>
                             <line x1="6" y1="20" x2="6" y2="14"></line>
@@ -925,13 +1070,14 @@
 
                 <!-- 4. Tables & Activity Grid (Open PRs & Recent Activity) -->
                 <div class="az-widget-grid" style="margin-top:16px;">
-                  
+
                   <!-- Visual 3: Open PR Review Status Table (Col 8) -->
                   <div class="az-widget-card az-widget-col-8" id="widgetOpenPrTable">
                     <div class="az-widget-header">
                       <div>
                         <div class="az-widget-title">
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:5px; vertical-align:text-bottom;">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" style="margin-right:5px; vertical-align:text-bottom;">
                             <circle cx="18" cy="18" r="3"></circle>
                             <circle cx="6" cy="6" r="3"></circle>
                             <path d="M13 6h3a2 2 0 0 1 2 2v7"></path>
@@ -943,22 +1089,26 @@
                         <div class="az-widget-subtitle">Active pull requests across project repositories</div>
                       </div>
                       <div class="az-widget-header-tools">
-                        <button type="button" class="az-btn-action" id="btnDashJumpToPrs" style="padding:4px 8px; font-size:11px;">
+                        <button type="button" class="az-btn-action" id="btnDashJumpToPrs"
+                          style="padding:4px 8px; font-size:11px;">
                           View All PRs →
                         </button>
                       </div>
                     </div>
 
-                    <div class="az-dash-table-wrapper" id="azDashOpenPrContainer" style="max-height:280px; overflow-y:auto;">
+                    <div class="az-dash-table-wrapper" id="azDashOpenPrContainer"
+                      style="max-height:280px; overflow-y:auto;">
                       <div class="az-empty-dash-state" style="padding:24px 0;">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="1.5">
                           <circle cx="18" cy="18" r="3"></circle>
                           <circle cx="6" cy="6" r="3"></circle>
                           <path d="M13 6h3a2 2 0 0 1 2 2v7"></path>
                           <line x1="6" y1="9" x2="6" y2="21"></line>
                         </svg>
                         <div style="font-weight:600; margin-top:6px;">No Open Pull Requests</div>
-                        <div style="font-size:11px; color:var(--text-muted); margin-top:3px;">Select a project or all pull requests are merged and approved.</div>
+                        <div style="font-size:11px; color:var(--text-muted); margin-top:3px;">Select a project or all
+                          pull requests are merged and approved.</div>
                       </div>
                     </div>
                   </div>
@@ -968,7 +1118,8 @@
                     <div class="az-widget-header">
                       <div>
                         <div class="az-widget-title">
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:5px; vertical-align:text-bottom;">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" style="margin-right:5px; vertical-align:text-bottom;">
                             <circle cx="12" cy="12" r="10"></circle>
                             <polyline points="12 6 12 12 16 14"></polyline>
                           </svg>
@@ -978,7 +1129,8 @@
                       </div>
                     </div>
 
-                    <div class="az-dash-activity-stream" id="azDashRecentActivityList" style="max-height:280px; overflow-y:auto; padding-right:4px;">
+                    <div class="az-dash-activity-stream" id="azDashRecentActivityList"
+                      style="max-height:280px; overflow-y:auto; padding-right:4px;">
                       <div class="az-empty-dash-state" style="padding:24px 0;">
                         <div style="font-size:11px; color:var(--text-muted);">No recent project activity recorded.</div>
                       </div>
@@ -992,330 +1144,2396 @@
 
             <!-- VIEW 1: Repositories & Branches -->
             <section id="view-repositories" class="data-view hidden">
-              <!-- KPI Summary Strip (Repositories & Branches Only) -->
-              <div id="kpiContainer" class="portal-kpi-summary-strip">
-                <div class="portal-kpi-card">
-                  <span id="kpi-1-label" class="portal-kpi-label">REPOSITORY</span>
-                  <span id="kpi-1-val" class="portal-kpi-val kpi-val-blue">-</span>
+              <div class="module-container">
+
+                <!-- 1. Module Header & Toolbar -->
+                <div class="module-header-bar">
+                  <div class="module-title-group">
+                    <h2 class="module-title">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        style="color:var(--azure-blue);">
+                        <line x1="6" y1="3" x2="6" y2="15"></line>
+                        <circle cx="18" cy="6" r="3"></circle>
+                        <circle cx="6" cy="18" r="3"></circle>
+                        <path d="M18 9a9 9 0 0 1-9 9"></path>
+                      </svg>
+                      <span>Repositories &amp; Branches</span>
+                    </h2>
+                    <p class="module-subtitle">Inspect Git repositories, active branches, branch policies, and latest
+                      commit telemetry</p>
+                  </div>
+
+                  <div class="module-toolbar">
+                    <!-- Project Selector (synced with top bar) -->
+                    <div class="mod-control-group">
+                      <span class="mod-control-label">Project:</span>
+                      <select id="repoModProjectSelect" class="mod-select" title="Select Azure DevOps Project">
+                        <option value="">-- Choose Project --</option>
+                      </select>
+                    </div>
+
+                    <!-- Repository Scope Selector -->
+                    <div class="mod-control-group">
+                      <span class="mod-control-label">Repository:</span>
+                      <select id="repoModRepoSelect" class="mod-select" title="Choose Repository">
+                        <option value="">-- Choose Repository --</option>
+                        <option value="-- All Repositories --">-- All Repositories --</option>
+                      </select>
+                    </div>
+
+                    <!-- Last Updated Indicator -->
+                    <span class="mod-last-updated" id="repoLastUpdatedText">Last updated: —</span>
+
+                    <!-- Refresh Button -->
+                    <button type="button" class="mod-btn-action mod-btn-primary" id="btnRefreshRepos"
+                      title="Refresh live repository telemetry">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                      </svg>
+                      <span>Refresh</span>
+                    </button>
+
+                    <!-- Open in ADO Portal Button -->
+                    <button type="button" class="mod-btn-action" id="btnOpenRepoInAdo"
+                      title="Open repository in Azure DevOps Portal">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                      </svg>
+                      <span>ADO Portal</span>
+                    </button>
+                  </div>
                 </div>
-                <div class="portal-kpi-card">
-                  <span id="kpi-2-label" class="portal-kpi-label">BRANCHES</span>
-                  <span id="kpi-2-val" class="portal-kpi-val kpi-val-purple">-</span>
+
+                <!-- 2. Dynamic Summary Cards (5 Cards: Total Repositories, Total Branches, Active Branches, Protected Branches, Default Branch) -->
+                <div class="module-summary-grid grid-5" id="repoSummaryGrid">
+
+                  <!-- Card 1: Total Repositories -->
+                  <div class="module-summary-card accent-blue" id="repoCardTotalRepos">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-blue">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="6" y1="3" x2="6" y2="15"></line>
+                            <circle cx="18" cy="6" r="3"></circle>
+                            <circle cx="6" cy="18" r="3"></circle>
+                            <path d="M18 9a9 9 0 0 1-9 9"></path>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Total Repositories</span>
+                      </div>
+                      <span class="mod-card-badge badge-blue" id="repoBadgeTotalRepos">Project Scope</span>
+                    </div>
+                    <div class="mod-card-val" id="repoValTotalRepos">—</div>
+                    <div class="mod-card-sub" id="repoSubTotalRepos">Repositories in project</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-blue" id="repoChipActiveRepos">0 Active</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 2: Total Branches -->
+                  <div class="module-summary-card accent-purple" id="repoCardTotalBranches">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-purple">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="6" y1="3" x2="6" y2="15"></line>
+                            <circle cx="18" cy="6" r="3"></circle>
+                            <circle cx="6" cy="18" r="3"></circle>
+                            <path d="M18 9a9 9 0 0 1-9 9"></path>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Total Branches</span>
+                      </div>
+                      <span class="mod-card-badge badge-purple" id="repoBadgeTotalBranches">Refs</span>
+                    </div>
+                    <div class="mod-card-val" id="repoValTotalBranches">—</div>
+                    <div class="mod-card-sub" id="repoSubTotalBranches">Branches in scope</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-purple" id="repoChipScopeBranch">Selected Scope</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 3: Active Branches -->
+                  <div class="module-summary-card accent-green" id="repoCardActiveBranches">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-green">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Active Branches</span>
+                      </div>
+                      <span class="mod-card-badge badge-green" id="repoBadgeActiveBranches">&lt;90 Days</span>
+                    </div>
+                    <div class="mod-card-val" id="repoValActiveBranches">—</div>
+                    <div class="mod-card-sub">Recently updated branches</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-green" id="repoChipActiveCount">0 Active</span>
+                        <span class="mod-chip chip-orange" id="repoChipStaleCount">0 Stale</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 4: Protected Branches -->
+                  <div class="module-summary-card accent-orange" id="repoCardProtectedBranches">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-orange">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Protected Branches</span>
+                      </div>
+                      <span class="mod-card-badge badge-orange" id="repoBadgeProtected">Policies</span>
+                    </div>
+                    <div class="mod-card-val" id="repoValProtectedBranches">—</div>
+                    <div class="mod-card-sub">Enforced with branch policies</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-green" id="repoChipProtectedCount">0 Protected</span>
+                        <span class="mod-chip chip-gray" id="repoChipUnprotectedCount">0 Unprotected</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 5: Default Branch -->
+                  <div class="module-summary-card accent-teal" id="repoCardDefaultBranch">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-teal">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon
+                              points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                            </polygon>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Default Branch</span>
+                      </div>
+                      <span class="mod-card-badge badge-blue">Primary</span>
+                    </div>
+                    <div class="mod-card-val" id="repoValDefaultBranch"
+                      style="font-size:20px; font-family:'JetBrains Mono', Consolas, monospace;">—</div>
+                    <div class="mod-card-sub" id="repoSubDefaultBranch">Primary target branch</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-blue" id="repoChipDefaultTarget">Default Target</span>
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
-                <div class="portal-kpi-card">
-                  <span id="kpi-3-label" class="portal-kpi-label">TOTAL PRS</span>
-                  <span id="kpi-3-val" class="portal-kpi-val kpi-val-teal">-</span>
+
+                <!-- 3. Detailed Repository Information Panel -->
+                <div class="mod-detail-panel" id="repoDetailPanel">
+                  <div class="mod-detail-header">
+                    <div class="mod-detail-title">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        style="color:var(--azure-blue);">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                      </svg>
+                      <span>Detailed Repository Information</span>
+                    </div>
+                    <div id="repoDetailExternalLink">
+                      <!-- Rendered dynamically with link -->
+                    </div>
+                  </div>
+                  <div class="mod-detail-grid">
+                    <div class="mod-detail-item">
+                      <span class="label">Project Name</span>
+                      <span class="value" id="repoDetailProject">—</span>
+                    </div>
+                    <div class="mod-detail-item">
+                      <span class="label">Repository Name</span>
+                      <span class="value" id="repoDetailName">—</span>
+                    </div>
+                    <div class="mod-detail-item">
+                      <span class="label">Repository ID</span>
+                      <span class="value" id="repoDetailId"
+                        style="font-family:'JetBrains Mono', Consolas, monospace; font-size:11.5px;">—</span>
+                    </div>
+                    <div class="mod-detail-item">
+                      <span class="label">Repository URL</span>
+                      <span class="value" id="repoDetailUrl">—</span>
+                    </div>
+                    <div class="mod-detail-item">
+                      <span class="label">Repository Status</span>
+                      <span class="value" id="repoDetailStatus">—</span>
+                    </div>
+                    <div class="mod-detail-item">
+                      <span class="label">Default Branch</span>
+                      <span class="value" id="repoDetailDefaultBranch"
+                        style="font-family:'JetBrains Mono', Consolas, monospace;">—</span>
+                    </div>
+                    <div class="mod-detail-item">
+                      <span class="label">Total Branches</span>
+                      <span class="value" id="repoDetailTotalBranches">—</span>
+                    </div>
+                    <div class="mod-detail-item">
+                      <span class="label">Created Date</span>
+                      <span class="value" id="repoDetailCreatedDate">—</span>
+                    </div>
+                    <div class="mod-detail-item">
+                      <span class="label">Last Updated Date</span>
+                      <span class="value" id="repoDetailLastUpdatedDate">—</span>
+                    </div>
+                  </div>
                 </div>
-                <div class="portal-kpi-card">
-                  <span id="kpi-4-label" class="portal-kpi-label">ACTIVE PRS</span>
-                  <span id="kpi-4-val" class="portal-kpi-val kpi-val-orange">-</span>
+
+                <!-- 4. Branch Details Table Toolbar (Search & Filter) -->
+                <div class="mod-table-toolbar">
+                  <div class="mod-search-input-wrap">
+                    <svg class="mod-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="repoBranchSearchInput"
+                      placeholder="Filter branches by name, commit message, author..." />
+                  </div>
+
+                  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <span class="mod-control-label">Status Filter:</span>
+                    <select id="repoBranchStatusFilter" class="mod-select">
+                      <option value="all">All Branches</option>
+                      <option value="active">Active Branches (&lt;90d)</option>
+                      <option value="stale">Stale Branches (&gt;90d)</option>
+                      <option value="protected">Protected Branches</option>
+                      <option value="unprotected">Unprotected Branches</option>
+                    </select>
+
+                    <span class="mod-table-stats" id="repoTableStats">0 branches</span>
+                  </div>
                 </div>
-                <div class="portal-kpi-card">
-                  <span id="kpi-5-label" class="portal-kpi-label">COMPLETED PRS</span>
-                  <span id="kpi-5-val" class="portal-kpi-val kpi-val-green">-</span>
-                </div>
-              </div>
 
-              <div class="portal-table-wrapper">
-                <table class="portal-table">
-                  <thead>
-                    <tr>
-                      <th>REPOSITORY</th>
-                      <th>BRANCH NAME</th>
-                      <th>STATUS / HEALTH</th>
-                      <th>BRANCH POLICIES</th>
-                      <th>LAST AUTHOR</th>
-                      <th>MODIFIED TIME</th>
-                      <th>COMMIT MESSAGE</th>
-                    </tr>
-                  </thead>
-                  <tbody id="branchesTableBody">
-                    <tr>
-                      <td colspan="7" style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue);"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                        Select a repository scope and click <strong>"Inspect Repositories"</strong> button above to load branch details.
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div id="seeMoreRepoContainer" class="pagination-footer hidden">
-                <button type="button" id="btnMoreRepos" class="btn-secondary">See More (<span
-                    id="repoRemainingCount">0</span> remaining)</button>
-              </div>
-            </section>
+                <!-- 5. Branch Details Table -->
+                <div class="portal-table-wrapper" style="position:relative;">
+                  <div class="mod-loading-overlay hidden" id="repoLoadingOverlay">
+                    <div class="mod-spinner"></div>
+                    <div style="font-size:12px; font-weight:600; color:var(--text-main); margin-top:8px;">Loading
+                      repository branches &amp; policy telemetry...</div>
+                  </div>
 
-            <!-- VIEW: Branch Policies Sub-view -->
-            <section id="view-policies" class="data-view hidden">
-              <div class="portal-table-wrapper">
-                <table class="portal-table">
-                  <thead>
-                    <tr>
-                      <th>REPOSITORY</th>
-                      <th>PROTECTED BRANCH</th>
-                      <th>POLICY TYPE</th>
-                      <th>ENFORCEMENT</th>
-                      <th>POLICY CONFIGURATION DETAILS</th>
-                      <th>STATUS</th>
-                    </tr>
-                  </thead>
-                  <tbody id="policyTableBody">
-                    <tr>
-                      <td colspan="6" style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue);"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                        Select a repository scope and click <strong>"Inspect Policies"</strong> button above to load branch policies.
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
-            <!-- VIEW: Pull Requests Sub-view -->
-            <section id="view-prs" class="data-view hidden">
-              <div class="portal-table-wrapper">
-                <table class="portal-table">
-                  <thead>
-                    <tr>
-                      <th>REPOSITORY</th>
-                      <th>PR TITLE</th>
-                      <th>SOURCE → TARGET</th>
-                      <th>CREATOR</th>
-                      <th>STATUS</th>
-                      <th>CREATED DATE</th>
-                    </tr>
-                  </thead>
-                  <tbody id="repoPrsTableBody">
-                    <tr>
-                      <td colspan="6" style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue);"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M13 6h3a2 2 0 0 1 2 2v7"></path><line x1="6" y1="9" x2="6" y2="21"></line></svg>
-                        Select a repository scope and click <strong>"Inspect PRs"</strong> button above to load pull requests.
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div id="seeMoreRepoPrsContainer" class="pagination-footer hidden">
-                <button type="button" id="btnMorePrs" class="btn-secondary">See More (<span
-                    id="repoPrsRemainingCount">0</span> remaining)</button>
-              </div>
-            </section>
-
-            <!-- VIEW 2: Project Security Groups, Roles & Member Permissions -->
-            <section id="view-access" class="data-view hidden">
-              <div class="table-action-topbar">
-                <button type="button" id="btnExportAccessXlsx" class="btn-export-green">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="7 10 12 15 17 10"></polyline>
-                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                  </svg>
-                  Export Permissions (.xlsx)
-                </button>
-              </div>
-              <div class="portal-table-wrapper">
-                <table class="portal-table">
-                  <thead>
-                    <tr>
-                      <th>PROJECT</th>
-                      <th>SECURITY GROUP NAME</th>
-                      <th>ROLE</th>
-                      <th>USER DISPLAY NAME</th>
-                      <th>USER PRINCIPAL / EMAIL</th>
-                    </tr>
-                  </thead>
-                  <tbody id="accessTableBody">
-                    <tr>
-                      <td colspan="5" style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue);"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
-                        Specify a user query (or leave blank for all) and click <strong>"Scan Members"</strong> button above to load permissions.
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div id="seeMoreAccessContainer" class="pagination-footer hidden">
-                <button type="button" id="btnMoreAccess" class="btn-secondary">See More (<span
-                    id="accessRemainingCount">0</span> remaining)</button>
-              </div>
-            </section>
-
-            <!-- VIEW 3: Activity & Commits -->
-            <section id="view-activity" class="data-view hidden">
-              <div class="portal-table-wrapper">
-                <table class="portal-table">
-                  <thead>
-                    <tr>
-                      <th>REPOSITORY</th>
-                      <th>COMMIT ID</th>
-                      <th>AUTHOR</th>
-                      <th>COMMIT DATE</th>
-                      <th>MESSAGE / CHANGES</th>
-                    </tr>
-                  </thead>
-                  <tbody id="userCommitsTableBody">
-                    <tr>
-                      <td colspan="5" style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue);"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-                        Enter a user email and timeframe, then click <strong>"Search Activity"</strong> button above to load commit history.
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div id="seeMoreCommitsContainer" class="pagination-footer hidden">
-                <button type="button" id="btnMoreCommits" class="btn-secondary">See More (<span
-                    id="commitsRemainingCount">0</span> remaining)</button>
-              </div>
-
-              <!-- PRs by user -->
-              <div style="margin-top: 24px;">
-                <h4
-                  style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px; font-weight: 700; text-transform: uppercase;">
-                  User Authored Pull Requests</h4>
-                <div class="portal-table-wrapper">
-                  <table class="portal-table">
+                  <table class="portal-table" id="repoBranchesTable">
                     <thead>
                       <tr>
-                        <th>REPOSITORY</th>
-                        <th>PR TITLE</th>
-                        <th>SOURCE → TARGET</th>
-                        <th>STATUS</th>
-                        <th>CREATION DATE</th>
+                        <th>BRANCH NAME</th>
+                        <th>REPOSITORY NAME</th>
+                        <th>LATEST COMMIT ID</th>
+                        <th>LATEST COMMIT MESSAGE</th>
+                        <th>COMMIT AUTHOR</th>
+                        <th>LAST UPDATED</th>
+                        <th>BRANCH POLICY STATUS</th>
+                        <th>BRANCH STATUS</th>
                       </tr>
                     </thead>
-                    <tbody id="userPrTableBody">
+                    <tbody id="branchesTableBody">
                       <tr>
-                        <td colspan="5" style="padding: 24px 16px; text-align: center; color: var(--text-muted); font-size: 12px;">
-                          No pull request activity loaded. Click <strong>"Search Activity"</strong> button above to inspect.
+                        <td colspan="8"
+                          style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue);">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                          </svg>
+                          Select an Azure DevOps project to load repository branches.
                         </td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
+
+                <div id="seeMoreRepoContainer" class="pagination-footer hidden">
+                  <button type="button" id="btnMoreRepos" class="btn-secondary">See More (<span
+                      id="repoRemainingCount">0</span> remaining)</button>
+                </div>
+
+              </div>
+            </section>
+
+            <!-- VIEW: Branch Policies Sub-view -->
+            <section id="view-policies" class="data-view hidden">
+              <div class="module-container">
+
+                <!-- 1. Header & Toolbar -->
+                <div class="module-header-bar">
+                  <div class="module-title-group">
+                    <h2 class="module-title">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        style="color:var(--azure-blue);">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                      </svg>
+                      <span>Branch Policies &amp; Governance</span>
+                    </h2>
+                    <p class="module-subtitle">Inspect branch protection rules, required reviewer thresholds, and CI
+                      build verification gates</p>
+                  </div>
+
+                  <div class="module-toolbar">
+                    <div class="mod-control-group">
+                      <span class="mod-control-label">Project:</span>
+                      <select id="policyProjectSelect" class="mod-select" title="Choose Project">
+                        <option value="">-- Choose Project --</option>
+                      </select>
+                    </div>
+
+                    <div class="mod-control-group">
+                      <span class="mod-control-label">Repository:</span>
+                      <select id="policyRepoSelect" class="mod-select" title="Choose Repository">
+                        <option value="-- All Repositories --">-- All Repositories --</option>
+                      </select>
+                    </div>
+
+                    <span class="mod-last-updated" id="policyLastUpdatedText">Last updated: —</span>
+
+                    <button type="button" class="mod-btn-action mod-btn-primary" id="btnRefreshPolicies"
+                      title="Refresh policies">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                      </svg>
+                      <span>Refresh</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 2. Dynamic Summary Cards (5 Cards: Total Policies, Active Policies, Inactive Policies, Protected Branches, Branches Without Policies) -->
+                <div class="module-summary-grid grid-5" id="policySummaryGrid">
+
+                  <!-- Card 1: Total Policies -->
+                  <div class="module-summary-card accent-blue" id="policyCardTotal">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-blue">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Total Policies</span>
+                      </div>
+                      <span class="mod-card-badge badge-blue">Enforced</span>
+                    </div>
+                    <div class="mod-card-val" id="policyValTotal">—</div>
+                    <div class="mod-card-sub">Branch policy configurations</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-blue" id="policyChipScope">Configured</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 2: Active Policies -->
+                  <div class="module-summary-card accent-green" id="policyCardActive">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-green">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Active Policies</span>
+                      </div>
+                      <span class="mod-card-badge badge-green">Enabled</span>
+                    </div>
+                    <div class="mod-card-val" id="policyValActive">—</div>
+                    <div class="mod-card-sub">Currently enabled rules</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-green" id="policyChipBlocking">0 Blocking</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 3: Inactive Policies -->
+                  <div class="module-summary-card accent-red" id="policyCardInactive">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-red">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Inactive Policies</span>
+                      </div>
+                      <span class="mod-card-badge badge-red">Disabled</span>
+                    </div>
+                    <div class="mod-card-val" id="policyValInactive">—</div>
+                    <div class="mod-card-sub">Disabled or paused rules</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-red" id="policyChipInactive">0 Inactive</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 4: Protected Branches -->
+                  <div class="module-summary-card accent-purple" id="policyCardProtectedBranches">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-purple">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="6" y1="3" x2="6" y2="15"></line>
+                            <circle cx="18" cy="6" r="3"></circle>
+                            <circle cx="6" cy="18" r="3"></circle>
+                            <path d="M18 9a9 9 0 0 1-9 9"></path>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Protected Branches</span>
+                      </div>
+                      <span class="mod-card-badge badge-purple">Guarded</span>
+                    </div>
+                    <div class="mod-card-val" id="policyValProtectedBranches">—</div>
+                    <div class="mod-card-sub">Branches with active policies</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-purple" id="policyChipProtectedRatio">0 Protected</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 5: Branches Without Policies -->
+                  <div class="module-summary-card accent-orange" id="policyCardUnprotectedBranches">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-orange">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path
+                              d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                            </path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Without Policies</span>
+                      </div>
+                      <span class="mod-card-badge badge-orange">Review</span>
+                    </div>
+                    <div class="mod-card-val" id="policyValUnprotectedBranches">—</div>
+                    <div class="mod-card-sub">Branches lacking review gates</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-orange" id="policyChipUnprotectedRatio">0 Unprotected</span>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                <!-- 3. Table Toolbar -->
+                <div class="mod-table-toolbar">
+                  <div class="mod-search-input-wrap">
+                    <svg class="mod-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="policySearchInput"
+                      placeholder="Filter policies by branch, repository, or policy type..." />
+                  </div>
+
+                  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <span class="mod-control-label">Type Filter:</span>
+                    <select id="policyTypeFilter" class="mod-select">
+                      <option value="all">All Policy Types</option>
+                      <option value="reviewer">Minimum Reviewers</option>
+                      <option value="build">Build Validation</option>
+                      <option value="comment">Comment Resolution</option>
+                      <option value="workitem">Work Item Linking</option>
+                      <option value="blocking">Blocking (Required) Only</option>
+                      <option value="optional">Optional (Advisory) Only</option>
+                      <option value="unprotected">Unprotected Branches</option>
+                    </select>
+
+                    <span class="mod-table-stats" id="policyTableStats">0 policies</span>
+                  </div>
+                </div>
+
+                <!-- 4. Detailed Policy Table -->
+                <div class="portal-table-wrapper" style="position:relative;">
+                  <table class="portal-table" id="policyDetailsTable">
+                    <thead>
+                      <tr>
+                        <th>PROJECT NAME</th>
+                        <th>REPOSITORY NAME</th>
+                        <th>BRANCH NAME</th>
+                        <th>POLICY TYPE</th>
+                        <th>ENFORCEMENT</th>
+                        <th>POLICY STATUS</th>
+                        <th>MIN REVIEWER COUNT</th>
+                        <th>REQUIRED BUILD VALIDATION</th>
+                        <th>REQUIRED COMMENT RESOLUTION</th>
+                        <th>LAST UPDATED</th>
+                      </tr>
+                    </thead>
+                    <tbody id="policyTableBody">
+                      <tr>
+                        <td colspan="10"
+                          style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue);">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                          </svg>
+                          Select an Azure DevOps project to load branch policies.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+              </div>
+            </section>
+
+            <!-- VIEW: Pull Requests Sub-view -->
+            <section id="view-prs" class="data-view hidden">
+              <div class="module-container">
+
+                <!-- 1. Header & Toolbar -->
+                <div class="module-header-bar">
+                  <div class="module-title-group">
+                    <h2 class="module-title">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        style="color:var(--azure-blue);">
+                        <circle cx="18" cy="18" r="3"></circle>
+                        <circle cx="6" cy="6" r="3"></circle>
+                        <path d="M13 6h3a2 2 0 0 1 2 2v7"></path>
+                        <line x1="6" y1="9" x2="6" y2="21"></line>
+                      </svg>
+                      <span>Pull Requests Matrix</span>
+                    </h2>
+                    <p class="module-subtitle">Inspect active, completed, abandoned, and draft pull requests with
+                      reviewer verification telemetry</p>
+                  </div>
+
+                  <div class="module-toolbar">
+                    <div class="mod-control-group">
+                      <span class="mod-control-label">Project:</span>
+                      <select id="prProjectSelect" class="mod-select" title="Choose Project">
+                        <option value="">-- Choose Project --</option>
+                      </select>
+                    </div>
+
+                    <div class="mod-control-group">
+                      <span class="mod-control-label">Repository:</span>
+                      <select id="prRepoSelect" class="mod-select" title="Choose Repository">
+                        <option value="-- All Repositories --">-- All Repositories --</option>
+                      </select>
+                    </div>
+
+                    <span class="mod-last-updated" id="prLastUpdatedText">Last updated: —</span>
+
+                    <button type="button" class="mod-btn-action mod-btn-primary" id="btnRefreshPrs"
+                      title="Refresh pull requests">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                      </svg>
+                      <span>Refresh</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 2. Dynamic Summary Cards (5 Cards: Total PRs, Active PRs, Completed PRs, Abandoned PRs, Draft PRs) -->
+                <div class="module-summary-grid grid-5" id="prSummaryGrid">
+
+                  <!-- Card 1: Total Pull Requests -->
+                  <div class="module-summary-card accent-blue" id="prCardTotal">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-blue">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="18" cy="18" r="3"></circle>
+                            <circle cx="6" cy="6" r="3"></circle>
+                            <path d="M13 6h3a2 2 0 0 1 2 2v7"></path>
+                            <line x1="6" y1="9" x2="6" y2="21"></line>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Total Pull Requests</span>
+                      </div>
+                      <span class="mod-card-badge badge-blue">Scope</span>
+                    </div>
+                    <div class="mod-card-val" id="prValTotal">—</div>
+                    <div class="mod-card-sub">Total pull requests queried</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-blue" id="prChipTotalScope">All PRs</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 2: Active Pull Requests -->
+                  <div class="module-summary-card accent-green" id="prCardActive">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-green">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Active PRs</span>
+                      </div>
+                      <span class="mod-card-badge badge-green">In Review</span>
+                    </div>
+                    <div class="mod-card-val" id="prValActive">—</div>
+                    <div class="mod-card-sub">Open PRs awaiting review/merge</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-green" id="prChipActive">0 Active</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 3: Completed Pull Requests -->
+                  <div class="module-summary-card accent-teal" id="prCardCompleted">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-teal">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Completed PRs</span>
+                      </div>
+                      <span class="mod-card-badge badge-blue">Merged</span>
+                    </div>
+                    <div class="mod-card-val" id="prValCompleted">—</div>
+                    <div class="mod-card-sub">Successfully merged PRs</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-green" id="prChipCompleted">0 Completed</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 4: Abandoned Pull Requests -->
+                  <div class="module-summary-card accent-red" id="prCardAbandoned">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-red">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Abandoned PRs</span>
+                      </div>
+                      <span class="mod-card-badge badge-red">Closed</span>
+                    </div>
+                    <div class="mod-card-val" id="prValAbandoned">—</div>
+                    <div class="mod-card-sub">Closed without merge</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-red" id="prChipAbandoned">0 Abandoned</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 5: Draft Pull Requests -->
+                  <div class="module-summary-card accent-orange" id="prCardDraft">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-orange">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Draft PRs</span>
+                      </div>
+                      <span class="mod-card-badge badge-orange">Work In Progress</span>
+                    </div>
+                    <div class="mod-card-val" id="prValDraft">—</div>
+                    <div class="mod-card-sub">Draft PRs not yet ready for review</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-orange" id="prChipDraft">0 Drafts</span>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                <!-- 3. Table Toolbar -->
+                <div class="mod-table-toolbar">
+                  <div class="mod-search-input-wrap">
+                    <svg class="mod-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="prSearchInput"
+                      placeholder="Filter pull requests by ID, title, author, or branch..." />
+                  </div>
+
+                  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <span class="mod-control-label">Status Filter:</span>
+                    <select id="prStatusFilter" class="mod-select">
+                      <option value="all">All PR Statuses</option>
+                      <option value="active" selected>Active Pull Requests</option>
+                      <option value="completed">Completed Pull Requests</option>
+                      <option value="abandoned">Abandoned Pull Requests</option>
+                      <option value="draft">Draft Pull Requests</option>
+                    </select>
+
+                    <span class="mod-table-stats" id="prTableStats">0 pull requests</span>
+                  </div>
+                </div>
+
+                <!-- 4. Detailed PR Table -->
+                <div class="portal-table-wrapper" style="position:relative;">
+                  <table class="portal-table" id="repoPrsTable">
+                    <thead>
+                      <tr>
+                        <th>PR ID</th>
+                        <th>TITLE</th>
+                        <th>REPOSITORY NAME</th>
+                        <th>SOURCE BRANCH</th>
+                        <th>TARGET BRANCH</th>
+                        <th>CREATED BY</th>
+                        <th>ASSIGNED REVIEWERS</th>
+                        <th>CREATION DATE</th>
+                        <th>LAST UPDATED</th>
+                        <th>PR STATUS</th>
+                        <th>COMPLETION DATE</th>
+                      </tr>
+                    </thead>
+                    <tbody id="repoPrsTableBody">
+                      <tr>
+                        <td colspan="11"
+                          style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue);">
+                            <circle cx="18" cy="18" r="3"></circle>
+                            <circle cx="6" cy="6" r="3"></circle>
+                            <path d="M13 6h3a2 2 0 0 1 2 2v7"></path>
+                            <line x1="6" y1="9" x2="6" y2="21"></line>
+                          </svg>
+                          Select an Azure DevOps project to load pull requests.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div id="seeMoreRepoPrsContainer" class="pagination-footer hidden">
+                  <button type="button" id="btnMorePrs" class="btn-secondary">See More (<span
+                      id="repoPrsRemainingCount">0</span> remaining)</button>
+                </div>
+
+              </div>
+            </section>
+
+            <!-- VIEW 2: Project Security Groups, Roles & Member Permissions -->
+            <section id="view-access" class="data-view hidden">
+              <div class="module-container">
+
+                <!-- 1. Header & Toolbar -->
+                <div class="module-header-bar">
+                  <div class="module-title-group">
+                    <h2 class="module-title">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        style="color:var(--azure-blue);">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                      </svg>
+                      <span>Security Groups &amp; Roles</span>
+                    </h2>
+                    <p class="module-subtitle">Audit Azure DevOps project permissions, security groups, assigned roles,
+                      and member identities</p>
+                  </div>
+
+                  <div class="module-toolbar">
+                    <div class="mod-control-group">
+                      <span class="mod-control-label">Project:</span>
+                      <select id="accessProjectSelect" class="mod-select" title="Choose Project">
+                        <option value="">-- Choose Project --</option>
+                      </select>
+                    </div>
+
+                    <span class="mod-last-updated" id="accessLastUpdatedText">Last updated: —</span>
+
+                    <button type="button" class="mod-btn-action mod-btn-primary" id="btnRefreshAccess"
+                      title="Refresh security permissions">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                      </svg>
+                      <span>Refresh</span>
+                    </button>
+
+                    <button type="button" id="btnExportAccessXlsx" class="btn-export-green"
+                      title="Export permissions to Excel (.xlsx)">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                      </svg>
+                      <span>Export (.xlsx)</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 2. Dynamic Summary Cards (6 Cards: Total Groups, Total Users, Project Admins, Contributors, Readers, Users Requiring Review) -->
+                <div class="module-summary-grid grid-6" id="accessSummaryGrid">
+
+                  <!-- Card 1: Total Security Groups -->
+                  <div class="module-summary-card accent-blue" id="accessCardTotalGroups">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-blue">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Security Groups</span>
+                      </div>
+                      <span class="mod-card-badge badge-blue">Graph</span>
+                    </div>
+                    <div class="mod-card-val" id="accessValTotalGroups">—</div>
+                    <div class="mod-card-sub">Project security groups</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-blue" id="accessChipProjectGroups">Project Scope</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 2: Total Users -->
+                  <div class="module-summary-card accent-purple" id="accessCardTotalUsers">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-purple">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Total Users</span>
+                      </div>
+                      <span class="mod-card-badge badge-purple">Members</span>
+                    </div>
+                    <div class="mod-card-val" id="accessValTotalUsers">—</div>
+                    <div class="mod-card-sub">Identities assigned roles</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-purple" id="accessChipUsersScope">Distinct Identities</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 3: Project Administrators -->
+                  <div class="module-summary-card accent-orange" id="accessCardAdmins">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-orange">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path
+                              d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z">
+                            </path>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Project Administrators</span>
+                      </div>
+                      <span class="mod-card-badge badge-orange">Privileged</span>
+                    </div>
+                    <div class="mod-card-val" id="accessValAdmins">—</div>
+                    <div class="mod-card-sub">Full project administrative rights</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-orange" id="accessChipAdmins">0 Admins</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 4: Contributors -->
+                  <div class="module-summary-card accent-green" id="accessCardContributors">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-green">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Contributors</span>
+                      </div>
+                      <span class="mod-card-badge badge-green">Standard</span>
+                    </div>
+                    <div class="mod-card-val" id="accessValContributors">—</div>
+                    <div class="mod-card-sub">Code &amp; build contribution access</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-green" id="accessChipContributors">0 Contributors</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 5: Readers -->
+                  <div class="module-summary-card accent-teal" id="accessCardReaders">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-teal">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Readers</span>
+                      </div>
+                      <span class="mod-card-badge badge-blue">Read-Only</span>
+                    </div>
+                    <div class="mod-card-val" id="accessValReaders">—</div>
+                    <div class="mod-card-sub">Read-only project stakeholders</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-gray" id="accessChipReaders">0 Readers</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 6: Users Requiring Access Review -->
+                  <div class="module-summary-card accent-red" id="accessCardReview">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-red">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path
+                              d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                            </path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Access Review</span>
+                      </div>
+                      <span class="mod-card-badge badge-red">Audit</span>
+                    </div>
+                    <div class="mod-card-val" id="accessValReview">—</div>
+                    <div class="mod-card-sub">Members needing review</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-red" id="accessChipReview">0 Flags</span>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                <!-- 3. Table Toolbar -->
+                <div class="mod-table-toolbar">
+                  <div class="mod-search-input-wrap">
+                    <svg class="mod-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="accessSearchInput"
+                      placeholder="Filter by group name, user display name, or email..." />
+                  </div>
+
+                  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <span class="mod-control-label">Role Filter:</span>
+                    <select id="accessRoleFilter" class="mod-select">
+                      <option value="all">All Roles</option>
+                      <option value="Admin">Administrators</option>
+                      <option value="Contributor">Contributors</option>
+                      <option value="Reader">Readers</option>
+                    </select>
+
+                    <span class="mod-table-stats" id="accessTableStats">0 records</span>
+                  </div>
+                </div>
+
+                <!-- 4. Detailed Security Groups & Members Table -->
+                <div class="portal-table-wrapper" style="position:relative;">
+                  <table class="portal-table" id="accessTable">
+                    <thead>
+                      <tr>
+                        <th>GROUP NAME</th>
+                        <th>GROUP DESCRIPTION</th>
+                        <th>GROUP ID</th>
+                        <th>PROJECT NAME</th>
+                        <th>GROUP TYPE</th>
+                        <th>TOTAL MEMBERS</th>
+                        <th>ASSIGNED PERMISSIONS</th>
+                        <th>ACCESS LEVEL</th>
+                      </tr>
+                    </thead>
+                    <tbody id="accessTableBody">
+                      <tr>
+                        <td colspan="8"
+                          style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue);">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                          </svg>
+                          Select an Azure DevOps project to load security groups and permissions.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div id="seeMoreAccessContainer" class="pagination-footer hidden">
+                  <button type="button" id="btnMoreAccess" class="btn-secondary">See More (<span
+                      id="accessRemainingCount">0</span> remaining)</button>
+                </div>
+
+              </div>
+            </section>
+
+            <!-- VIEW 3: Activity & Commits -->
+            <section id="view-activity" class="data-view hidden">
+              <div class="module-container">
+
+                <!-- 1. Header & Toolbar -->
+                <div class="module-header-bar">
+                  <div class="module-title-group">
+                    <h2 class="module-title">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        style="color:var(--azure-blue);">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                      </svg>
+                      <span>User Activity &amp; Commits</span>
+                    </h2>
+                    <p class="module-subtitle">Inspect repository activity, commit velocity, contributor statistics, and
+                      code change history</p>
+                  </div>
+
+                  <div class="module-toolbar">
+                    <div class="mod-control-group">
+                      <span class="mod-control-label">Project:</span>
+                      <select id="activityProjectSelect" class="mod-select" title="Choose Project">
+                        <option value="">-- Choose Project --</option>
+                      </select>
+                    </div>
+
+                    <div class="mod-control-group">
+                      <span class="mod-control-label">Timeframe:</span>
+                      <select id="userTimeframeDays" class="mod-select">
+                        <option value="7">Last 7 Days</option>
+                        <option value="30">Last 30 Days</option>
+                        <option value="90" selected>Last 90 Days</option>
+                        <option value="180">Last 6 Months</option>
+                        <option value="365">Last 1 Year</option>
+                        <option value="0">All Time</option>
+                      </select>
+                    </div>
+
+                    <span class="mod-last-updated" id="activityLastUpdatedText">Last updated: —</span>
+
+                    <button type="button" class="mod-btn-action mod-btn-primary" id="btnRefreshActivity"
+                      title="Refresh commit activity">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                      </svg>
+                      <span>Refresh</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 2. Dynamic Summary Cards (6 Cards: Total Commits, Active Contributors, Commits Today, Commits This Week, Commits This Month, Active Repos) -->
+                <div class="module-summary-grid grid-6" id="activitySummaryGrid">
+
+                  <!-- Card 1: Total Commits -->
+                  <div class="module-summary-card accent-blue" id="actCardTotalCommits">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-blue">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="4"></circle>
+                            <line x1="1.05" y1="12" x2="7" y2="12"></line>
+                            <line x1="17.01" y1="12" x2="22.96" y2="12"></line>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Total Commits</span>
+                      </div>
+                      <span class="mod-card-badge badge-blue">Timeframe</span>
+                    </div>
+                    <div class="mod-card-val" id="actValTotalCommits">—</div>
+                    <div class="mod-card-sub">Commits across repositories</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-blue" id="actChipScope">Project Repos</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 2: Active Contributors -->
+                  <div class="module-summary-card accent-purple" id="actCardContributors">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-purple">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Active Authors</span>
+                      </div>
+                      <span class="mod-card-badge badge-purple">Authors</span>
+                    </div>
+                    <div class="mod-card-val" id="actValContributors">—</div>
+                    <div class="mod-card-sub">Distinct code contributors</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-purple" id="actChipTopAuthor">Top Author</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 3: Commits Today -->
+                  <div class="module-summary-card accent-green" id="actCardToday">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-green">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 14 14"></polyline>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Commits Today</span>
+                      </div>
+                      <span class="mod-card-badge badge-green">Today</span>
+                    </div>
+                    <div class="mod-card-val" id="actValToday">—</div>
+                    <div class="mod-card-sub">Pushed in past 24 hours</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-green" id="actChipToday">Live Commits</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 4: Commits This Week -->
+                  <div class="module-summary-card accent-green" id="actCardThisWeek">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-green">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Commits This Week</span>
+                      </div>
+                      <span class="mod-card-badge badge-green">Last 7d</span>
+                    </div>
+                    <div class="mod-card-val" id="actValThisWeek">—</div>
+                    <div class="mod-card-sub">Pushed in past 7 days</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-green" id="actChipThisWeek">Weekly Velocity</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 5: Commits This Month -->
+                  <div class="module-summary-card accent-teal" id="actCardThisMonth">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-teal">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="20" x2="18" y2="10"></line>
+                            <line x1="12" y1="20" x2="12" y2="4"></line>
+                            <line x1="6" y1="20" x2="6" y2="14"></line>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Commits This Month</span>
+                      </div>
+                      <span class="mod-card-badge badge-blue">Last 30d</span>
+                    </div>
+                    <div class="mod-card-val" id="actValThisMonth">—</div>
+                    <div class="mod-card-sub">Pushed in past 30 days</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-blue" id="actChipThisMonth">Monthly Volume</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 6: Active Repositories -->
+                  <div class="module-summary-card accent-orange" id="actCardActiveRepos">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-orange">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="6" y1="3" x2="6" y2="15"></line>
+                            <circle cx="18" cy="6" r="3"></circle>
+                            <circle cx="6" cy="18" r="3"></circle>
+                            <path d="M18 9a9 9 0 0 1-9 9"></path>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Active Repositories</span>
+                      </div>
+                      <span class="mod-card-badge badge-orange">Active</span>
+                    </div>
+                    <div class="mod-card-val" id="actValActiveRepos">—</div>
+                    <div class="mod-card-sub">Repositories with recent commits</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-orange" id="actChipActiveRepos">With Activity</span>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                <!-- 3. Table Toolbar -->
+                <div class="mod-table-toolbar">
+                  <div class="mod-search-input-wrap">
+                    <svg class="mod-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="activitySearchInput"
+                      placeholder="Filter by author name, email, commit message, or repo..." />
+                  </div>
+
+                  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <span class="mod-table-stats" id="activityTableStats">0 commits</span>
+                  </div>
+                </div>
+
+                <!-- 4. Detailed Commits Table -->
+                <div class="portal-table-wrapper" style="position:relative;">
+                  <table class="portal-table" id="activityCommitsTable">
+                    <thead>
+                      <tr>
+                        <th>COMMIT ID</th>
+                        <th>COMMIT MESSAGE</th>
+                        <th>AUTHOR NAME</th>
+                        <th>AUTHOR EMAIL</th>
+                        <th>REPOSITORY NAME</th>
+                        <th>BRANCH NAME</th>
+                        <th>COMMIT DATE</th>
+                        <th>COMMIT URL</th>
+                      </tr>
+                    </thead>
+                    <tbody id="userCommitsTableBody">
+                      <tr>
+                        <td colspan="8"
+                          style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue);">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                          </svg>
+                          Select an Azure DevOps project to load commit history.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div id="seeMoreCommitsContainer" class="pagination-footer hidden">
+                  <button type="button" id="btnMoreCommits" class="btn-secondary">See More (<span
+                      id="commitsRemainingCount">0</span> remaining)</button>
+                </div>
+
+                <!-- User Authored PRs Section -->
+                <div style="margin-top: 24px;">
+                  <h4
+                    style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px; font-weight: 700; text-transform: uppercase;">
+                    User Authored Pull Requests
+                  </h4>
+                  <div class="portal-table-wrapper">
+                    <table class="portal-table">
+                      <thead>
+                        <tr>
+                          <th>REPOSITORY</th>
+                          <th>PR TITLE</th>
+                          <th>SOURCE → TARGET</th>
+                          <th>STATUS</th>
+                          <th>CREATION DATE</th>
+                        </tr>
+                      </thead>
+                      <tbody id="userPrTableBody">
+                        <tr>
+                          <td colspan="5"
+                            style="padding: 24px 16px; text-align: center; color: var(--text-muted); font-size: 12px;">
+                            No pull request activity recorded in this scope.
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
               </div>
             </section>
 
             <!-- VIEW 4: Pipelines -->
             <section id="view-pipelines" class="data-view hidden">
-              <div class="portal-table-wrapper">
-                <table class="portal-table">
-                  <thead>
-                    <tr>
-                      <th>PIPELINE / BUILD</th>
-                      <th>BRANCH & TRIGGER</th>
-                      <th>TRIGGERED BY</th>
-                      <th>BUILD STATUS</th>
-                      <th>LINKED RELEASE & ENV</th>
-                      <th>CI/CD STATE</th>
-                      <th>BUILD FINISH TIME</th>
-                      <th>DEPLOYMENT FINISH TIME</th>
-                    </tr>
-                  </thead>
-                  <tbody id="pipelineTableBody">
-                    <tr>
-                      <td colspan="8" style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue);"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                        Select your Runs Scope and click <strong>"Fetch Runs"</strong> button above to load pipeline details.
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div id="seeMorePipelinesContainer" class="pagination-footer hidden">
-                <button type="button" id="btnMorePipelines" class="btn-secondary">See More (<span
-                    id="pipelinesRemainingCount">0</span> remaining)</button>
+              <div class="module-container">
+
+                <!-- 1. Header & Toolbar -->
+                <div class="module-header-bar">
+                  <div class="module-title-group">
+                    <h2 class="module-title">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        style="color:var(--azure-blue);">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                      </svg>
+                      <span>Pipelines (Builds &amp; Deployments)</span>
+                    </h2>
+                    <p class="module-subtitle">Inspect CI/CD pipeline runs, deployment environments, average build
+                      durations, and success rates</p>
+                  </div>
+
+                  <div class="module-toolbar">
+                    <div class="mod-control-group">
+                      <span class="mod-control-label">Project:</span>
+                      <select id="pipelineProjectSelect" class="mod-select" title="Choose Project">
+                        <option value="">-- Choose Project --</option>
+                      </select>
+                    </div>
+
+                    <div class="mod-control-group">
+                      <span class="mod-control-label">Runs Scope:</span>
+                      <select id="pipelineRunsTop" class="mod-select">
+                        <option value="25">Latest 25 Runs</option>
+                        <option value="50" selected>Latest 50 Runs</option>
+                        <option value="100">Latest 100 Runs</option>
+                        <option value="200">Latest 200 Runs</option>
+                      </select>
+                    </div>
+
+                    <div class="mod-control-group">
+                      <span class="mod-control-label">Filter:</span>
+                      <select id="pipelineDeploymentFilter" class="mod-select">
+                        <option value="all" selected>All Build &amp; Deployments</option>
+                        <option value="deployed">Deployment Completed (Passed)</option>
+                        <option value="deploy_failed">Deployment Failed</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="build_failed">Build Failed</option>
+                      </select>
+                    </div>
+
+                    <span class="mod-last-updated" id="pipeLastUpdatedText">Last updated: —</span>
+
+                    <button type="button" class="mod-btn-action mod-btn-primary" id="btnRefreshPipelines"
+                      title="Refresh pipeline runs">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                      </svg>
+                      <span>Refresh</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 2. Dynamic Summary Cards (6 Cards: Total Pipelines, Successful Pipelines, Failed Pipelines, Running Pipelines, Cancelled Pipelines, Queued Pipelines) -->
+                <div class="module-summary-grid grid-6" id="pipelineSummaryGrid">
+
+                  <!-- Card 1: Total Pipelines -->
+                  <div class="module-summary-card accent-blue" id="pipeCardTotal">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-blue">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Total Pipelines</span>
+                      </div>
+                      <span class="mod-card-badge badge-blue">Executions</span>
+                    </div>
+                    <div class="mod-card-val" id="pipeValTotal">—</div>
+                    <div class="mod-card-sub">Pipeline runs in scope</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-blue" id="pipeChipSuccessRate">0% Pass Rate</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 2: Successful Pipelines -->
+                  <div class="module-summary-card accent-green" id="pipeCardSuccessful">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-green">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Successful</span>
+                      </div>
+                      <span class="mod-card-badge badge-green">Passed</span>
+                    </div>
+                    <div class="mod-card-val" id="pipeValSuccessful">—</div>
+                    <div class="mod-card-sub">Passed without error</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-green" id="pipeChipSuccessCount">0 Passed</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 3: Failed Pipelines -->
+                  <div class="module-summary-card accent-red" id="pipeCardFailed">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-red">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Failed</span>
+                      </div>
+                      <span class="mod-card-badge badge-red">Failed</span>
+                    </div>
+                    <div class="mod-card-val" id="pipeValFailed">—</div>
+                    <div class="mod-card-sub">Failed builds or deployments</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-red" id="pipeChipFailedCount">0 Failed</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 4: Running Pipelines -->
+                  <div class="module-summary-card accent-cyan" id="pipeCardRunning">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-cyan">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 14 14"></polyline>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Running</span>
+                      </div>
+                      <span class="mod-card-badge badge-blue">Active</span>
+                    </div>
+                    <div class="mod-card-val" id="pipeValRunning">—</div>
+                    <div class="mod-card-sub">Currently executing runs</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-blue" id="pipeChipRunningCount">0 Running</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 5: Cancelled Pipelines -->
+                  <div class="module-summary-card accent-orange" id="pipeCardCancelled">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-orange">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Cancelled</span>
+                      </div>
+                      <span class="mod-card-badge badge-orange">Stopped</span>
+                    </div>
+                    <div class="mod-card-val" id="pipeValCancelled">—</div>
+                    <div class="mod-card-sub">Aborted or superseded</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-gray" id="pipeChipCancelledCount">0 Cancelled</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 6: Queued Pipelines -->
+                  <div class="module-summary-card accent-purple" id="pipeCardQueued">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-purple">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="19" x2="12" y2="5"></line>
+                            <polyline points="5 12 12 5 19 12"></polyline>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Queued</span>
+                      </div>
+                      <span class="mod-card-badge badge-purple">Waiting</span>
+                    </div>
+                    <div class="mod-card-val" id="pipeValQueued">—</div>
+                    <div class="mod-card-sub">Waiting for agent compute</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-purple" id="pipeChipAvgDuration">Avg Duration: —</span>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                <!-- 3. Table Toolbar -->
+                <div class="mod-table-toolbar">
+                  <div class="mod-search-input-wrap">
+                    <svg class="mod-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="pipelineSearchInput"
+                      placeholder="Filter pipelines by name, branch, triggered by..." />
+                  </div>
+
+                  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <span class="mod-table-stats" id="pipelineTableStats">0 runs</span>
+                  </div>
+                </div>
+
+                <!-- 4. Detailed Pipeline Table -->
+                <div class="portal-table-wrapper" style="position:relative;">
+                  <table class="portal-table" id="pipelineRunsTable">
+                    <thead>
+                      <tr>
+                        <th>PIPELINE / BUILD</th>
+                        <th>BRANCH &amp; TRIGGER</th>
+                        <th>TRIGGERED BY</th>
+                        <th>BUILD STATUS</th>
+                        <th>LINKED RELEASE &amp; ENV</th>
+                        <th>CI/CD STATE</th>
+                        <th>BUILD FINISH TIME</th>
+                        <th>DEPLOYMENT FINISH TIME</th>
+                      </tr>
+                    </thead>
+                    <tbody id="pipelineTableBody">
+                      <tr>
+                        <td colspan="8"
+                          style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue);">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                          </svg>
+                          Select an Azure DevOps project to load pipeline execution history.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div id="seeMorePipelinesContainer" class="pagination-footer hidden">
+                  <button type="button" id="btnMorePipelines" class="btn-secondary">See More (<span
+                      id="pipelinesRemainingCount">0</span> remaining)</button>
+                </div>
+
               </div>
             </section>
 
             <!-- VIEW 5: Work Items -->
             <section id="view-workitems" class="data-view hidden">
-              <div class="portal-table-wrapper">
-                <table class="portal-table">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>TYPE</th>
-                      <th>TITLE</th>
-                      <th>ASSIGNED TO</th>
-                      <th>STATE</th>
-                      <th>CREATED DATE</th>
-                    </tr>
-                  </thead>
-                  <tbody id="workItemsTableBody">
-                    <tr>
-                      <td colspan="6" style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue);"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-                        Specify an assigned user (or leave blank for all) and click <strong>"Query Work Items"</strong> button above to load backlog items.
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div id="seeMoreWorkItemsContainer" class="pagination-footer hidden">
-                <button type="button" id="btnMoreWorkItems" class="btn-secondary">See More (<span
-                    id="workItemsRemainingCount">0</span> remaining)</button>
+              <div class="module-container">
+
+                <!-- 1. Header & Toolbar -->
+                <div class="module-header-bar">
+                  <div class="module-title-group">
+                    <h2 class="module-title">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        style="color:var(--azure-blue);">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                      </svg>
+                      <span>Work Items &amp; Backlog</span>
+                    </h2>
+                    <p class="module-subtitle">Inspect agile backlog items, user stories, tasks, high-priority bugs, and
+                      sprint progress</p>
+                  </div>
+
+                  <div class="module-toolbar">
+                    <div class="mod-control-group">
+                      <span class="mod-control-label">Project:</span>
+                      <select id="wiProjectSelect" class="mod-select" title="Choose Project">
+                        <option value="">-- Choose Project --</option>
+                      </select>
+                    </div>
+
+                    <div class="mod-control-group">
+                      <span class="mod-control-label">Assignee:</span>
+                      <input type="text" id="targetWorkItemUser" class="mod-input" style="width:170px;"
+                        placeholder="user@domain.com or blank" />
+                    </div>
+
+                    <span class="mod-last-updated" id="wiLastUpdatedText">Last updated: —</span>
+
+                    <button type="button" class="mod-btn-action mod-btn-primary" id="btnRefreshWorkItems"
+                      title="Query Work Items">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                      </svg>
+                      <span>Refresh</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 2. Dynamic Summary Cards (6 Cards: Total Work Items, New, Active, Resolved, Closed, Blocked) -->
+                <div class="module-summary-grid grid-6" id="workItemsSummaryGrid">
+
+                  <!-- Card 1: Total Work Items -->
+                  <div class="module-summary-card accent-blue" id="wiCardTotal">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-blue">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="9" y1="9" x2="15" y2="9"></line>
+                            <line x1="9" y1="13" x2="15" y2="13"></line>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Total Items</span>
+                      </div>
+                      <span class="mod-card-badge badge-blue">Scope</span>
+                    </div>
+                    <div class="mod-card-val" id="wiValTotal">—</div>
+                    <div class="mod-card-sub">Queried project backlog items</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-blue" id="wiChipAssigned">Assigned &amp; Tracked</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 2: New Work Items -->
+                  <div class="module-summary-card accent-teal" id="wiCardNew">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-teal">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="16"></line>
+                            <line x1="8" y1="12" x2="16" y2="12"></line>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">New Items</span>
+                      </div>
+                      <span class="mod-card-badge badge-blue">New</span>
+                    </div>
+                    <div class="mod-card-val" id="wiValNew">—</div>
+                    <div class="mod-card-sub">Awaiting triage / backlog</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-blue" id="wiChipNew">0 In Backlog</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 3: Active Work Items -->
+                  <div class="module-summary-card accent-blue" id="wiCardActive">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-blue">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Active Items</span>
+                      </div>
+                      <span class="mod-card-badge badge-blue">In Dev</span>
+                    </div>
+                    <div class="mod-card-val" id="wiValActive">—</div>
+                    <div class="mod-card-sub">Items in active sprint development</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-blue" id="wiChipActive">0 Active</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 4: Resolved Work Items -->
+                  <div class="module-summary-card accent-green" id="wiCardResolved">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-green">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Resolved</span>
+                      </div>
+                      <span class="mod-card-badge badge-green">Ready</span>
+                    </div>
+                    <div class="mod-card-val" id="wiValResolved">—</div>
+                    <div class="mod-card-sub">Completed testing or code reviews</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-green" id="wiChipResolved">0 Resolved</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 5: Closed Work Items -->
+                  <div class="module-summary-card accent-purple" id="wiCardClosed">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-purple">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="9" y1="9" x2="15" y2="15"></line>
+                            <line x1="15" y1="9" x2="9" y2="15"></line>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Closed Items</span>
+                      </div>
+                      <span class="mod-card-badge badge-purple">Closed</span>
+                    </div>
+                    <div class="mod-card-val" id="wiValClosed">—</div>
+                    <div class="mod-card-sub">Closed and accepted items</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-purple" id="wiChipClosed">0 Closed</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 6: Blocked Work Items -->
+                  <div class="module-summary-card accent-red" id="wiCardBlocked">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-red">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Blocked Items</span>
+                      </div>
+                      <span class="mod-card-badge badge-red">Impediment</span>
+                    </div>
+                    <div class="mod-card-val" id="wiValBlocked">—</div>
+                    <div class="mod-card-sub">Items with impediments / bugs</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-red" id="wiChipBlocked">0 Blocked</span>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                <!-- 3. Table Toolbar -->
+                <div class="mod-table-toolbar">
+                  <div class="mod-search-input-wrap">
+                    <svg class="mod-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="workItemsSearchInput"
+                      placeholder="Filter work items by title, type, assignee, or ID..." />
+                  </div>
+
+                  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <span class="mod-control-label">Type:</span>
+                    <select id="wiTypeFilter" class="mod-select">
+                      <option value="all">All Types</option>
+                      <option value="Bug">Bugs</option>
+                      <option value="Task">Tasks</option>
+                      <option value="User Story">User Stories</option>
+                      <option value="Feature">Features</option>
+                      <option value="Epic">Epics</option>
+                    </select>
+
+                    <span class="mod-control-label">State:</span>
+                    <select id="wiStatusFilter" class="mod-select">
+                      <option value="all">All States</option>
+                      <option value="New">New</option>
+                      <option value="Active">Active</option>
+                      <option value="Resolved">Resolved</option>
+                      <option value="Closed">Closed</option>
+                      <option value="Blocked">Blocked</option>
+                    </select>
+
+                    <span class="mod-table-stats" id="workItemsTableStats">0 items</span>
+                  </div>
+                </div>
+
+                <!-- 4. Detailed Work Items Table -->
+                <div class="portal-table-wrapper" style="position:relative;">
+                  <table class="portal-table" id="workItemsTable">
+                    <thead>
+                      <tr>
+                        <th>WORK ITEM ID</th>
+                        <th>TITLE</th>
+                        <th>WORK ITEM TYPE</th>
+                        <th>ASSIGNED TO</th>
+                        <th>STATE</th>
+                        <th>PRIORITY</th>
+                        <th>AREA PATH</th>
+                        <th>ITERATION PATH</th>
+                        <th>CREATED DATE</th>
+                        <th>UPDATED DATE</th>
+                        <th>DUE DATE</th>
+                      </tr>
+                    </thead>
+                    <tbody id="workItemsTableBody">
+                      <tr>
+                        <td colspan="11"
+                          style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue);">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                          </svg>
+                          Select an Azure DevOps project to load backlog work items.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div id="seeMoreWorkItemsContainer" class="pagination-footer hidden">
+                  <button type="button" id="btnMoreWorkItems" class="btn-secondary">See More (<span
+                      id="workItemsRemainingCount">0</span> remaining)</button>
+                </div>
+
               </div>
             </section>
 
             <!-- VIEW 6: Agent Pools -->
             <section id="view-agentpools" class="data-view hidden">
-              <div class="portal-table-wrapper">
-                <table class="portal-table">
-                  <thead>
-                    <tr>
-                      <th>POOL / QUEUE NAME</th>
-                      <th>POOL TYPE</th>
-                      <th>AGENTS CAPACITY</th>
-                      <th>AGENT VERSION</th>
-                      <th>HEALTH / STATUS</th>
-                      <th>PROVISIONING</th>
-                      <th>POOL ID</th>
-                    </tr>
-                  </thead>
-                  <tbody id="agentPoolsTableBody">
-                    <tr>
-                      <td colspan="7" style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue);"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect></svg>
-                        Select a pool type and click <strong>"Scan Agent Pools"</strong> button above to load agent pools & queues.
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div id="seeMoreAgentPoolsContainer" class="pagination-footer hidden">
-                <button type="button" id="btnMoreAgentPools" class="btn-secondary">See More (<span
-                    id="agentPoolsRemainingCount">0</span> remaining)</button>
+              <div class="module-container">
+
+                <!-- 1. Header & Toolbar -->
+                <div class="module-header-bar">
+                  <div class="module-title-group">
+                    <h2 class="module-title">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        style="color:var(--azure-blue);">
+                        <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                        <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                        <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                        <line x1="6" y1="18" x2="6.01" y2="18"></line>
+                      </svg>
+                      <span>Agent Pools &amp; Queues</span>
+                    </h2>
+                    <p class="module-subtitle">Inspect project task queues, Azure-hosted runners vs self-hosted agents,
+                      real-time availability, and capability matrices</p>
+                  </div>
+
+                  <div class="module-toolbar">
+                    <div class="mod-control-group">
+                      <span class="mod-control-label">Project:</span>
+                      <select id="agentPoolProjectSelect" class="mod-select" title="Choose Project">
+                        <option value="">-- Choose Project --</option>
+                      </select>
+                    </div>
+
+                    <div class="mod-control-group">
+                      <span class="mod-control-label">Pool Type:</span>
+                      <select id="agentPoolTypeSelect" class="mod-select">
+                        <option value="all" selected>All Agent Pools &amp; Queues</option>
+                        <option value="hosted">Azure-Hosted (Microsoft)</option>
+                        <option value="selfhosted">Self-Hosted Compute</option>
+                      </select>
+                    </div>
+
+                    <span class="mod-last-updated" id="poolLastUpdatedText">Last updated: —</span>
+
+                    <button type="button" class="mod-btn-action mod-btn-primary" id="btnRefreshAgentPools"
+                      title="Refresh agent pools">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                      </svg>
+                      <span>Refresh</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 2. Dynamic Summary Cards (6 Cards: Total Pools, Total Agents, Online Agents, Offline Agents, Busy Agents, Idle Agents) -->
+                <div class="module-summary-grid grid-6" id="agentPoolsSummaryGrid">
+
+                  <!-- Card 1: Total Agent Pools -->
+                  <div class="module-summary-card accent-blue" id="poolCardTotalPools">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-blue">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Total Pools</span>
+                      </div>
+                      <span class="mod-card-badge badge-blue">Queues</span>
+                    </div>
+                    <div class="mod-card-val" id="poolValTotalPools">—</div>
+                    <div class="mod-card-sub">Assigned task queues</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-blue" id="poolChipHostedCount">0 Hosted</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 2: Total Agents -->
+                  <div class="module-summary-card accent-purple" id="poolCardTotalAgents">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-purple">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                            <circle cx="9" cy="9" r="2"></circle>
+                            <path d="M15 15h.01"></path>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Total Agents</span>
+                      </div>
+                      <span class="mod-card-badge badge-purple">Runners</span>
+                    </div>
+                    <div class="mod-card-val" id="poolValTotalAgents">—</div>
+                    <div class="mod-card-sub">Provisioned compute runners</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-purple" id="poolChipSelfHostedCount">0 Self-Hosted</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 3: Online Agents -->
+                  <div class="module-summary-card accent-green" id="poolCardOnlineAgents">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-green">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Online Agents</span>
+                      </div>
+                      <span class="mod-card-badge badge-green">Ready</span>
+                    </div>
+                    <div class="mod-card-val" id="poolValOnlineAgents">—</div>
+                    <div class="mod-card-sub">Active &amp; listening runners</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-green" id="poolChipOnlineCount">0 Online</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 4: Offline Agents -->
+                  <div class="module-summary-card accent-red" id="poolCardOfflineAgents">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-red">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Offline Agents</span>
+                      </div>
+                      <span class="mod-card-badge badge-red">Offline</span>
+                    </div>
+                    <div class="mod-card-val" id="poolValOfflineAgents">—</div>
+                    <div class="mod-card-sub">Unavailable or disconnected</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-red" id="poolChipOfflineCount">0 Offline</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 5: Busy Agents -->
+                  <div class="module-summary-card accent-orange" id="poolCardBusyAgents">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-orange">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 14 14"></polyline>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Busy Agents</span>
+                      </div>
+                      <span class="mod-card-badge badge-orange">Running</span>
+                    </div>
+                    <div class="mod-card-val" id="poolValBusyAgents">—</div>
+                    <div class="mod-card-sub">Currently running pipeline jobs</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-orange" id="poolChipBusyCount">0 Executing</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 6: Idle Agents -->
+                  <div class="module-summary-card accent-teal" id="poolCardIdleAgents">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-teal">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Idle Agents</span>
+                      </div>
+                      <span class="mod-card-badge badge-blue">Available</span>
+                    </div>
+                    <div class="mod-card-val" id="poolValIdleAgents">—</div>
+                    <div class="mod-card-sub">Available for immediate work</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-green" id="poolChipIdleCount">0 Idle</span>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                <!-- 3. Table Toolbar -->
+                <div class="mod-table-toolbar">
+                  <div class="mod-search-input-wrap">
+                    <svg class="mod-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="agentPoolSearchInput"
+                      placeholder="Filter pools and agents by name, status, or type..." />
+                  </div>
+
+                  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <span class="mod-table-stats" id="agentPoolsTableStats">0 pools</span>
+                  </div>
+                </div>
+
+                <!-- 4. Detailed Agent Pool Table -->
+                <h4
+                  style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px; font-weight: 700; text-transform: uppercase;">
+                  Agent Pools &amp; Queues
+                </h4>
+                <div class="portal-table-wrapper" style="position:relative;">
+                  <table class="portal-table" id="agentPoolsTable">
+                    <thead>
+                      <tr>
+                        <th>POOL / QUEUE NAME</th>
+                        <th>POOL TYPE</th>
+                        <th>AGENTS CAPACITY</th>
+                        <th>AGENT VERSION</th>
+                        <th>HEALTH / STATUS</th>
+                        <th>PROVISIONING</th>
+                        <th>POOL ID</th>
+                      </tr>
+                    </thead>
+                    <tbody id="agentPoolsTableBody">
+                      <tr>
+                        <td colspan="7"
+                          style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue);">
+                            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                          </svg>
+                          Select an Azure DevOps project to load agent pools and task queues.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- 5. Detailed Agents Table -->
+                <div style="margin-top: 24px;">
+                  <h4
+                    style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px; font-weight: 700; text-transform: uppercase;">
+                    Detailed Agents Telemetry &amp; System Capabilities
+                  </h4>
+                  <div class="portal-table-wrapper" style="position:relative;">
+                    <table class="portal-table" id="agentsDetailTable">
+                      <thead>
+                        <tr>
+                          <th>AGENT NAME</th>
+                          <th>AGENT ID</th>
+                          <th>AGENT POOL</th>
+                          <th>AGENT STATUS</th>
+                          <th>ENABLED / DISABLED</th>
+                          <th>CURRENT JOB</th>
+                          <th>ASSIGNED CAPABILITIES</th>
+                          <th>LAST UPDATED</th>
+                        </tr>
+                      </thead>
+                      <tbody id="agentsDetailTableBody">
+                        <tr>
+                          <td colspan="8"
+                            style="padding: 30px 16px; text-align: center; color: var(--text-muted); font-size: 12px;">
+                            No individual compute agents loaded yet.
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div id="seeMoreAgentPoolsContainer" class="pagination-footer hidden">
+                  <button type="button" id="btnMoreAgentPools" class="btn-secondary">See More (<span
+                      id="agentPoolsRemainingCount">0</span> remaining)</button>
+                </div>
+
               </div>
             </section>
 
             <!-- VIEW 7: Service Connections -->
             <section id="view-serviceconnections" class="data-view hidden">
-              <div class="portal-table-wrapper">
-                <table class="portal-table">
-                  <thead>
-                    <tr>
-                      <th>CONNECTION NAME</th>
-                      <th>SERVICE TYPE</th>
-                      <th>AUTH SCHEME</th>
-                      <th>TARGET SCOPE / URL</th>
-                      <th>CREATED BY</th>
-                      <th>STATUS / HEALTH</th>
-                    </tr>
-                  </thead>
-                  <tbody id="serviceConnectionsTableBody">
-                    <tr>
-                      <td colspan="6" style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue);"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                        Select a service type and click <strong>"Scan Endpoints"</strong> button above to load service connections.
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div id="seeMoreServiceConnectionsContainer" class="pagination-footer hidden">
-                <button type="button" id="btnMoreServiceConnections" class="btn-secondary">See More (<span
-                    id="serviceConnectionsRemainingCount">0</span> remaining)</button>
+              <div class="module-container">
+
+                <!-- 1. Header & Toolbar -->
+                <div class="module-header-bar">
+                  <div class="module-title-group">
+                    <h2 class="module-title">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        style="color:var(--azure-blue);">
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                      </svg>
+                      <span>Service Connections &amp; Endpoints</span>
+                    </h2>
+                    <p class="module-subtitle">Inspect cloud endpoint authorizations, service principals, Workload
+                      Identity Federation, and connection health</p>
+                  </div>
+
+                  <div class="module-toolbar">
+                    <div class="mod-control-group">
+                      <span class="mod-control-label">Project:</span>
+                      <select id="scProjectSelect" class="mod-select" title="Choose Project">
+                        <option value="">-- Choose Project --</option>
+                      </select>
+                    </div>
+
+                    <div class="mod-control-group">
+                      <span class="mod-control-label">Type:</span>
+                      <select id="scTypeSelect" class="mod-select">
+                        <option value="all" selected>All Types</option>
+                        <option value="azurerm">Azure Resource Manager (ARM)</option>
+                        <option value="github">GitHub</option>
+                        <option value="docker">Docker Registry</option>
+                        <option value="kubernetes">Kubernetes</option>
+                        <option value="other">Other 3rd Party</option>
+                      </select>
+                    </div>
+
+                    <span class="mod-last-updated" id="scLastUpdatedText">Last updated: —</span>
+
+                    <button type="button" class="mod-btn-action mod-btn-primary" id="btnRefreshServiceConnections"
+                      title="Refresh service connections">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                      </svg>
+                      <span>Refresh</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 2. Dynamic Summary Cards (5 Cards: Total Service Connections, Active Connections, Disabled Connections, Expired Connections, Requiring Attention) -->
+                <div class="module-summary-grid grid-5" id="scSummaryGrid">
+
+                  <!-- Card 1: Total Service Connections -->
+                  <div class="module-summary-card accent-blue" id="scCardTotal">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-blue">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Total Connections</span>
+                      </div>
+                      <span class="mod-card-badge badge-blue">Project</span>
+                    </div>
+                    <div class="mod-card-val" id="scValTotal">—</div>
+                    <div class="mod-card-sub">Service endpoints configured</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-blue" id="scChipScope">All Types</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 2: Active Connections -->
+                  <div class="module-summary-card accent-green" id="scCardActive">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-green">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Active Connections</span>
+                      </div>
+                      <span class="mod-card-badge badge-green">Operational</span>
+                    </div>
+                    <div class="mod-card-val" id="scValActive">—</div>
+                    <div class="mod-card-sub">Ready and authorized</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-green" id="scChipActive">0 Active</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 3: Disabled Connections -->
+                  <div class="module-summary-card accent-orange" id="scCardDisabled">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-orange">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Disabled</span>
+                      </div>
+                      <span class="mod-card-badge badge-orange">Paused</span>
+                    </div>
+                    <div class="mod-card-val" id="scValDisabled">—</div>
+                    <div class="mod-card-sub">Explicitly disabled endpoints</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-orange" id="scChipDisabled">0 Disabled</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 4: Expired Connections -->
+                  <div class="module-summary-card accent-red" id="scCardExpired">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-red">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Expired</span>
+                      </div>
+                      <span class="mod-card-badge badge-red">Auth Error</span>
+                    </div>
+                    <div class="mod-card-val" id="scValExpired">—</div>
+                    <div class="mod-card-sub">Expired secrets / certs</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-red" id="scChipExpired">0 Expired</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card 5: Connections Requiring Attention -->
+                  <div class="module-summary-card accent-red" id="scCardAttention">
+                    <div class="mod-card-header">
+                      <div class="mod-card-title-group">
+                        <span class="mod-card-icon icon-red">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path
+                              d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                            </path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                          </svg>
+                        </span>
+                        <span class="mod-card-label">Needs Attention</span>
+                      </div>
+                      <span class="mod-card-badge badge-red">Alert</span>
+                    </div>
+                    <div class="mod-card-val" id="scValAttention">—</div>
+                    <div class="mod-card-sub">Disabled or expired connections</div>
+                    <div class="mod-card-footer">
+                      <div class="mod-chip-group">
+                        <span class="mod-chip chip-red" id="scChipAttention">0 Alerts</span>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                <!-- 3. Table Toolbar -->
+                <div class="mod-table-toolbar">
+                  <div class="mod-search-input-wrap">
+                    <svg class="mod-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="scSearchInput"
+                      placeholder="Filter by connection name, auth scheme, target URL..." />
+                  </div>
+
+                  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <span class="mod-table-stats" id="scTableStats">0 connections</span>
+                  </div>
+                </div>
+
+                <!-- 4. Detailed Service Connections Table -->
+                <div class="portal-table-wrapper" style="position:relative;">
+                  <table class="portal-table" id="serviceConnectionsTable">
+                    <thead>
+                      <tr>
+                        <th>CONNECTION NAME</th>
+                        <th>CONNECTION ID</th>
+                        <th>CONNECTION TYPE</th>
+                        <th>PROJECT NAME</th>
+                        <th>AUTHOR NAME</th>
+                        <th>AUTHENTICATION TYPE</th>
+                        <th>CONNECTION STATUS</th>
+                        <th>SERVICE PRINCIPAL / APP ID</th>
+                        <th>EXPIRATION DATE</th>
+                        <th>LAST UPDATED</th>
+                      </tr>
+                    </thead>
+                    <tbody id="serviceConnectionsTableBody">
+                      <tr>
+                        <td colspan="10"
+                          style="padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            style="width: 28px; height: 28px; margin: 0 auto 10px; display: block; color: var(--azure-blue);">
+                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                          </svg>
+                          Select an Azure DevOps project to load service connections and endpoints.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div id="seeMoreServiceConnectionsContainer" class="pagination-footer hidden">
+                  <button type="button" id="btnMoreServiceConnections" class="btn-secondary">See More (<span
+                      id="serviceConnectionsRemainingCount">0</span> remaining)</button>
+                </div>
+
               </div>
             </section>
 
@@ -1476,15 +3694,15 @@
   </aside>
 
   <!-- Modular Scripts -->
-  <script src="js/repos.js?v=18.0"></script>
-  <script src="js/access.js?v=18.0"></script>
-  <script src="js/activity.js?v=18.0"></script>
-  <script src="js/pipelines.js?v=18.0"></script>
-  <script src="js/workitems.js?v=18.0"></script>
-  <script src="js/agentpools.js?v=18.0"></script>
-  <script src="js/serviceconnections.js?v=18.0"></script>
-  <script src="js/dashboard.js?v=18.0"></script>
-  <script src="js/app.js?v=18.0"></script>
+  <script src="js/repos.js?v=19.5"></script>
+  <script src="js/access.js?v=19.5"></script>
+  <script src="js/activity.js?v=19.5"></script>
+  <script src="js/pipelines.js?v=19.5"></script>
+  <script src="js/workitems.js?v=19.5"></script>
+  <script src="js/agentpools.js?v=19.5"></script>
+  <script src="js/serviceconnections.js?v=19.5"></script>
+  <script src="js/dashboard.js?v=19.5"></script>
+  <script src="js/app.js?v=19.5"></script>
 </body>
 
 </html>

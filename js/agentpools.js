@@ -1,4 +1,4 @@
-// Azure DevOps Intelligence Hub - Project-Wise Agent Pools & Queues Module
+﻿// Azure DevOps Intelligence Hub - Project-Wise Agent Pools & Queues Module
 window.AgentPoolModule = {
   pools: [],
   index: 0,
@@ -6,6 +6,56 @@ window.AgentPoolModule = {
   currentProject: '',
   currentOrg: '',
   latestAgentVersion: '3.248.0',
+  allDetailedPools: [],
+  allAgents: [],
+  searchTerm: '',
+  typeFilter: 'all',
+  eventsBound: false,
+
+  initEvents() {
+    if (this.eventsBound) return;
+    this.eventsBound = true;
+
+    document.getElementById('agentPoolSearchInput')?.addEventListener('input', (e) => {
+      this.searchTerm = (e.target.value || '').trim().toLowerCase();
+      this.filterAndRender();
+    });
+
+    document.getElementById('agentPoolProjectSelect')?.addEventListener('change', (e) => {
+      const topSelect = document.getElementById('projectSelect');
+      if (topSelect && topSelect.value !== e.target.value) {
+        topSelect.value = e.target.value;
+        window.HubApp.handleProjectSelect();
+      }
+    });
+
+    document.getElementById('btnRefreshAgentPools')?.addEventListener('click', () => {
+      this.refreshCurrent();
+    });
+
+    document.getElementById('btnMoreAgentPools')?.addEventListener('click', () => {
+      this.render(true);
+    });
+  },
+
+  refreshCurrent() {
+    const org = window.HubApp.getOrg();
+    const project = document.getElementById('projectSelect')?.value || '';
+    const pat = window.HubApp.getPat();
+    const type = document.getElementById('agentPoolTypeSelect')?.value || 'all';
+    if (org && project && pat) {
+      this.fetch(org, project, pat, type);
+    }
+  },
+
+  syncProjectDropdowns(project) {
+    const el = document.getElementById('agentPoolProjectSelect');
+    const topSelect = document.getElementById('projectSelect');
+    if (el && topSelect) {
+      el.innerHTML = topSelect.innerHTML;
+      el.value = project;
+    }
+  },
 
   compareVersions(v1, v2) {
     if (!v1 && !v2) return 0;
@@ -182,33 +232,129 @@ window.AgentPoolModule = {
       filtered = detailedPools.filter(p => !p.isHosted);
     }
 
+        this.allDetailedPools = detailedPools;
     this.pools = filtered;
     this.index = 0;
 
-    // 5. Aggregate KPIs
-    const totalPools = this.pools.length;
-    const hostedCount = this.pools.filter(p => p.isHosted).length;
-    const selfHostedCount = this.pools.filter(p => !p.isHosted).length;
-    const totalOnlineAgents = this.pools.reduce((acc, p) => acc + (p.isHosted ? 0 : p.onlineAgentsCount), 0);
-    const totalOfflineAgents = this.pools.reduce((acc, p) => acc + (p.isHosted ? 0 : p.offlineAgentsCount), 0);
-    const poolsWithUpdates = this.pools.filter(p => p.hasUpdateAvailable).length;
+    this.initEvents();
+    this.syncProjectDropdowns(cleanProject);
 
+    // Flatten all individual compute agents across pools
+    const allAgentsList = [];
+    detailedPools.forEach(p => {
+      if (p.isHosted) {
+        allAgentsList.push({
+          id: p.poolId || p.id,
+          name: 'Hosted Elastic Runner',
+          pool: p.name,
+          poolType: 'Azure Hosted',
+          status: 'Online',
+          enabled: true,
+          currentJob: 'Managed by Azure Cloud',
+          capabilities: 'Standard Azure Virtual Machine Images',
+          lastUpdated: 'Live Managed',
+          isHosted: true
+        });
+      } else {
+        (p.agents || []).forEach(ag => {
+          const isOnline = (ag.status || '').toLowerCase() === 'online';
+          const isEnabled = ag.enabled !== false;
+          const currentJob = ag.assignedRequest ? (ag.assignedRequest.jobName || ag.assignedRequest.planType || 'Executing Job') : 'Idle (Available)';
+          const isBusy = !!ag.assignedRequest;
+          const caps = [];
+          if (ag.systemCapabilities) {
+            if (ag.systemCapabilities['Agent.OS']) caps.push(ag.systemCapabilities['Agent.OS']);
+            if (ag.systemCapabilities['Agent.Version']) caps.push('v' + ag.systemCapabilities['Agent.Version']);
+            if (ag.systemCapabilities['DotNetFramework']) caps.push('.NET');
+            if (ag.systemCapabilities['node.js']) caps.push('NodeJS');
+          }
+          const capsStr = caps.length > 0 ? caps.join(' â€¢ ') : 'Standard System Capabilities';
+          const lastCompleted = ag.lastCompletedRequest?.finishTime || ag.lastCompletedRequest?.queueTime;
+          const lastUpdStr = lastCompleted ? new Date(lastCompleted).toLocaleString() : 'Recent';
+
+          allAgentsList.push({
+            id: ag.id,
+            name: ag.name,
+            pool: p.name,
+            poolType: p.poolType,
+            status: isOnline ? 'Online' : 'Offline',
+            enabled: isEnabled,
+            currentJob: currentJob,
+            isBusy: isBusy,
+            capabilities: capsStr,
+            lastUpdated: lastUpdStr,
+            rawAgent: ag,
+            isHosted: false
+          });
+        });
+      }
+    });
+    this.allAgents = allAgentsList;
+
+    // Aggregate Summary Card Numbers
+    const totalPools = detailedPools.length;
+    const hostedPools = detailedPools.filter(p => p.isHosted).length;
+    const selfHostedPools = detailedPools.filter(p => !p.isHosted).length;
+
+    const selfHostedAgents = allAgentsList.filter(a => !a.isHosted);
+    const totalAgentsCount = selfHostedAgents.length > 0 ? selfHostedAgents.length : (hostedPools > 0 ? hostedPools : 0);
+    const onlineAgentsCount = selfHostedAgents.filter(a => a.status === 'Online').length + (hostedPools > 0 ? 1 : 0);
+    const offlineAgentsCount = selfHostedAgents.filter(a => a.status !== 'Online').length;
+    const busyAgentsCount = selfHostedAgents.filter(a => a.isBusy).length;
+    const idleAgentsCount = Math.max(0, onlineAgentsCount - busyAgentsCount);
+
+    // Update 6 Dynamic Summary Cards
+    const elPoolTotal = document.getElementById('poolValTotalPools');
+    if (elPoolTotal) elPoolTotal.textContent = totalPools;
+    const elChipHosted = document.getElementById('poolChipHostedCount');
+    if (elChipHosted) elChipHosted.textContent = `${hostedPools} Hosted`;
+
+    const elAgentsTotal = document.getElementById('poolValTotalAgents');
+    if (elAgentsTotal) elAgentsTotal.textContent = totalAgentsCount;
+    const elChipSelfHosted = document.getElementById('poolChipSelfHostedCount');
+    if (elChipSelfHosted) elChipSelfHosted.textContent = `${selfHostedAgents.length} Self-Hosted`;
+
+    const elOnline = document.getElementById('poolValOnlineAgents');
+    if (elOnline) elOnline.textContent = onlineAgentsCount;
+    const elChipOnline = document.getElementById('poolChipOnlineCount');
+    if (elChipOnline) elChipOnline.textContent = `${onlineAgentsCount} Online`;
+
+    const elOffline = document.getElementById('poolValOfflineAgents');
+    if (elOffline) elOffline.textContent = offlineAgentsCount;
+    const elChipOffline = document.getElementById('poolChipOfflineCount');
+    if (elChipOffline) elChipOffline.textContent = `${offlineAgentsCount} Offline`;
+
+    const elBusy = document.getElementById('poolValBusyAgents');
+    if (elBusy) elBusy.textContent = busyAgentsCount;
+    const elChipBusy = document.getElementById('poolChipBusyCount');
+    if (elChipBusy) elChipBusy.textContent = `${busyAgentsCount} Executing`;
+
+    const elIdle = document.getElementById('poolValIdleAgents');
+    if (elIdle) elIdle.textContent = idleAgentsCount;
+    const elChipIdle = document.getElementById('poolChipIdleCount');
+    if (elChipIdle) elChipIdle.textContent = `${idleAgentsCount} Idle`;
+
+    const elLastUpd = document.getElementById('poolLastUpdatedText');
+    if (elLastUpd) elLastUpd.textContent = `Last updated: ${new Date().toLocaleTimeString(undefined, { hour12: false })}`;
+
+    // Backward compatibility setKpis
     window.HubApp.setKpis(
       cleanProject,
       'Total Agent Pools',
       totalPools,
       'Self-Hosted Online',
-      totalOnlineAgents,
-      'Updates Available',
-      poolsWithUpdates > 0 ? `${poolsWithUpdates} Pool${poolsWithUpdates > 1 ? 's' : ''}` : 'All Up to Date'
+      onlineAgentsCount,
+      'Offline Agents',
+      offlineAgentsCount
     );
 
     this.render(false);
+    this.renderDetailedAgents();
 
     // 6. Render distribution chart
     const chartLabels = ['Azure Hosted', 'Self-Hosted Online', 'Self-Hosted Offline', 'Empty Pools'];
     const emptyPoolsCount = this.pools.filter(p => !p.isHosted && p.size === 0).length;
-    const chartVals = [hostedCount, totalOnlineAgents, totalOfflineAgents, emptyPoolsCount];
+    const chartVals = [hostedPools, onlineAgentsCount, offlineAgentsCount, emptyPoolsCount];
 
     window.HubApp.renderChart(chartLabels, chartVals, 'Agent Pools & Infrastructure Health');
   },
@@ -216,39 +362,39 @@ window.AgentPoolModule = {
   getStatusBadge(pool) {
     if (pool.isHosted) {
       return `
-        <span class="badge badge-succeeded">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        <span class="badge badge-succeeded" style="font-size:11px; padding:2px 8px; border-radius:12px; display:inline-flex; align-items:center;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:11px; height:11px; margin-right:4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
           Hosted Managed
         </span>
       `;
     }
     if (pool.size === 0) {
       return `
-        <span class="badge badge-canceled">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+        <span class="badge badge-canceled" style="font-size:11px; padding:2px 8px; border-radius:12px; display:inline-flex; align-items:center;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:11px; height:11px; margin-right:4px;"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>
           No Agents Configured
         </span>
       `;
     }
     if (pool.onlineAgentsCount > 0 && pool.offlineAgentsCount === 0) {
       return `
-        <span class="badge badge-active">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        <span class="badge badge-blue" style="font-size:11px; padding:2px 8px; border-radius:12px; display:inline-flex; align-items:center;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:11px; height:11px; margin-right:4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
           ${pool.onlineAgentsCount} Online
         </span>
       `;
     }
     if (pool.onlineAgentsCount > 0 && pool.offlineAgentsCount > 0) {
       return `
-        <span class="badge badge-warning">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg>
+        <span class="badge badge-warning" style="font-size:11px; padding:2px 8px; border-radius:12px; display:inline-flex; align-items:center;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:11px; height:11px; margin-right:4px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg>
           Degraded (${pool.onlineAgentsCount} on, ${pool.offlineAgentsCount} off)
         </span>
       `;
     }
     return `
-      <span class="badge badge-failed">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      <span class="badge badge-failed" style="font-size:11px; padding:2px 8px; border-radius:12px; display:inline-flex; align-items:center;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:11px; height:11px; margin-right:4px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         All Offline (${pool.offlineAgentsCount})
       </span>
     `;
@@ -256,23 +402,33 @@ window.AgentPoolModule = {
 
   getTypeBadge(pool) {
     if (pool.isHosted) {
-      return `<span class="badge badge-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>Azure Hosted</span>`;
+      return `<span class="badge badge-blue" style="font-size:11px; padding:2px 8px; border-radius:12px; display:inline-flex; align-items:center; gap:5px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:12px; height:12px;"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>Azure Hosted</span>`;
     }
-    return `<span class="badge badge-purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>Self-Hosted</span>`;
+    return `<span class="badge badge-purple" style="font-size:11px; padding:2px 8px; border-radius:12px; display:inline-flex; align-items:center; gap:5px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:12px; height:12px;"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>Self-Hosted</span>`;
+  },
+
+  getCapacityHtml(pool) {
+    if (pool.isHosted) {
+      return `<span style="color:var(--azure-blue); font-size:12px; font-weight:500;">Elastic Cloud</span>`;
+    }
+    if (pool.size === 0) {
+      return `<span style="color:var(--text-muted); font-size:12px;">0 / 0 Online</span>`;
+    }
+    return `<span style="color:var(--azure-blue); font-size:12px; font-weight:600;">${pool.onlineAgentsCount} / ${pool.size} Online</span>`;
   },
 
   getVersionBadge(pool) {
     if (pool.isHosted) {
       return `
         <div style="display:flex; align-items:center; gap:6px;">
-          <code>Cloud (v3.x)</code>
-          <span class="badge badge-succeeded" style="font-size:10.5px; padding:2px 6px;">Managed</span>
+          <span style="color:var(--azure-blue); font-size:12px; font-weight:500;">Cloud (v3.x)</span>
+          <span class="badge badge-succeeded" style="font-size:10px; padding:1px 6px; font-weight:600; border-radius:10px;">Managed</span>
         </div>
       `;
     }
 
     if (!pool.agents || pool.agents.length === 0) {
-      return `<span class="text-muted" style="font-size:12px; font-style:italic;">No agents configured</span>`;
+      return `<span style="font-size:12px; font-style:italic; color:var(--text-muted);">No agents configured</span>`;
     }
 
     const recent = pool.recentVersion || 'unknown';
@@ -280,21 +436,21 @@ window.AgentPoolModule = {
       return `
         <div style="display:flex; flex-direction:column; gap:2px;">
           <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-            <code>v${recent}</code>
-            <span class="badge badge-warning" style="font-size:10.5px; padding:2px 7px; font-weight:600;" title="Latest available version: v${this.latestAgentVersion}">
+            <span style="color:var(--azure-blue); font-size:12px; font-weight:600;">v${recent}</span>
+            <span class="badge badge-warning" style="font-size:10.5px; padding:1px 7px; font-weight:600; border-radius:10px;" title="Latest available version: v${this.latestAgentVersion}">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:10px; height:10px; margin-right:3px; vertical-align:-1px;"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
               Update Available
             </span>
           </div>
-          ${pool.agents.length > 1 ? `<span style="font-size:11px; color:var(--text-muted);">${pool.agents.length} agents (${recent})</span>` : ''}
+          ${pool.agents.length > 1 ? `<span style="font-size:10.5px; color:var(--text-muted);">${pool.agents.length} agents (${recent})</span>` : ''}
         </div>
       `;
     }
 
     return `
       <div style="display:flex; align-items:center; gap:6px;">
-        <code>v${recent}</code>
-        <span class="badge badge-succeeded" style="font-size:10.5px; padding:2px 6px; font-weight:600;">
+        <span style="color:var(--azure-blue); font-size:12px; font-weight:600;">v${recent}</span>
+        <span class="badge badge-succeeded" style="font-size:10px; padding:1px 6px; font-weight:600; border-radius:10px;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:10px; height:10px; margin-right:2px; vertical-align:-1px;"><polyline points="20 6 9 17 4 12"/></svg>
           Up to Date
         </span>
@@ -302,13 +458,50 @@ window.AgentPoolModule = {
     `;
   },
 
+  getProvisioningBadge(pool) {
+    const isAuto = pool.autoProvision !== false;
+    return `<span class="badge badge-blue" style="font-size:11px; padding:2px 8px; border-radius:12px;">${isAuto ? 'Auto-Provisioned' : 'Manual'}</span>`;
+  },
+
+  filterAndRender() {
+    let list = this.allDetailedPools;
+
+    if (this.searchTerm) {
+      const q = this.searchTerm;
+      list = list.filter(p => {
+        return (
+          (p.name && p.name.toLowerCase().includes(q)) ||
+          (p.poolType && p.poolType.toLowerCase().includes(q)) ||
+          (p.status && p.status.toLowerCase().includes(q)) ||
+          String(p.poolId || p.id).includes(q)
+        );
+      });
+    }
+
+    if (this.typeFilter && this.typeFilter !== 'all') {
+      const tf = this.typeFilter.toLowerCase();
+      if (tf === 'hosted') list = list.filter(p => p.isHosted);
+      else if (tf === 'selfhosted') list = list.filter(p => !p.isHosted);
+    }
+
+    this.pools = list;
+    this.index = 0;
+    this.render(false);
+    this.renderDetailedAgents();
+  },
+
   render(append = false) {
     const tbody = document.getElementById('agentPoolsTableBody');
     if (!tbody) return;
     if (!append) tbody.innerHTML = '';
 
+    const statsEl = document.getElementById('agentPoolsTableStats');
+    if (statsEl) {
+      statsEl.textContent = `${this.pools.length} pools`;
+    }
+
     if (this.pools.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">No agent pools or queues found for this project.</td></tr>`;
+      tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400">No agent pools or queues found for this project.</td></tr>';
       document.getElementById('seeMoreAgentPoolsContainer')?.classList.add('hidden');
       return;
     }
@@ -317,23 +510,25 @@ window.AgentPoolModule = {
 
     slice.forEach((pool, localIdx) => {
       const globalIdx = this.index + localIdx;
-      const statusBadge = this.getStatusBadge(pool);
       const typeBadge = this.getTypeBadge(pool);
+      const capacityHtml = this.getCapacityHtml(pool);
       const versionBadge = this.getVersionBadge(pool);
-
-      const agentCountText = pool.isHosted ? 'Elastic Cloud' : `${pool.onlineAgentsCount} / ${pool.size} Online`;
+      const statusBadge = this.getStatusBadge(pool);
+      const provisioningBadge = this.getProvisioningBadge(pool);
 
       const tr = document.createElement('tr');
       tr.title = 'Click to open Azure Blade Telemetry for this Agent Pool';
+      tr.style.cursor = 'pointer';
       tr.innerHTML = `
-        <td><strong>${pool.name}</strong></td>
+        <td><strong style="color:var(--text-main); font-size:12.5px; font-weight:700;">${pool.name}</strong></td>
         <td>${typeBadge}</td>
-        <td><code>${agentCountText}</code></td>
+        <td>${capacityHtml}</td>
         <td>${versionBadge}</td>
         <td>${statusBadge}</td>
-        <td>${pool.autoProvision ? '<span class="badge badge-active">Auto-Provisioned</span>' : '<span class="badge badge-canceled">Manual</span>'}</td>
-        <td><code>#${pool.poolId}</code></td>
+        <td>${provisioningBadge}</td>
+        <td><code style="color:var(--azure-blue); font-size:12px; font-weight:600;">#${pool.poolId || pool.id}</code></td>
       `;
+
       tr.addEventListener('click', () => this.openPoolBlade(globalIdx));
       tbody.appendChild(tr);
     });
@@ -349,6 +544,50 @@ window.AgentPoolModule = {
     }
   },
 
+  renderDetailedAgents() {
+    const tbody = document.getElementById('agentsDetailTableBody');
+    if (!tbody) return;
+
+    let agents = this.allAgents;
+    if (this.searchTerm) {
+      const q = this.searchTerm;
+      agents = agents.filter(a => {
+        return (
+          (a.name && a.name.toLowerCase().includes(q)) ||
+          (a.pool && a.pool.toLowerCase().includes(q)) ||
+          (a.status && a.status.toLowerCase().includes(q)) ||
+          (a.currentJob && a.currentJob.toLowerCase().includes(q)) ||
+          String(a.id).includes(q)
+        );
+      });
+    }
+
+    if (agents.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" style="padding: 24px; text-align: center; color: var(--text-muted);">No individual compute agents match the criteria.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = agents.map(a => {
+      const statusBadge = a.status === 'Online'
+        ? '<span class="badge badge-succeeded"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>Online</span>'
+        : '<span class="badge badge-failed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>Offline</span>';
+
+      const enabledBadge = a.enabled
+        ? '<span class="badge badge-active">Enabled</span>'
+        : '<span class="badge badge-canceled">Disabled</span>';
+
+      return '<tr>' +
+        '<td><strong>' + a.name + '</strong></td>' +
+        '<td><code>#' + a.id + '</code></td>' +
+        '<td><span class="badge badge-purple">' + a.pool + '</span></td>' +
+        '<td>' + statusBadge + '</td>' +
+        '<td>' + enabledBadge + '</td>' +
+        '<td><span style="font-weight:600; color:var(--text-main); font-size:12px;">' + a.currentJob + '</span></td>' +
+        '<td style="font-size:11px; max-width:240px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="' + a.capabilities + '">' + a.capabilities + '</td>' +
+        '<td style="font-size:11.5px; color:var(--text-muted);">' + a.lastUpdated + '</td>' +
+        '</tr>';
+    }).join('');
+  },
   openPoolBlade(poolIdx) {
     const pool = this.pools[poolIdx];
     if (!pool) return;
@@ -432,7 +671,7 @@ window.AgentPoolModule = {
                   Microsoft-Hosted Agent Fleet
                 </div>
                 <div class="p-3" style="background:var(--azure-surface-alt); border-radius:var(--radius-md); border:1px solid var(--azure-border);">
-                  <p style="font-size:13px; color:var(--text-main); font-weight:600; margin-bottom:4px;">☁️ Dynamic Azure Hosted Cloud Instances</p>
+                  <p style="font-size:13px; color:var(--text-main); font-weight:600; margin-bottom:4px;">Γÿü∩╕Å Dynamic Azure Hosted Cloud Instances</p>
                   <p style="font-size:12px; color:var(--text-muted); line-height:1.4;">
                     Includes Ubuntu Latest (22.04/24.04), Windows Server 2022 / 2025, and macOS 13/14 hosted runners with preinstalled SDKs (Docker, .NET, Node.js, Python, Java, Go, Rust, PowerShell).
                   </p>
@@ -531,7 +770,7 @@ window.AgentPoolModule = {
             return `
               <div style="margin-bottom:16px;">
                 <div style="font-weight:600; font-size:13px; margin-bottom:6px; color:var(--text-main);">
-                  💻 Agent: ${ag.name} (Capabilities: ${Object.keys(sysCaps).length})
+                  ≡ƒÆ╗ Agent: ${ag.name} (Capabilities: ${Object.keys(sysCaps).length})
                 </div>
                 <div style="display:flex; flex-wrap:wrap; gap:4px; max-height:220px; overflow-y:auto; padding:8px; background:var(--azure-surface-alt); border-radius:var(--radius-sm); border:1px solid var(--azure-border);">
                   ${tags || '<span class="text-muted" style="font-size:12px;">No capability tags exposed.</span>'}

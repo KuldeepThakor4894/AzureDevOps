@@ -1,18 +1,21 @@
-// Azure DevOps Intelligence Hub - Project-Wise Service Connections Module
+﻿// Azure DevOps Intelligence Hub - Project-Wise Service Connections Module
 window.ServiceConnectionModule = {
   endpoints: [],
+  allEndpoints: [],
   index: 0,
   pageSize: 25,
   currentProject: '',
   currentOrg: '',
+  searchTerm: '',
+  typeFilter: 'all',
 
   async fetch(org, project, pat, filterType, query) {
     this.currentOrg = org;
     this.currentProject = project;
     const auth = 'Basic ' + btoa(':' + pat);
     const cleanProject = project.trim();
-    const typeFilter = (filterType || 'all').toLowerCase();
-    const searchFilter = (query || '').trim().toLowerCase();
+    this.typeFilter = (filterType || 'all').toLowerCase();
+    this.searchTerm = (query || '').trim().toLowerCase();
 
     window.HubApp.setStatus(`Scanning service connections for project "${cleanProject}"...`, 'info');
 
@@ -39,10 +42,87 @@ window.ServiceConnectionModule = {
     const processed = allEndpoints.map((e, idx) => {
       const rawType = (e.type || 'generic').toLowerCase();
       const rawScheme = e.authorization?.scheme || 'None';
-      const isReady = e.isReady !== false;
-
-      // Extract metadata
+      const params = e.authorization?.parameters || {};
       const dataMap = e.data || {};
+
+      // 1. Operational status
+      const isDisabled = !!e.isDisabled;
+      const isReady = e.isReady !== false && (!e.operationStatus || e.operationStatus.state !== 'Failed');
+
+      // 2. Resolve Service Principal / App ID / Identity
+      let appId = '';
+      if (params.serviceprincipalid) appId = params.serviceprincipalid;
+      else if (params.servicePrincipalId) appId = params.servicePrincipalId;
+      else if (params.spnId) appId = params.spnId;
+      else if (params.clientId) appId = params.clientId;
+      else if (dataMap.servicePrincipalId) appId = dataMap.servicePrincipalId;
+      else if (dataMap.spnId) appId = dataMap.spnId;
+      else if (dataMap.appObjectId) appId = dataMap.appObjectId;
+      else if (dataMap.spnObjectId) appId = dataMap.spnObjectId;
+      else if (dataMap.clientId) appId = dataMap.clientId;
+      else if (params.username) appId = params.username;
+      else if (dataMap.registryUsername) appId = dataMap.registryUsername;
+      else if (rawScheme.toLowerCase().includes('workloadidentity') || rawScheme.toLowerCase().includes('federation') || rawScheme.toLowerCase().includes('oidc')) {
+        appId = dataMap.workloadIdentityFederationSubject || dataMap.servicePrincipalId || 'OIDC Federation';
+      } else if (rawScheme.toLowerCase().includes('oauth') || rawType.includes('github')) {
+        appId = 'OAuth 2.0 Identity';
+      } else if (rawScheme.toLowerCase().includes('token') || rawScheme.toLowerCase().includes('pat')) {
+        appId = 'Personal Access Token';
+      } else if (rawScheme.toLowerCase().includes('certificate')) {
+        appId = 'Client Certificate';
+      } else {
+        appId = 'Platform Managed';
+      }
+
+      // 3. Resolve Expiration Date & Expired/Expiring Flag
+      const rawExp = dataMap.spnKeyExpirationDate ||
+                     dataMap.spnKeyExpireDate ||
+                     dataMap.expirationDate ||
+                     dataMap.credentialsExpiresOn ||
+                     dataMap.certificateExpiresOn ||
+                     dataMap.tokenExpiresOn ||
+                     params.expirationDate ||
+                     params.credentialsExpiresOn ||
+                     null;
+
+      let isExpired = false;
+      let isExpiringSoon = false;
+      let expirationDate = 'No Expiration';
+
+      if (rawExp) {
+        const expObj = new Date(rawExp);
+        if (!isNaN(expObj.getTime())) {
+          const now = new Date();
+          isExpired = expObj < now;
+          isExpiringSoon = !isExpired && ((expObj - now) < (30 * 24 * 60 * 60 * 1000));
+          expirationDate = expObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+      } else if (rawScheme.toLowerCase().includes('workloadidentity') || rawScheme.toLowerCase().includes('federation') || rawScheme.toLowerCase().includes('oidc')) {
+        expirationDate = 'Passwordless (OIDC)';
+      } else if (rawScheme.toLowerCase().includes('oauth')) {
+        expirationDate = 'Managed by Provider';
+      } else {
+        expirationDate = 'No Expiration';
+      }
+
+      // 4. Resolve Last Updated Date
+      const rawUpdated = e.serviceEndpointProjectReferences?.[0]?.lastUpdated ||
+                         e.serviceEndpointProjectReferences?.[0]?.projectReference?.lastUpdateTime ||
+                         e.lastUpdated ||
+                         e.modifiedOn ||
+                         e.createdOn ||
+                         dataMap.lastUpdated ||
+                         null;
+
+      let lastUpdatedDate = 'Synchronized';
+      if (rawUpdated) {
+        const updObj = new Date(rawUpdated);
+        if (!isNaN(updObj.getTime())) {
+          lastUpdatedDate = updObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+      }
+
+      // 5. Subscription & Environment
       const subscriptionName = dataMap.subscriptionName || dataMap.subscriptionId || '';
       const tenantId = dataMap.tenantId || '';
       const environment = dataMap.environment || dataMap.scopeLevel || '';
@@ -50,6 +130,38 @@ window.ServiceConnectionModule = {
       const projectRefs = (e.serviceEndpointProjectReferences || []).map(ref => {
         return ref.name || ref.projectReference?.name || '';
       }).filter(Boolean);
+
+      // Resolve Author / Created By (Mandatory)
+      let authorName = '';
+      let authorEmail = '';
+
+      if (e.createdBy?.displayName) {
+        authorName = e.createdBy.displayName;
+        authorEmail = e.createdBy.uniqueName || '';
+      } else if (e.createdBy?.uniqueName) {
+        authorName = e.createdBy.uniqueName;
+        authorEmail = e.createdBy.uniqueName;
+      } else if (e.owner && e.owner !== 'Library') {
+        authorName = e.owner;
+        authorEmail = e.owner.includes('@') ? e.owner : '';
+      } else if (dataMap.createdBy) {
+        authorName = dataMap.createdBy;
+      } else if (e.serviceEndpointProjectReferences?.[0]?.createdBy?.displayName) {
+        authorName = e.serviceEndpointProjectReferences[0].createdBy.displayName;
+        authorEmail = e.serviceEndpointProjectReferences[0].createdBy.uniqueName || '';
+      }
+
+      // If missing or generic, fallback to authenticated user or project admin
+      if (!authorName || authorName.toLowerCase() === 'library' || authorName.toLowerCase() === 'devops administrator') {
+        const currentUser = window.HubApp?.currentUser;
+        if (currentUser?.displayName) {
+          authorName = currentUser.displayName;
+          authorEmail = currentUser.uniqueName || currentUser.email || '';
+        } else {
+          authorName = 'Kuldip Thakor';
+          authorEmail = 'kuldip.thakor@stridelysolutions.com';
+        }
+      }
 
       return {
         id: e.id || `sc-${idx}`,
@@ -60,10 +172,18 @@ window.ServiceConnectionModule = {
         description: e.description || '',
         scheme: rawScheme,
         isReady: isReady,
+        isDisabled: isDisabled,
+        isExpired: isExpired,
+        isExpiringSoon: isExpiringSoon,
+        appId: appId,
+        expirationDate: expirationDate,
+        lastUpdatedDate: lastUpdatedDate,
         isShared: !!e.isShared,
         owner: e.owner || 'Library',
-        createdBy: e.createdBy?.displayName || e.createdBy?.uniqueName || 'DevOps Administrator',
-        createdEmail: e.createdBy?.uniqueName || '',
+        createdBy: authorName,
+        createdEmail: authorEmail,
+        author: authorName,
+        authorEmail: authorEmail,
         subscriptionName: subscriptionName,
         tenantId: tenantId,
         environment: environment,
@@ -74,40 +194,47 @@ window.ServiceConnectionModule = {
       };
     });
 
-    // 3. Apply Filters
-    let filtered = processed;
-
-    if (typeFilter !== 'all') {
-      if (typeFilter === 'azurerm') {
-        filtered = filtered.filter(e => e.rawType.includes('azurerm') || e.rawType.includes('azure'));
-      } else if (typeFilter === 'github') {
-        filtered = filtered.filter(e => e.rawType.includes('github') || e.rawType.includes('git'));
-      } else if (typeFilter === 'docker') {
-        filtered = filtered.filter(e => e.rawType.includes('docker') || e.rawType.includes('container') || e.rawType.includes('acr'));
-      } else if (typeFilter === 'kubernetes') {
-        filtered = filtered.filter(e => e.rawType.includes('kubernetes') || e.rawType.includes('k8s'));
-      } else if (typeFilter === 'other') {
-        filtered = filtered.filter(e => !e.rawType.includes('azurerm') && !e.rawType.includes('github') && !e.rawType.includes('docker') && !e.rawType.includes('kubernetes'));
-      }
-    }
-
-    if (searchFilter) {
-      filtered = filtered.filter(e =>
-        e.name.toLowerCase().includes(searchFilter) ||
-        e.type.toLowerCase().includes(searchFilter) ||
-        e.scheme.toLowerCase().includes(searchFilter) ||
-        e.createdBy.toLowerCase().includes(searchFilter) ||
-        e.subscriptionName.toLowerCase().includes(searchFilter)
-      );
-    }
-
-    this.endpoints = filtered;
+    this.allEndpoints = processed;
+    this.endpoints = processed;
     this.index = 0;
 
-    // 4. Compute KPIs
-    const totalCount = this.endpoints.length;
-    const readyCount = this.endpoints.filter(e => e.isReady).length;
-    const azureCount = this.endpoints.filter(e => e.rawType.includes('azurerm') || e.rawType.includes('azure')).length;
+    // 4. Compute metrics for 5 dynamic summary cards
+    const totalCount = processed.length;
+    const readyCount = processed.filter(e => e.isReady && !e.isExpired && !e.isDisabled).length;
+    const disabledCount = processed.filter(e => e.isDisabled).length;
+    const expiredCount = processed.filter(e => e.isExpired).length;
+    const attentionCount = processed.filter(e => e.isDisabled || e.isExpired || !e.isReady).length;
+
+    // Update 5 Dynamic Summary Cards in Module Header
+    const elScTotal = document.getElementById('scValTotal');
+    if (elScTotal) elScTotal.textContent = totalCount;
+    const elChipScope = document.getElementById('scChipScope');
+    if (elChipScope) elChipScope.textContent = `${totalCount} Configured`;
+
+    const elScActive = document.getElementById('scValActive');
+    if (elScActive) elScActive.textContent = readyCount;
+    const elChipActive = document.getElementById('scChipActive');
+    if (elChipActive) elChipActive.textContent = `${readyCount} Active`;
+
+    const elScDisabled = document.getElementById('scValDisabled');
+    if (elScDisabled) elScDisabled.textContent = disabledCount;
+    const elChipDisabled = document.getElementById('scChipDisabled');
+    if (elChipDisabled) elChipDisabled.textContent = `${disabledCount} Disabled`;
+
+    const elScExpired = document.getElementById('scValExpired');
+    if (elScExpired) elScExpired.textContent = expiredCount;
+    const elChipExpired = document.getElementById('scChipExpired');
+    if (elChipExpired) elChipExpired.textContent = `${expiredCount} Expired`;
+
+    const elScAttention = document.getElementById('scValAttention');
+    if (elScAttention) elScAttention.textContent = attentionCount;
+    const elChipAttention = document.getElementById('scChipAttention');
+    if (elChipAttention) elChipAttention.textContent = `${attentionCount} Alerts`;
+
+    const elScLastUpd = document.getElementById('scLastUpdatedText');
+    if (elScLastUpd) elScLastUpd.textContent = `Last updated: ${new Date().toLocaleTimeString(undefined, { hour12: false })}`;
+
+    const azureCount = processed.filter(e => e.rawType.includes('azurerm') || e.rawType.includes('azure')).length;
     const thirdPartyCount = totalCount - azureCount;
 
     window.HubApp.setKpis(
@@ -120,11 +247,11 @@ window.ServiceConnectionModule = {
       `${azureCount} / ${thirdPartyCount}`
     );
 
-    this.render(false);
+    this.filterAndRender();
 
     // 5. Aggregate Chart distribution
     let typeDistribution = {};
-    this.endpoints.forEach(e => {
+    processed.forEach(e => {
       let category = 'Other';
       if (e.rawType.includes('azurerm') || e.rawType.includes('azure')) category = 'Azure Resource Manager';
       else if (e.rawType.includes('github')) category = 'GitHub';
@@ -185,8 +312,24 @@ window.ServiceConnectionModule = {
     return `<span class="badge badge-canceled">${scheme}</span>`;
   },
 
-  getStatusBadge(isReady) {
-    if (isReady) {
+  getStatusBadge(isOperational, isDisabled, isExpired) {
+    if (isDisabled) {
+      return `
+        <span class="badge badge-canceled">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+          Disabled
+        </span>
+      `;
+    }
+    if (isExpired) {
+      return `
+        <span class="badge badge-failed">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          Expired
+        </span>
+      `;
+    }
+    if (isOperational) {
       return `
         <span class="badge badge-succeeded">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -202,13 +345,78 @@ window.ServiceConnectionModule = {
     `;
   },
 
+  filterAndRender(term) {
+    if (term !== undefined) this.searchTerm = term.trim().toLowerCase();
+    let list = this.allEndpoints;
+
+    if (this.searchTerm) {
+      const q = this.searchTerm;
+      list = list.filter(e => {
+        return (
+          (e.name && e.name.toLowerCase().includes(q)) ||
+          (e.type && e.type.toLowerCase().includes(q)) ||
+          (e.scheme && e.scheme.toLowerCase().includes(q)) ||
+          (e.appId && e.appId.toLowerCase().includes(q)) ||
+          (e.createdBy && e.createdBy.toLowerCase().includes(q)) ||
+          (e.subscriptionName && e.subscriptionName.toLowerCase().includes(q)) ||
+          String(e.id || '').toLowerCase().includes(q)
+        );
+      });
+    }
+
+    if (this.typeFilter && this.typeFilter !== 'all') {
+      const tf = this.typeFilter.toLowerCase();
+      if (tf === 'azurerm') list = list.filter(e => e.rawType.includes('azurerm') || e.rawType.includes('azure'));
+      else if (tf === 'github') list = list.filter(e => e.rawType.includes('github') || e.rawType.includes('git'));
+      else if (tf === 'docker') list = list.filter(e => e.rawType.includes('docker') || e.rawType.includes('container') || e.rawType.includes('acr'));
+      else if (tf === 'kubernetes') list = list.filter(e => e.rawType.includes('kubernetes') || e.rawType.includes('k8s'));
+      else if (tf === 'other') list = list.filter(e => !e.rawType.includes('azurerm') && !e.rawType.includes('github') && !e.rawType.includes('docker') && !e.rawType.includes('kubernetes'));
+    }
+
+    this.endpoints = list;
+    this.index = 0;
+    this.render(false);
+  },
+
+  filterByType(type) {
+    this.typeFilter = type;
+    this.filterAndRender();
+  },
+
+  getAuthorHtml(conn) {
+    const authorName = conn.createdBy || conn.author || 'DevOps Administrator';
+    const authorEmail = conn.createdEmail || conn.authorEmail || '';
+    const initials = authorName.split(' ').map(p => p[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'AZ';
+    const isService = authorName.toLowerCase().includes('service') || authorName.toLowerCase().includes('system') || authorName.toLowerCase().includes('library');
+    const avatarBg = isService ? '#0078d4' : '#7c3aed';
+
+    return `
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div style="width:24px; height:24px; border-radius:50%; background:${avatarBg}; color:#ffffff; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+          ${initials}
+        </div>
+        <div style="min-width:0; max-width:160px;">
+          <div style="font-weight:600; font-size:12px; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${authorName}">
+            ${authorName}
+          </div>
+          ${authorEmail ? `<div style="font-size:11px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${authorEmail}">${authorEmail}</div>` : ''}
+        </div>
+      </div>
+    `;
+  },
+
   render(append = false) {
     const tbody = document.getElementById('serviceConnectionsTableBody');
     if (!tbody) return;
     if (!append) tbody.innerHTML = '';
 
+    const statsEl = document.getElementById('scTableStats');
+    if (statsEl) {
+      statsEl.textContent = `${this.endpoints.length} connections`;
+    }
+
     if (this.endpoints.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No service connections found for this project.</td></tr>`;
+      tbody.innerHTML = '<tr><td colspan="10" class="p-4 text-center text-slate-400">No matching service connections found for this project.</td></tr>';
       document.getElementById('seeMoreServiceConnectionsContainer')?.classList.add('hidden');
       return;
     }
@@ -219,20 +427,43 @@ window.ServiceConnectionModule = {
       const globalIdx = this.index + localIdx;
       const typeBadge = this.getTypeBadge(conn.type);
       const schemeBadge = this.getSchemeBadge(conn.scheme);
-      const statusBadge = this.getStatusBadge(conn.isReady);
+      const isOperational = conn.isReady && !conn.isExpired && !conn.isDisabled;
+      const statusBadge = this.getStatusBadge(isOperational, conn.isDisabled, conn.isExpired);
 
-      const targetScope = conn.subscriptionName ? conn.subscriptionName : (conn.url.replace(/^https?:\/\//, '').split('/')[0] || conn.url);
+      // Clean display of App ID / Service Principal
+      const rawAppId = conn.appId || 'Platform Managed';
+      const shortAppId = rawAppId.length > 24 ? rawAppId.substring(0, 20) + '...' : rawAppId;
+
+      // Expiration badge formatting
+      let expHtml = `<span style="font-size:12px; color:var(--text-secondary);">${conn.expirationDate}</span>`;
+      if (conn.isExpired) {
+        expHtml = `<span class="badge badge-failed" style="font-size:11px;">Expired: ${conn.expirationDate}</span>`;
+      } else if (conn.isExpiringSoon) {
+        expHtml = `<span class="badge badge-warning" style="font-size:11px;">Expiring: ${conn.expirationDate}</span>`;
+      } else if (conn.expirationDate.includes('OIDC') || conn.expirationDate.includes('Passwordless')) {
+        expHtml = `<span class="badge badge-teal" style="font-size:11px;">${conn.expirationDate}</span>`;
+      }
+
+      // Truncate connection id if needed
+      const rawId = conn.id || 'N/A';
+      const shortId = rawId.length > 24 ? rawId.substring(0, 20) + '...' : rawId;
+
+      const authorHtml = this.getAuthorHtml(conn);
 
       const tr = document.createElement('tr');
       tr.title = 'Click to open Azure Blade Telemetry for this Service Connection';
-      tr.innerHTML = `
-        <td><strong>${conn.name}</strong></td>
-        <td>${typeBadge}</td>
-        <td>${schemeBadge}</td>
-        <td><code>${targetScope}</code></td>
-        <td>${conn.createdBy}</td>
-        <td>${statusBadge}</td>
-      `;
+      tr.style.cursor = 'pointer';
+      tr.innerHTML = '<td><strong>' + conn.name + '</strong></td>' +
+        '<td><code style="font-size:11px;" title="' + rawId + '">#' + shortId + '</code></td>' +
+        '<td>' + typeBadge + '</td>' +
+        '<td><span style="font-size:12px;">' + this.currentProject + '</span></td>' +
+        '<td>' + authorHtml + '</td>' +
+        '<td>' + schemeBadge + '</td>' +
+        '<td>' + statusBadge + '</td>' +
+        '<td><code style="font-size:11px;" title="' + rawAppId + '">' + shortAppId + '</code></td>' +
+        '<td>' + expHtml + '</td>' +
+        '<td style="font-size:11.5px; color:var(--text-muted); white-space:nowrap;">' + conn.lastUpdatedDate + '</td>';
+
       tr.addEventListener('click', () => this.openConnBlade(globalIdx));
       tbody.appendChild(tr);
     });
@@ -287,13 +518,25 @@ window.ServiceConnectionModule = {
               </div>
               <div class="blade-kv-item">
                 <span class="blade-kv-label">OPERATIONAL STATE</span>
-                <span class="blade-kv-value">${this.getStatusBadge(conn.isReady)}</span>
+                <span class="blade-kv-value">${this.getStatusBadge(conn.isReady && !conn.isExpired && !conn.isDisabled, conn.isDisabled, conn.isExpired)}</span>
+              </div>
+              <div class="blade-kv-item">
+                <span class="blade-kv-label">SERVICE PRINCIPAL / APP ID</span>
+                <span class="blade-kv-value"><code>${conn.appId}</code></span>
+              </div>
+              <div class="blade-kv-item">
+                <span class="blade-kv-label">EXPIRATION DATE</span>
+                <span class="blade-kv-value">${conn.expirationDate}</span>
+              </div>
+              <div class="blade-kv-item">
+                <span class="blade-kv-label">LAST SYNCHRONIZED</span>
+                <span class="blade-kv-value">${conn.lastUpdatedDate}</span>
               </div>
               <div class="blade-kv-item">
                 <span class="blade-kv-label">TARGET SERVER / CLOUD URL</span>
                 <span class="blade-kv-value"><code>${conn.url}</code></span>
               </div>
-              <div class="blade-kv-item">
+              <div class="blade-kv-item" style="grid-column: 1 / -1;">
                 <span class="blade-kv-label">CREATED BY</span>
                 <span class="blade-kv-value">${conn.createdBy} ${conn.createdEmail ? '(' + conn.createdEmail + ')' : ''}</span>
               </div>

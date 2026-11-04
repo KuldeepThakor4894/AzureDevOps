@@ -133,6 +133,27 @@ window.DashboardModule = {
       }
     });
 
+    // Reset 8 Summary Cards
+    ['dashValTotalProjects', 'dashValTotalRepos', 'dashValTotalPipelines', 'dashValTotalBuilds',
+      'dashValTotalAgentPools', 'dashValTotalAgents', 'dashValTotalServiceConnections', 'dashValTotalWorkItems'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '—';
+      });
+    const chipBuildsPassed = document.getElementById('dashChipBuildsPassed');
+    if (chipBuildsPassed) chipBuildsPassed.textContent = '0 Passed';
+    const chipBuildsFailed = document.getElementById('dashChipBuildsFailed');
+    if (chipBuildsFailed) chipBuildsFailed.textContent = '0 Failed';
+    const chipAgentsOnline = document.getElementById('dashChipAgentsOnline');
+    if (chipAgentsOnline) chipAgentsOnline.textContent = '0 Online';
+    const chipAgentsOffline = document.getElementById('dashChipAgentsOffline');
+    if (chipAgentsOffline) chipAgentsOffline.textContent = '0 Offline';
+    const chipConnActive = document.getElementById('dashChipConnectionsActive');
+    if (chipConnActive) chipConnActive.textContent = '0 Active';
+    const chipWiActive = document.getElementById('dashChipActiveWorkItems');
+    if (chipWiActive) chipWiActive.textContent = '0 Active';
+    const chipWiBugs = document.getElementById('dashChipBugsCount');
+    if (chipWiBugs) chipWiBugs.textContent = '0 Bugs';
+
     // Reset Critical Alerts Banner
     const alertsBanner = document.getElementById('azDashCriticalAlertsBanner');
     if (alertsBanner) alertsBanner.classList.add('hidden');
@@ -187,10 +208,10 @@ window.DashboardModule = {
 
     // Reset Visual Chart Legends
     ['azLegendPipePassed', 'azLegendPipeFailed', 'azLegendPipeRunning',
-     'azLegendWiNew', 'azLegendWiActive', 'azLegendWiTesting', 'azLegendWiClosed'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = '0';
-    });
+      'azLegendWiNew', 'azLegendWiActive', 'azLegendWiTesting', 'azLegendWiClosed'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '0';
+      });
 
     const ratioBadge = document.getElementById('dashPipelineHealthRatio');
     if (ratioBadge) ratioBadge.textContent = '—';
@@ -273,6 +294,20 @@ window.DashboardModule = {
     };
 
     try {
+      // Update Total Projects Summary Card
+      let projectsCount = (this.cachedProjects || []).length || (window.HubApp?.cachedProjects || []).length;
+      if (projectsCount === 0) {
+        try {
+          const pData = await this.fetchApi('_apis/projects?api-version=6.0');
+          if (pData?.value) {
+            projectsCount = pData.value.length;
+            this.cachedProjects = pData.value;
+          }
+        } catch (e) { }
+      }
+      const elDashProjects = document.getElementById('dashValTotalProjects');
+      if (elDashProjects) elDashProjects.textContent = projectsCount > 0 ? projectsCount.toLocaleString() : '1';
+
       // Concurrently aggregate all Project Overview Metrics
       await Promise.allSettled([
         this.loadWorkItemsOverview(cleanProject, criticalAlerts),
@@ -399,6 +434,14 @@ window.DashboardModule = {
       const elProg = document.getElementById('dashKpiWorkItemsProgress');
       if (elProg) elProg.style.width = `${completionPct}%`;
 
+      // Update Dynamic Summary Card 8 (Total Work Items)
+      const elDashWiTotal = document.getElementById('dashValTotalWorkItems');
+      if (elDashWiTotal) elDashWiTotal.textContent = totalScope.toLocaleString();
+      const elDashWiActive = document.getElementById('dashChipActiveWorkItems');
+      if (elDashWiActive) elDashWiActive.textContent = `${activeCount.toLocaleString()} Active`;
+      const elDashWiBugs = document.getElementById('dashChipBugsCount');
+      if (elDashWiBugs) elDashWiBugs.textContent = `${highPriBugsCount.toLocaleString()} Bugs`;
+
       // Render Work Item Status Distribution Chart
       this.lastWorkItemDist = {
         newCount,
@@ -485,6 +528,27 @@ window.DashboardModule = {
         ratioBadge.style.color = passRate >= 80 ? '#107c10' : '#d13438';
       }
 
+      // Fetch Pipeline Definitions Count
+      let defsCount = 0;
+      try {
+        const defsData = await this.fetchApi(`${encodeURIComponent(cleanProject)}/_apis/build/definitions?api-version=6.0`);
+        defsCount = defsData?.count || (defsData?.value || []).length || 0;
+      } catch (e) { }
+
+      // Update Dynamic Summary Card 3 (Total Pipelines)
+      const elDashPipelines = document.getElementById('dashValTotalPipelines');
+      if (elDashPipelines) elDashPipelines.textContent = defsCount > 0 ? defsCount.toLocaleString() : (totalRuns > 0 ? totalRuns.toLocaleString() : '—');
+      const elDashPipeHealth = document.getElementById('dashChipPipeHealth');
+      if (elDashPipeHealth) elDashPipeHealth.textContent = `${passRate}% Health`;
+
+      // Update Dynamic Summary Card 4 (Total Builds)
+      const elDashBuilds = document.getElementById('dashValTotalBuilds');
+      if (elDashBuilds) elDashBuilds.textContent = totalRuns.toLocaleString();
+      const elDashPassed = document.getElementById('dashChipBuildsPassed');
+      if (elDashPassed) elDashPassed.textContent = `${passedCount.toLocaleString()} Passed`;
+      const elDashFailed = document.getElementById('dashChipBuildsFailed');
+      if (elDashFailed) elDashFailed.textContent = `${failedCount.toLocaleString()} Failed`;
+
       // Render Visual 1: Pipeline Health Chart
       this.lastPipelineHealth = { passed: passedCount, failed: failedCount, running: runningCount };
       this.renderPipelineHealthChart(passedCount, failedCount, runningCount);
@@ -545,6 +609,12 @@ window.DashboardModule = {
         elPrProg.style.width = `${prFill}%`;
       }
 
+      // Update Dynamic Summary Card 2 (Total Repositories)
+      const elDashRepos = document.getElementById('dashValTotalRepos');
+      if (elDashRepos) elDashRepos.textContent = repos.length.toLocaleString();
+      const elDashActiveRepos = document.getElementById('dashChipActiveRepos');
+      if (elDashActiveRepos) elDashActiveRepos.textContent = `${repos.length} Repos`;
+
       // Update PR Count Badge
       const prBadge = document.getElementById('azDashPrCountBadge');
       if (prBadge) prBadge.textContent = openPrs.length.toLocaleString();
@@ -569,7 +639,7 @@ window.DashboardModule = {
       const qData = await this.fetchApi(queuesUrl);
       const queues = qData?.value || [];
       totalPools = queues.length;
-      
+
       queues.forEach(q => {
         if (q.pool?.isOnline === false) offlineAgents++;
         else onlinePools++;
@@ -600,6 +670,51 @@ window.DashboardModule = {
 
       const elEndpoints = document.getElementById('dashKpiEndpointsCount');
       if (elEndpoints) elEndpoints.textContent = endpointsCount.toLocaleString();
+
+      // Count total compute agents
+      let totalAgentsCount = 0;
+      let liveOnlineAgents = 0;
+      let liveOfflineAgents = 0;
+
+      for (const q of queues) {
+        const p = q.pool || q;
+        if (p.isHosted) {
+          totalAgentsCount += 1;
+          liveOnlineAgents += 1;
+        } else if (p.id) {
+          try {
+            const aData = await this.fetchApi(`_apis/distributedtask/pools/${p.id}/agents?api-version=6.0`);
+            const ags = aData?.value || [];
+            totalAgentsCount += ags.length;
+            ags.forEach(ag => {
+              if ((ag.status || '').toLowerCase() === 'online') liveOnlineAgents++;
+              else liveOfflineAgents++;
+            });
+          } catch (e) {
+            totalAgentsCount += (p.size || 0);
+          }
+        }
+      }
+
+      // Update Dynamic Summary Card 5 (Total Agent Pools)
+      const elDashPools = document.getElementById('dashValTotalAgentPools');
+      if (elDashPools) elDashPools.textContent = totalPools.toLocaleString();
+      const elDashPoolsOnline = document.getElementById('dashChipPoolsOnline');
+      if (elDashPoolsOnline) elDashPoolsOnline.textContent = `${onlinePools} Active`;
+
+      // Update Dynamic Summary Card 6 (Total Agents)
+      const elDashAgents = document.getElementById('dashValTotalAgents');
+      if (elDashAgents) elDashAgents.textContent = totalAgentsCount > 0 ? totalAgentsCount.toLocaleString() : (totalPools > 0 ? `${totalPools}` : '—');
+      const elDashAgOnline = document.getElementById('dashChipAgentsOnline');
+      if (elDashAgOnline) elDashAgOnline.textContent = `${liveOnlineAgents} Online`;
+      const elDashAgOffline = document.getElementById('dashChipAgentsOffline');
+      if (elDashAgOffline) elDashAgOffline.textContent = `${liveOfflineAgents} Offline`;
+
+      // Update Dynamic Summary Card 7 (Total Service Connections)
+      const elDashConn = document.getElementById('dashValTotalServiceConnections');
+      if (elDashConn) elDashConn.textContent = endpointsCount.toLocaleString();
+      const elDashConnActive = document.getElementById('dashChipConnectionsActive');
+      if (elDashConnActive) elDashConnActive.textContent = `${endpointsCount} Active`;
 
     } catch (err) {
       console.warn('Error loading infrastructure overview:', err);
@@ -849,27 +964,27 @@ window.DashboardModule = {
         </thead>
         <tbody>
           ${prs.map(pr => {
-            const title = self.escapeHtml(pr.title || 'Untitled Pull Request');
-            const targetBranch = self.escapeHtml((pr.targetRefName || '').replace('refs/heads/', ''));
-            const sourceBranch = self.escapeHtml((pr.sourceRefName || '').replace('refs/heads/', ''));
-            const repoName = self.escapeHtml(pr.repository?.name || 'Repository');
-            const authorName = self.escapeHtml(pr.createdBy?.displayName || 'Author');
-            const initials = (authorName.split(' ').map(n => n[0]).join('') || 'PR').substring(0, 2).toUpperCase();
-            const relAge = self.formatRelativeTime(pr.creationDate);
-            const prUrl = pr._links?.web?.href || `https://dev.azure.com/${self.currentOrg}/${encodeURIComponent(self.currentProject)}/_git/${encodeURIComponent(pr.repository?.name || '')}/pullrequest/${pr.pullRequestId}`;
+      const title = self.escapeHtml(pr.title || 'Untitled Pull Request');
+      const targetBranch = self.escapeHtml((pr.targetRefName || '').replace('refs/heads/', ''));
+      const sourceBranch = self.escapeHtml((pr.sourceRefName || '').replace('refs/heads/', ''));
+      const repoName = self.escapeHtml(pr.repository?.name || 'Repository');
+      const authorName = self.escapeHtml(pr.createdBy?.displayName || 'Author');
+      const initials = (authorName.split(' ').map(n => n[0]).join('') || 'PR').substring(0, 2).toUpperCase();
+      const relAge = self.formatRelativeTime(pr.creationDate);
+      const prUrl = pr._links?.web?.href || `https://dev.azure.com/${self.currentOrg}/${encodeURIComponent(self.currentProject)}/_git/${encodeURIComponent(pr.repository?.name || '')}/pullrequest/${pr.pullRequestId}`;
 
-            // Votes status summary
-            const reviewers = pr.reviewers || [];
-            const approvedCount = reviewers.filter(r => r.vote > 0).length;
-            const waitingCount = reviewers.filter(r => r.vote === 0).length;
-            const rejectedCount = reviewers.filter(r => r.vote < 0).length;
+      // Votes status summary
+      const reviewers = pr.reviewers || [];
+      const approvedCount = reviewers.filter(r => r.vote > 0).length;
+      const waitingCount = reviewers.filter(r => r.vote === 0).length;
+      const rejectedCount = reviewers.filter(r => r.vote < 0).length;
 
-            let statusBadge = '<span class="az-kpi-chip chip-blue">Under Review</span>';
-            if (rejectedCount > 0) statusBadge = '<span class="az-kpi-chip chip-red">Changes Requested</span>';
-            else if (approvedCount > 0) statusBadge = `<span class="az-kpi-chip chip-green">✓ ${approvedCount} Approved</span>`;
-            else if (waitingCount > 0) statusBadge = `<span class="az-kpi-chip chip-purple">${waitingCount} Reviewer${waitingCount > 1 ? 's' : ''}</span>`;
+      let statusBadge = '<span class="az-kpi-chip chip-blue">Under Review</span>';
+      if (rejectedCount > 0) statusBadge = '<span class="az-kpi-chip chip-red">Changes Requested</span>';
+      else if (approvedCount > 0) statusBadge = `<span class="az-kpi-chip chip-green">✓ ${approvedCount} Approved</span>`;
+      else if (waitingCount > 0) statusBadge = `<span class="az-kpi-chip chip-purple">${waitingCount} Reviewer${waitingCount > 1 ? 's' : ''}</span>`;
 
-            return `
+      return `
               <tr>
                 <td><strong style="color:var(--azure-blue);">#${pr.pullRequestId}</strong></td>
                 <td>
@@ -887,7 +1002,7 @@ window.DashboardModule = {
                 <td style="text-align:right; font-size:11px; color:var(--text-muted);">${relAge}</td>
               </tr>
             `;
-          }).join('')}
+    }).join('')}
         </tbody>
       </table>
     `;
@@ -913,22 +1028,22 @@ window.DashboardModule = {
     const html = `
       <div class="az-activity-feed">
         ${activities.map(act => {
-          const type = act.type || 'commit';
-          const iconClass = type === 'build' ? 'act-build' : (type === 'pr' ? 'act-pr' : (type === 'wi' ? 'act-wi' : 'act-commit'));
-          const relTime = self.formatRelativeTime(act.date);
+      const type = act.type || 'commit';
+      const iconClass = type === 'build' ? 'act-build' : (type === 'pr' ? 'act-pr' : (type === 'wi' ? 'act-wi' : 'act-commit'));
+      const relTime = self.formatRelativeTime(act.date);
 
-          let iconSvg = '';
-          if (type === 'build') {
-            iconSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
-          } else if (type === 'pr') {
-            iconSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M13 6h3a2 2 0 0 1 2 2v7"></path><line x1="6" y1="9" x2="6" y2="21"></line></svg>';
-          } else if (type === 'wi') {
-            iconSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="9"></line></svg>';
-          } else {
-            iconSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="4"></circle><line x1="1.05" y1="12" x2="7" y2="12"></line><line x1="17.01" y1="12" x2="22.96" y2="12"></line></svg>';
-          }
+      let iconSvg = '';
+      if (type === 'build') {
+        iconSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+      } else if (type === 'pr') {
+        iconSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M13 6h3a2 2 0 0 1 2 2v7"></path><line x1="6" y1="9" x2="6" y2="21"></line></svg>';
+      } else if (type === 'wi') {
+        iconSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="9"></line></svg>';
+      } else {
+        iconSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="4"></circle><line x1="1.05" y1="12" x2="7" y2="12"></line><line x1="17.01" y1="12" x2="22.96" y2="12"></line></svg>';
+      }
 
-          return `
+      return `
             <div class="az-act-item">
               <div class="az-act-icon-box ${iconClass}">
                 ${iconSvg}
@@ -943,7 +1058,7 @@ window.DashboardModule = {
               </div>
             </div>
           `;
-        }).join('')}
+    }).join('')}
       </div>
     `;
 
@@ -970,18 +1085,56 @@ window.DashboardModule = {
       }
     });
 
+    // Click-to-Navigate Deep Links for 8 Dynamic Summary Cards
+    document.getElementById('dashCardProjects')?.addEventListener('click', () => {
+      document.getElementById('azDashTeamPicker')?.click();
+    });
+    document.getElementById('dashCardRepos')?.addEventListener('click', () => {
+      if (window.HubApp && typeof window.HubApp.switchView === 'function') {
+        window.HubApp.switchView('repositories');
+      }
+    });
+    document.getElementById('dashCardPipelines')?.addEventListener('click', () => {
+      if (window.HubApp && typeof window.HubApp.switchView === 'function') {
+        window.HubApp.switchView('pipelines');
+      }
+    });
+    document.getElementById('dashCardBuilds')?.addEventListener('click', () => {
+      if (window.HubApp && typeof window.HubApp.switchView === 'function') {
+        window.HubApp.switchView('pipelines');
+      }
+    });
+    document.getElementById('dashCardAgentPools')?.addEventListener('click', () => {
+      if (window.HubApp && typeof window.HubApp.switchView === 'function') {
+        window.HubApp.switchView('agentpools');
+      }
+    });
+    document.getElementById('dashCardAgents')?.addEventListener('click', () => {
+      if (window.HubApp && typeof window.HubApp.switchView === 'function') {
+        window.HubApp.switchView('agentpools');
+      }
+    });
+    document.getElementById('dashCardConnections')?.addEventListener('click', () => {
+      if (window.HubApp && typeof window.HubApp.switchView === 'function') {
+        window.HubApp.switchView('serviceconnections');
+      }
+    });
+    document.getElementById('dashCardWorkItems')?.addEventListener('click', () => {
+      if (window.HubApp && typeof window.HubApp.switchView === 'function') {
+        window.HubApp.switchView('workitems');
+      }
+    });
+
     // Click-to-Navigate Deep Links for Overview KPI Cards
     document.getElementById('kpiCardWorkItems')?.addEventListener('click', () => {
       if (window.HubApp && typeof window.HubApp.switchView === 'function') {
         window.HubApp.switchView('workitems');
-        window.HubApp.triggerActiveInspect();
       }
     });
 
     document.getElementById('kpiCardPipelines')?.addEventListener('click', () => {
       if (window.HubApp && typeof window.HubApp.switchView === 'function') {
         window.HubApp.switchView('pipelines');
-        window.HubApp.triggerActiveInspect();
       }
     });
 
@@ -994,17 +1147,17 @@ window.DashboardModule = {
     document.getElementById('kpiCardInfrastructure')?.addEventListener('click', () => {
       if (window.HubApp && typeof window.HubApp.switchView === 'function') {
         window.HubApp.switchView('agentpools');
-        window.HubApp.triggerActiveInspect();
       }
     });
 
     // Jump to PRs view button
     document.getElementById('btnDashJumpToPrs')?.addEventListener('click', () => {
       if (window.HubApp && typeof window.HubApp.switchView === 'function') {
-        const repoSelect = document.getElementById('repoSelect');
-        if (repoSelect) repoSelect.value = '-- All Repositories --';
+        const prFilter = document.getElementById('prRepoFilterSelect');
+        if (prFilter) prFilter.value = '-- All Repositories --';
+        const prMod = document.getElementById('prRepoSelect');
+        if (prMod) prMod.value = '-- All Repositories --';
         window.HubApp.switchView('prs');
-        window.HubApp.triggerActiveInspect();
       }
     });
 
