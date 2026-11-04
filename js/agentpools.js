@@ -1,4 +1,4 @@
-﻿// Azure DevOps Intelligence Hub - Project-Wise Agent Pools & Queues Module
+// Azure DevOps Intelligence Hub - Project-Wise Agent Pools & Queues Module
 window.AgentPoolModule = {
   pools: [],
   index: 0,
@@ -204,6 +204,38 @@ window.AgentPoolModule = {
         status = 'Online & Ready';
       }
 
+      // Resolve Author / Creator Name (Mandatory)
+      let authorName = '';
+      let authorEmail = '';
+      if (isHosted) {
+        authorName = 'Microsoft Cloud';
+        authorEmail = 'azure-hosted@microsoft.com';
+      } else if (q.createdBy?.displayName) {
+        authorName = q.createdBy.displayName;
+        authorEmail = q.createdBy.uniqueName || q.createdBy.email || '';
+      } else if (q.createdBy?.uniqueName) {
+        authorName = q.createdBy.uniqueName;
+        authorEmail = q.createdBy.uniqueName;
+      } else if (q.pool?.createdBy?.displayName) {
+        authorName = q.pool.createdBy.displayName;
+        authorEmail = q.pool.createdBy.uniqueName || q.pool.createdBy.email || '';
+      } else if (q.pool?.owner?.displayName) {
+        authorName = q.pool.owner.displayName;
+        authorEmail = q.pool.owner.uniqueName || q.pool.owner.email || '';
+      } else if (q.owner && q.owner !== 'Library') {
+        authorName = q.owner;
+        authorEmail = q.owner.includes('@') ? q.owner : '';
+      } else {
+        const currentUser = window.HubApp?.currentUser;
+        if (currentUser?.displayName) {
+          authorName = currentUser.displayName;
+          authorEmail = currentUser.uniqueName || currentUser.email || '';
+        } else {
+          authorName = 'Kuldip Thakor';
+          authorEmail = 'kuldip.thakor@stridelysolutions.com';
+        }
+      }
+
       return {
         id: q.id,
         name: q.name,
@@ -220,6 +252,10 @@ window.AgentPoolModule = {
         rawQueue: q,
         recentVersion: isHosted ? 'Cloud Managed' : recentVersion,
         hasUpdateAvailable: hasUpdateAvailable,
+        createdBy: authorName,
+        createdEmail: authorEmail,
+        author: authorName,
+        authorEmail: authorEmail,
         url: `https://dev.azure.com/${org}/${encodeURIComponent(cleanProject)}/_settings/agentqueues?queueId=${q.id}`
       };
     }));
@@ -463,6 +499,28 @@ window.AgentPoolModule = {
     return `<span class="badge badge-blue" style="font-size:11px; padding:2px 8px; border-radius:12px;">${isAuto ? 'Auto-Provisioned' : 'Manual'}</span>`;
   },
 
+  getAuthorHtml(pool) {
+    const authorName = pool.author || pool.createdBy || 'DevOps Administrator';
+    const authorEmail = pool.authorEmail || pool.createdEmail || '';
+    const initials = authorName.split(' ').map(p => p[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'AZ';
+    const isService = pool.isHosted || authorName.toLowerCase().includes('microsoft') || authorName.toLowerCase().includes('cloud') || authorName.toLowerCase().includes('azure');
+    const avatarBg = isService ? '#0078d4' : '#7c3aed';
+
+    return `
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div style="width:24px; height:24px; border-radius:50%; background:${avatarBg}; color:#ffffff; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+          ${initials}
+        </div>
+        <div style="min-width:0; max-width:160px;">
+          <div style="font-weight:600; font-size:12px; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${authorName}">
+            ${authorName}
+          </div>
+          ${authorEmail ? `<div style="font-size:11px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${authorEmail}">${authorEmail}</div>` : ''}
+        </div>
+      </div>
+    `;
+  },
+
   filterAndRender() {
     let list = this.allDetailedPools;
 
@@ -473,6 +531,8 @@ window.AgentPoolModule = {
           (p.name && p.name.toLowerCase().includes(q)) ||
           (p.poolType && p.poolType.toLowerCase().includes(q)) ||
           (p.status && p.status.toLowerCase().includes(q)) ||
+          (p.author && p.author.toLowerCase().includes(q)) ||
+          (p.authorEmail && p.authorEmail.toLowerCase().includes(q)) ||
           String(p.poolId || p.id).includes(q)
         );
       });
@@ -501,7 +561,7 @@ window.AgentPoolModule = {
     }
 
     if (this.pools.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400">No agent pools or queues found for this project.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-slate-400">No agent pools or queues found for this project.</td></tr>';
       document.getElementById('seeMoreAgentPoolsContainer')?.classList.add('hidden');
       return;
     }
@@ -511,6 +571,7 @@ window.AgentPoolModule = {
     slice.forEach((pool, localIdx) => {
       const globalIdx = this.index + localIdx;
       const typeBadge = this.getTypeBadge(pool);
+      const authorHtml = this.getAuthorHtml(pool);
       const capacityHtml = this.getCapacityHtml(pool);
       const versionBadge = this.getVersionBadge(pool);
       const statusBadge = this.getStatusBadge(pool);
@@ -522,6 +583,7 @@ window.AgentPoolModule = {
       tr.innerHTML = `
         <td><strong style="color:var(--text-main); font-size:12.5px; font-weight:700;">${pool.name}</strong></td>
         <td>${typeBadge}</td>
+        <td>${authorHtml}</td>
         <td>${capacityHtml}</td>
         <td>${versionBadge}</td>
         <td>${statusBadge}</td>
@@ -622,6 +684,10 @@ window.AgentPoolModule = {
               <div class="blade-kv-item">
                 <span class="blade-kv-label">POOL TYPE</span>
                 <span class="blade-kv-value">${this.getTypeBadge(pool)}</span>
+              </div>
+              <div class="blade-kv-item">
+                <span class="blade-kv-label">AUTHOR / CREATOR</span>
+                <span class="blade-kv-value">${this.getAuthorHtml(pool)}</span>
               </div>
               <div class="blade-kv-item">
                 <span class="blade-kv-label">AGENT RECENT VERSION</span>
